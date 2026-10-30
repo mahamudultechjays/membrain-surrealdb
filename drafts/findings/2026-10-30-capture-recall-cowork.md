@@ -41,18 +41,30 @@ Lookups took 3.5 to 9.3 s each, and every exchange was saved.
 
 ## What Agent Memory stored
 
-After the run the area held 10 saved message chunks and 8 entities: `Agent Memory demo`, `Reno`, `Acme Logistics`, `Spreetail`, `Techjays`, `Agent Memory`, `phase one` and `pilot`.
+After the run the area held 10 saved message chunks, 8 entities, 2 attribute facts and 19 links.
 
-| Stored item | Source | Category |
+The entities are `Agent Memory demo`, `Reno`, `Acme Logistics`, `Spreetail`, `Techjays`, `Agent Memory`, `phase one` and `pilot`.
+
+Only three of the six exchanges produced facts, seven in all:
+
+| Exchange | Fact stored | Category |
 |---|---|---|
-| The person works at Techjays | the chat (trust 0.5) | identity |
-| The person leads project Agent Memory | the chat (trust 0.5) | context (expires after 7 days) |
-| Agent Memory demo is a demo for Agent Memory | the chat (trust 0.5) | context |
-| phase one is part of pilot | the chat (trust 0.5) | context |
-| phase one: `status = "go"` | the chat | context |
-| 14 links between entities | Agent Memory's own elaboration (trust 0.3) | mixed |
-| Anything about Acme shipping late or on time | **not stored as a fact** | — |
-| The demo date, 3 November | **not stored as a fact** | — |
+| 2b-1 "Hi, I am Vidyul ..." | first name = Vidyul | identity |
+| 2b-1 | the person leads project Agent Memory | context (expires after 7 days) |
+| 2b-1 | Agent Memory is a project for Spreetail | context |
+| 2b-1 | Agent Memory demo is a demo for Agent Memory | context |
+| 2c "What do you know ..." | the person works at Techjays, **taken from Cowork's reply** (finding 4) | identity |
+| 2e "Our pilot ..." | phase one: `status = "go"` | context |
+| 2e | phase one is part of pilot | context |
+
+All seven came from the chat at trust 0.5.
+
+Nothing else became a fact:
+
+- 2b-2, 2d and the second 2c produced no facts.
+- Nothing about Acme shipping late or on time was stored as a fact.
+- The demo date, 3 November, was not stored as a fact.
+- The other 14 links came from Agent Memory's own elaboration at trust 0.3 (finding 3).
 
 ## Findings
 
@@ -86,6 +98,8 @@ Every assistant reply is saved with the user's message, including long commentar
 
 These replies came back in later recalls, and the second recall even returned an earlier answer that still said "ships late" (build plan F1).
 
+Replies also become facts. The person never mentioned Techjays in this run, but Cowork's answer in 2c said "You're Vidyul, at Techjays", and Agent Memory stored "works at Techjays" as a lasting identity fact about the person.
+
 ### 5. Lasting facts can be filed to expire
 
 "Leads project Agent Memory" was stored in the `context` category, which expires after 7 days.
@@ -114,6 +128,12 @@ Those searches returned 50 to 62 results while the person's area was still empty
 
 It may be the Agent Memory connector, which signs in as the user rather than with the area-limited key. If so, Claude in Cowork can search the whole context, which would weaken finding 7 for chat. This needs checking.
 
+### 9. Saves do not share a session
+
+The seven facts came from three different Agent Memory sessions, one per save that produced facts.
+
+The plugin's save hook sends no session id, so Agent Memory starts a new session for each save ([hook source](https://github.com/surrealdb/ai-claude-plugin), `hooks/agent-memory.sh`, checked 29 Oct 2026). One Cowork task therefore never maps to one Agent Memory session (build plan F4).
+
 ## For the Tuesday demo
 
 - **Show:** saving, recall in a new task, special characters, and isolation between two people.
@@ -124,13 +144,13 @@ It may be the Agent Memory connector, which signs in as the user rather than wit
 
 1. Confirm which identity made the 15:20 to 15:29 searches, and whether the connector is enabled in Cowork.
 2. Repeat 2b with "Remember that ..." and with a plainer fact, to see when a statement becomes a fact.
-3. Check how many Agent Memory sessions one Cowork task creates (F4).
+3. Confirm F4 inside one task: send several messages in one Cowork task and count the sessions their saves create.
 4. Run the "don't save that" check (F2).
 
 ## How this was checked
 
 - **Audit log:** `GET /api/v1/{context}/audit` gave each save and lookup with its time and latency.
 - **Traces:** `GET /api/v1/{context}/traces/{id}` gave each lookup's query text and how many items it returned. For example, trace `twtrgswjzujne8yx3lzf` is the elaboration that followed the 2e save.
-- **Entities and facts:** `GET /entities`, then `POST /lookup` per entity, gave each fact and link with its category, source and trust.
+- **Entities and facts:** `GET /entities`, `GET /attributes` and `GET /relations` listed every entity, fact and link with its category, source, trust and session. `POST /lookup` per entity returned only some of them, so the lists are the complete record.
 - **Saved messages:** `POST /query` with a lens on the person's area returned the stored chunks with their times.
 - **Isolation:** the same searches run with the second person's key.
