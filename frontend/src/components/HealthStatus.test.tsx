@@ -1,6 +1,11 @@
 import { render, screen } from '@testing-library/react'
 import HealthStatus from '@/components/HealthStatus'
 
+const HEALTHY_API = {
+  status: 200,
+  body: { status: 'ok', version: '0.1.0', environment: 'development' },
+}
+
 function mockFetch(responses: Record<string, { status: number; body: unknown }>) {
   vi.stubGlobal(
     'fetch',
@@ -19,13 +24,10 @@ afterEach(() => {
 })
 
 describe('HealthStatus', () => {
-  it('shows the API version and a healthy database', async () => {
+  it('shows the API version and a reachable Agent Memory', async () => {
     mockFetch({
-      '/api/v1/health': {
-        status: 200,
-        body: { status: 'ok', version: '0.1.0', environment: 'development' },
-      },
-      '/api/v1/health/ready': { status: 200, body: { status: 'ok', database: 'ok' } },
+      '/api/v1/health': HEALTHY_API,
+      '/api/v1/health/ready': { status: 200, body: { status: 'ok', agent_memory: 'ok' } },
     })
 
     render(<HealthStatus />)
@@ -34,15 +36,28 @@ describe('HealthStatus', () => {
     expect(await screen.findByText('ok')).toBeInTheDocument()
   })
 
-  it('reports the database as unavailable when readiness returns 503', async () => {
+  it('tells the user to configure Agent Memory when settings are missing', async () => {
     mockFetch({
-      '/api/v1/health': {
-        status: 200,
-        body: { status: 'ok', version: '0.1.0', environment: 'development' },
-      },
+      '/api/v1/health': HEALTHY_API,
       '/api/v1/health/ready': {
         status: 503,
-        body: { status: 'unavailable', database: 'unavailable' },
+        body: { status: 'unavailable', agent_memory: 'not_configured' },
+      },
+    })
+
+    render(<HealthStatus />)
+
+    expect(
+      await screen.findByText('not configured (set AGENT_MEMORY_* in .env)'),
+    ).toBeInTheDocument()
+  })
+
+  it('reports Agent Memory as unavailable when the service fails', async () => {
+    mockFetch({
+      '/api/v1/health': HEALTHY_API,
+      '/api/v1/health/ready': {
+        status: 503,
+        body: { status: 'unavailable', agent_memory: 'unavailable' },
       },
     })
 

@@ -10,7 +10,7 @@ Hexagonal, enforced by import-linter (`[tool.importlinter]` in `pyproject.toml`)
 |---|---|
 | `app/api/` | HTTP layer: routers, request/response wiring, `deps.py` |
 | `app/composition.py` | Composition root: the only place adapters are bound to ports |
-| `app/adapters/` | Concrete integrations (SurrealDB lives in `adapters/db/surreal/`) |
+| `app/adapters/` | Concrete integrations (Agent Memory lives in `adapters/agent_memory/`) |
 | `app/services/` | Use cases; depend on domain ports only |
 | `app/domain/` | Entities and ports (`Protocol`s); imports nothing app-level |
 | `app/schemas/` | Pydantic request/response models |

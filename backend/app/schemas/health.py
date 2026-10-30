@@ -4,6 +4,8 @@ from typing import Literal
 
 from pydantic import BaseModel
 
+from app.domain.ports.memory_probe import MemoryStatus
+
 
 class HealthResponse(BaseModel):
     """Liveness: the API process is up."""
@@ -17,4 +19,4 @@ class ReadinessResponse(BaseModel):
     """Readiness: the API and its dependencies can serve traffic."""
 
     status: Literal["ok", "unavailable"]
-    database: Literal["ok", "unavailable"]
+    agent_memory: MemoryStatus

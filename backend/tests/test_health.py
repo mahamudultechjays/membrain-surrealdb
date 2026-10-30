@@ -1,3 +1,4 @@
+import pytest
 from fastapi.testclient import TestClient
 
 from tests.conftest import FakeProbe
@@ -10,17 +11,18 @@ def test_liveness_reports_ok(client: TestClient) -> None:
     assert response.json()["status"] == "ok"
 
 
-def test_readiness_ok_when_database_responds(client: TestClient) -> None:
+def test_readiness_ok_when_agent_memory_answers(client: TestClient) -> None:
     response = client.get("/api/v1/health/ready")
 
     assert response.status_code == 200
-    assert response.json() == {"status": "ok", "database": "ok"}
+    assert response.json() == {"status": "ok", "agent_memory": "ok"}
 
 
-def test_readiness_503_when_database_down(client: TestClient, probe: FakeProbe) -> None:
-    probe.healthy = False
+@pytest.mark.parametrize("memory", ["unavailable", "not_configured"])
+def test_readiness_503_otherwise(client: TestClient, probe: FakeProbe, memory: str) -> None:
+    probe.status = memory  # type: ignore[assignment]
 
     response = client.get("/api/v1/health/ready")
 
     assert response.status_code == 503
-    assert response.json() == {"status": "unavailable", "database": "unavailable"}
+    assert response.json() == {"status": "unavailable", "agent_memory": memory}

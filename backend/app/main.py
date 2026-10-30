@@ -7,19 +7,19 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.v1.router import api_router
-from app.composition import get_surreal_connection
+from app.composition import get_agent_memory_client
 from app.core.config import settings
 from app.core.logging import setup_logging
 
 
 @asynccontextmanager
 async def lifespan(_: FastAPI) -> AsyncIterator[None]:
-    connection = get_surreal_connection()
-    await connection.connect()
     try:
         yield
     finally:
-        await connection.close()
+        client = get_agent_memory_client()
+        if client is not None:
+            await client.close()
 
 
 def create_app() -> FastAPI:

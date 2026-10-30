@@ -2,21 +2,33 @@
 
 from functools import lru_cache
 
-from app.adapters.db.surreal import SurrealConnection
+from surrealdb_memory import AsyncMemory
+
+from app.adapters.agent_memory import AgentMemoryProbe, NotConfiguredProbe
 from app.core.config import settings
-from app.domain.ports.database_probe import DatabaseProbe
+from app.domain.ports.memory_probe import MemoryProbe
 
 
 @lru_cache
-def get_surreal_connection() -> SurrealConnection:
-    return SurrealConnection(
-        url=settings.SURREAL_URL,
-        namespace=settings.SURREAL_NAMESPACE,
-        database=settings.SURREAL_DATABASE,
-        username=settings.SURREAL_USER,
-        password=settings.SURREAL_PASSWORD.get_secret_value(),
+def get_agent_memory_client() -> AsyncMemory | None:
+    """One client per process, or None until all AGENT_MEMORY_* settings are set.
+
+    The client opens its HTTP session lazily on first use; the app lifespan
+    closes it on shutdown.
+    """
+    endpoint = settings.AGENT_MEMORY_ENDPOINT
+    context = settings.AGENT_MEMORY_CONTEXT
+    api_key = settings.AGENT_MEMORY_API_KEY
+    if not (endpoint and context and api_key and api_key.get_secret_value()):
+        return None
+    return AsyncMemory(
+        context,
+        endpoint=endpoint.rstrip("/"),
+        api_key=api_key.get_secret_value(),
+        timeout=settings.AGENT_MEMORY_TIMEOUT_SECONDS,
     )
 
 
-def get_database_probe() -> DatabaseProbe:
-    return get_surreal_connection()
+def get_memory_probe() -> MemoryProbe:
+    client = get_agent_memory_client()
+    return AgentMemoryProbe(client) if client else NotConfiguredProbe()

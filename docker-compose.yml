@@ -1,30 +1,10 @@
-# Local development stack: SurrealDB + FastAPI (hot reload) + Vite (HMR).
+# Local development stack: FastAPI (hot reload) + Vite (HMR).
+# Agent Memory is hosted on SurrealDB Cloud; the backend reaches it over HTTPS
+# using the AGENT_MEMORY_* settings in .env, so there is no database service here.
 # Production-shaped images: `make prod` layers docker-compose.prod.yml on top.
 name: membrain-surrealdb-poc
 
 services:
-  surrealdb:
-    # Pinned, not :latest, so the POC's results stay reproducible.
-    image: surrealdb/surrealdb:v3.3.5
-    command:
-      - start
-      - --log=info
-      - --user=${SURREAL_USER:-root}
-      - --pass=${SURREAL_PASSWORD:-root}
-      - rocksdb:/data/database.db
-    # The image's default user cannot write to a fresh named volume.
-    user: root
-    ports:
-      - "${SURREAL_PORT:-8001}:8000"
-    volumes:
-      - surreal_data:/data
-    healthcheck:
-      test: ["CMD", "/surreal", "is-ready", "--endpoint", "http://localhost:8000"]
-      interval: 5s
-      timeout: 3s
-      retries: 10
-      start_period: 5s
-
   backend:
     build:
       context: ./backend
@@ -33,8 +13,6 @@ services:
       - path: .env
         required: false
     environment:
-      # Reach SurrealDB by service name inside the compose network.
-      SURREAL_URL: ws://surrealdb:8000/rpc
       # Docker Desktop on macOS/Windows delivers no filesystem events through a
       # bind mount, so uvicorn --reload needs polling to see host edits.
       WATCHFILES_FORCE_POLLING: "1"
@@ -53,9 +31,6 @@ services:
       timeout: 5s
       retries: 5
       start_period: 10s
-    depends_on:
-      surrealdb:
-        condition: service_healthy
 
   frontend:
     build:
@@ -75,6 +50,3 @@ services:
     depends_on:
       backend:
         condition: service_healthy
-
-volumes:
-  surreal_data:

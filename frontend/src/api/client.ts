@@ -12,12 +12,21 @@ export class ApiError extends Error {
   }
 }
 
-export async function apiGet<T>(path: string, signal?: AbortSignal): Promise<T> {
+interface GetOptions {
+  signal?: AbortSignal
+  /** Non-2xx statuses whose JSON body is still a valid answer, e.g. a 503 readiness report. */
+  acceptStatuses?: readonly number[]
+}
+
+export async function apiGet<T>(
+  path: string,
+  { signal, acceptStatuses = [] }: GetOptions = {},
+): Promise<T> {
   const response = await fetch(`${BASE_URL}${path}`, {
     headers: { Accept: 'application/json' },
     signal,
   })
-  if (!response.ok) {
+  if (!response.ok && !acceptStatuses.includes(response.status)) {
     throw new ApiError(response.status, `GET ${path} failed with ${response.status}`)
   }
   return (await response.json()) as T

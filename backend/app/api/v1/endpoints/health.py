@@ -2,7 +2,7 @@
 
 from fastapi import APIRouter, Response, status
 
-from app.api.deps import DatabaseProbeDep
+from app.api.deps import MemoryProbeDep
 from app.core.config import settings
 from app.schemas.health import HealthResponse, ReadinessResponse
 
@@ -20,9 +20,10 @@ async def health_check() -> HealthResponse:
     response_model=ReadinessResponse,
     responses={status.HTTP_503_SERVICE_UNAVAILABLE: {"model": ReadinessResponse}},
 )
-async def readiness_check(probe: DatabaseProbeDep, response: Response) -> ReadinessResponse:
-    """Readiness probe: 503 while SurrealDB is unreachable."""
-    if await probe.ping():
-        return ReadinessResponse(status="ok", database="ok")
+async def readiness_check(probe: MemoryProbeDep, response: Response) -> ReadinessResponse:
+    """Readiness probe: 503 until Agent Memory is configured and answering."""
+    memory = await probe.check()
+    if memory == "ok":
+        return ReadinessResponse(status="ok", agent_memory=memory)
     response.status_code = status.HTTP_503_SERVICE_UNAVAILABLE
-    return ReadinessResponse(status="unavailable", database="unavailable")
+    return ReadinessResponse(status="unavailable", agent_memory=memory)

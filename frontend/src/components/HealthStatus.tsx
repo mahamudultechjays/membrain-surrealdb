@@ -1,5 +1,11 @@
-import { getHealth, getReadiness } from '@/api/health'
-import { useAsync } from '@/hooks/useAsync'
+import { getHealth, getReadiness, type AgentMemoryStatus } from '@/api/health'
+import { useAsync, type AsyncState } from '@/hooks/useAsync'
+
+const MEMORY_LABELS: Record<AgentMemoryStatus, string> = {
+  ok: 'ok',
+  unavailable: 'unavailable',
+  not_configured: 'not configured (set AGENT_MEMORY_* in .env)',
+}
 
 export default function HealthStatus() {
   const health = useAsync(getHealth)
@@ -12,12 +18,12 @@ export default function HealthStatus() {
         ? `ok (v${health.data.version}, ${health.data.environment})`
         : 'unreachable'
 
-  const database =
+  const memory =
     readiness.status === 'loading'
       ? 'checking…'
       : readiness.status === 'success'
-        ? 'ok'
-        : 'unavailable'
+        ? MEMORY_LABELS[readiness.data.agent_memory]
+        : 'unknown (API unreachable)'
 
   return (
     <section aria-labelledby="health-heading">
@@ -25,17 +31,22 @@ export default function HealthStatus() {
       <ul className="status">
         <li>
           <span>API</span>
-          <span data-state={stateOf(health.status)}>{api}</span>
+          <span data-state={stateOf(health)}>{api}</span>
         </li>
         <li>
-          <span>SurrealDB</span>
-          <span data-state={stateOf(readiness.status)}>{database}</span>
+          <span>Agent Memory</span>
+          <span data-state={memoryStateOf(readiness)}>{memory}</span>
         </li>
       </ul>
     </section>
   )
 }
 
-function stateOf(status: 'loading' | 'success' | 'error') {
-  return status === 'success' ? 'ok' : status === 'error' ? 'down' : 'pending'
+function stateOf(state: AsyncState<unknown>) {
+  return state.status === 'success' ? 'ok' : state.status === 'error' ? 'down' : 'pending'
+}
+
+function memoryStateOf(state: AsyncState<{ agent_memory: AgentMemoryStatus }>) {
+  if (state.status !== 'success') return stateOf(state)
+  return state.data.agent_memory === 'ok' ? 'ok' : 'down'
 }

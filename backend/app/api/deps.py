@@ -8,7 +8,7 @@ from typing import Annotated
 
 from fastapi import Depends
 
-from app.composition import get_database_probe
-from app.domain.ports.database_probe import DatabaseProbe
+from app.composition import get_memory_probe
+from app.domain.ports.memory_probe import MemoryProbe
 
-DatabaseProbeDep = Annotated[DatabaseProbe, Depends(get_database_probe)]
+MemoryProbeDep = Annotated[MemoryProbe, Depends(get_memory_probe)]

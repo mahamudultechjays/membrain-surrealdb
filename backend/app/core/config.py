@@ -27,13 +27,13 @@ class Settings(BaseSettings):
     API_V1_PREFIX: str = "/api/v1"
     BACKEND_CORS_ORIGINS: list[str] = ["http://localhost:5174"]
 
-    # SurrealDB. Defaults reach the compose service from the host; compose
-    # overrides SURREAL_URL to use the service name inside the network.
-    SURREAL_URL: str = "ws://localhost:8001/rpc"
-    SURREAL_NAMESPACE: str = "membrain"
-    SURREAL_DATABASE: str = "poc"
-    SURREAL_USER: str = "root"
-    SURREAL_PASSWORD: SecretStr = SecretStr("root")
+    # SurrealDB Agent Memory (hosted on SurrealDB Cloud, reached over HTTPS).
+    # All three come from the Context's page in SurrealDB Cloud. Optional so the
+    # app still starts on a fresh clone; readiness reports "not_configured".
+    AGENT_MEMORY_ENDPOINT: str | None = None
+    AGENT_MEMORY_CONTEXT: str | None = None
+    AGENT_MEMORY_API_KEY: SecretStr | None = None
+    AGENT_MEMORY_TIMEOUT_SECONDS: float = 30.0
 
 
 @lru_cache

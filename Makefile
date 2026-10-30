@@ -1,8 +1,8 @@
-.PHONY: help up down restart logs ps build prod prod-down shell-backend shell-db \
+.PHONY: help up down restart logs ps build prod prod-down shell-backend \
 	lint lint-backend lint-frontend format test test-backend test-frontend check \
 	lock lock-frontend clean
 
-# Pick up ports and SURREAL_* from .env.
+# Pick up host ports from .env.
 -include .env
 
 COMPOSE := docker compose
@@ -24,7 +24,6 @@ up: .env ## Build and start the dev stack (detached), wait for health
 	@echo ""
 	@echo "→ app        http://localhost:$(or $(FRONTEND_PORT),5174)"
 	@echo "→ API docs   http://localhost:$(or $(BACKEND_PORT),8000)/docs"
-	@echo "→ SurrealDB  ws://localhost:$(or $(SURREAL_PORT),8001)/rpc"
 
 down: ## Stop the dev stack (keeps data)
 	$(COMPOSE) down
@@ -49,11 +48,6 @@ prod-down: ## Stop the production-shaped stack
 
 shell-backend: ## Shell inside the backend container
 	$(BACKEND) bash
-
-shell-db: ## SurrealQL REPL against the running database
-	$(COMPOSE) exec surrealdb /surreal sql --endpoint http://localhost:8000 \
-	  --username $(or $(SURREAL_USER),root) --password $(or $(SURREAL_PASSWORD),root) \
-	  --namespace $(or $(SURREAL_NAMESPACE),membrain) --database $(or $(SURREAL_DATABASE),poc) --pretty
 
 # --- Quality (all in containers) ---
 
@@ -89,5 +83,5 @@ lock-frontend: ## Refresh package-lock.json after editing package.json, then reb
 	$(FRONTEND) npm install
 	$(COMPOSE) build frontend
 
-clean: ## Stop everything and DELETE the SurrealDB volume
+clean: ## Stop everything and remove volumes
 	$(COMPOSE) down -v

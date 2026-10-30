@@ -8,7 +8,8 @@ membrain repo's `main` branch (`~/Techjays/Spreetail/membrain`).
 - `backend/`: FastAPI, Python 3.12, uv. Hexagonal layout enforced by import-linter;
   see `backend/README.md`.
 - `frontend/`: React 19 + Vite + TypeScript (strict), oxlint, Prettier, Vitest.
-- `surrealdb`: pinned image in `docker-compose.yml`, reached via `app/adapters/db/surreal/`.
+- SurrealDB Agent Memory: hosted on SurrealDB Cloud, called over HTTPS with the official
+  `surrealdb-memory` client (beta, pinned) from `app/adapters/agent_memory/`. No local database.
 
 ## Working rules
 
