@@ -1,0 +1,21 @@
+# Production-shaped images on top of docker-compose.yml:
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml up --build
+# No bind mounts, no reload; the frontend is nginx on :8080 proxying /api.
+services:
+  backend:
+    image: membrain-surrealdb-poc-backend:prod
+    build:
+      target: prod
+    environment:
+      ENVIRONMENT: production
+      WATCHFILES_FORCE_POLLING: !reset null
+    volumes: !reset []
+
+  frontend:
+    image: membrain-surrealdb-poc-frontend:prod
+    build:
+      target: prod
+    environment: !reset {}
+    ports: !override
+      - "${PROD_FRONTEND_PORT:-8080}:80"
+    volumes: !reset []

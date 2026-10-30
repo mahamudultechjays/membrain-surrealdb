@@ -1,0 +1,87 @@
+[project]
+name = "membrain-surrealdb-poc-backend"
+version = "0.1.0"
+description = "Membrain SurrealDB proof-of-concept API"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi>=0.120.0",
+    "uvicorn[standard]>=0.38.0",
+    "pydantic>=2.12.0",
+    "pydantic-settings>=2.11.0",
+    "surrealdb>=2.0.0",
+]
+
+[dependency-groups]
+dev = [
+    "ruff>=0.14.0",
+    "mypy>=1.18.0",
+    "pytest>=8.4.0",
+    "pytest-asyncio>=1.2.0",
+    "pytest-cov>=7.0.0",
+    "httpx2>=2.16.0",  # TestClient transport; starlette deprecated plain httpx
+    "import-linter>=2.5",
+]
+
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+src = ["."]
+
+[tool.ruff.lint]
+select = [
+    "E",     # pycodestyle errors
+    "W",     # pycodestyle warnings
+    "F",     # pyflakes
+    "I",     # isort
+    "B",     # flake8-bugbear
+    "C4",    # flake8-comprehensions
+    "UP",    # pyupgrade
+    "N",     # pep8-naming
+    "SIM",   # flake8-simplify
+    "RUF",   # ruff-specific
+    "PTH",   # use pathlib
+    "T20",   # no stray print statements
+    "ASYNC", # blocking calls inside async functions
+]
+ignore = ["B008"]  # FastAPI Depends() in defaults is idiomatic
+
+[tool.ruff.lint.isort]
+known-first-party = ["app"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+plugins = ["pydantic.mypy"]
+exclude = ["tests/"]
+
+[tool.importlinter]
+root_package = "app"
+
+# Hexagonal layering: higher layers may import lower ones, never the reverse.
+# app.composition is the only module that binds adapters to ports.
+[[tool.importlinter.contracts]]
+name = "Hexagonal layers (api -> composition -> adapters -> services -> domain)"
+type = "layers"
+layers = [
+    "app.api",
+    "app.composition",
+    "app.adapters",
+    "app.services",
+    "app.domain",
+]
+
+[[tool.importlinter.contracts]]
+name = "Domain is pure (no core/schemas imports)"
+type = "forbidden"
+source_modules = ["app.domain"]
+forbidden_modules = ["app.core", "app.schemas", "app.main"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+addopts = "--cov=app --cov-report=term-missing"
+
+[tool.coverage.run]
+omit = ["tests/*"]

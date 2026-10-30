@@ -1,0 +1,6 @@
+Task: [current topic]
+Outputs: [draft and review paths]
+Completed: [finished stages and checks]
+Decisions: [confirmed choices and their sources]
+Open issues: [missing evidence or blockers]
+Next action: [one concrete continuation step]

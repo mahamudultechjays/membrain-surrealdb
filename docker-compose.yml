@@ -1,0 +1,80 @@
+# Local development stack: SurrealDB + FastAPI (hot reload) + Vite (HMR).
+# Production-shaped images: `make prod` layers docker-compose.prod.yml on top.
+name: membrain-surrealdb-poc
+
+services:
+  surrealdb:
+    # Pinned, not :latest, so the POC's results stay reproducible.
+    image: surrealdb/surrealdb:v3.3.5
+    command:
+      - start
+      - --log=info
+      - --user=${SURREAL_USER:-root}
+      - --pass=${SURREAL_PASSWORD:-root}
+      - rocksdb:/data/database.db
+    # The image's default user cannot write to a fresh named volume.
+    user: root
+    ports:
+      - "${SURREAL_PORT:-8001}:8000"
+    volumes:
+      - surreal_data:/data
+    healthcheck:
+      test: ["CMD", "/surreal", "is-ready", "--endpoint", "http://localhost:8000"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 5s
+
+  backend:
+    build:
+      context: ./backend
+      target: dev
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      # Reach SurrealDB by service name inside the compose network.
+      SURREAL_URL: ws://surrealdb:8000/rpc
+      # Docker Desktop on macOS/Windows delivers no filesystem events through a
+      # bind mount, so uvicorn --reload needs polling to see host edits.
+      WATCHFILES_FORCE_POLLING: "1"
+    ports:
+      - "${BACKEND_PORT:-8000}:8000"
+    volumes:
+      # Whole backend/ for hot reload; the venv lives at /opt/venv, untouched.
+      - ./backend:/app
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - import urllib.request; urllib.request.urlopen('http://localhost:8000/api/v1/health')
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    depends_on:
+      surrealdb:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: ./frontend
+      target: dev
+    environment:
+      VITE_PROXY_TARGET: http://backend:8000
+      VITE_USE_POLLING: "1"
+    ports:
+      # 5174 by default so this runs alongside membrain, which owns 5173.
+      - "${FRONTEND_PORT:-5174}:5173"
+    volumes:
+      - ./frontend:/app
+      # Keep the image's node_modules (Linux binaries) rather than the host's.
+      # `make up` passes --renew-anon-volumes so a dependency change is picked up.
+      - /app/node_modules
+    depends_on:
+      backend:
+        condition: service_healthy
+
+volumes:
+  surreal_data:
