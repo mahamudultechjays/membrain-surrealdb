@@ -31,7 +31,7 @@ Times are IST.
 | 4d, same task, 11:50 | `Today I am reviewing the Harbor Lane warehouse layout.` | Context action dated 2 Nov 2026, a new context entity Harbor Lane warehouse, and 3 elaboration links at trust 0.3. No fact. |
 | 4e, same task, 11:54 | `Our standard return window for Harbor Lane is 30 days.` | Fact Harbor Lane warehouse `return_window` = "30 days", knowledge. Nothing else. |
 | 4f, new task, 11:56 | `Never mention competitor names in your answers.` | Instruction `no_competitor_names`. Cowork's reply was plain sentences, not bullets. |
-| 4g, new task, 12:00 | `How should you format your answers for me, and what am I working on today?` | Cowork's answer was right on bullets, competitors, today's task and the demo, but left out metric units. Its reply added two duplicate instructions, a third copy of the bullet rule as a fact, two duplicate actions and a duplicate link, and replaced demo `date` "tomorrow" with "Tuesday 3 November". |
+| 4g, new task, 12:00 | `How should you format your answers for me, and what am I working on today?` | Recall returned only saved chat passages, so Cowork built its answer from chat text, not from the stored instructions, facts or entities. The answer was right on bullets, competitors, today's task and the demo, but left out metric units. Its reply then added two duplicate instructions, a third copy of the bullet rule as a fact, two duplicate actions and a duplicate link, and replaced demo `date` "tomorrow" with "Tuesday 3 November". |
 | 4h, new task, 12:14 | `Stop using bullet points. Plain paragraphs are fine now.` | New instruction `format_paragraphs`. Both bullet instructions stayed; the bullet fact from 4g was removed with no replacement. |
 
 ## Findings
