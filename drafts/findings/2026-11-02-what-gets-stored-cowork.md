@@ -46,21 +46,7 @@ Formatting (4a), units (4b) and a topic to avoid (4f) each became an instruction
 
 Both recalls in 4g returned only saved chat passages, 26 of them, which was every passage in the area including the locker code from step 3.
 
-The audit log shows only those two lookups for the 4g turn, both made by the plugin's hook, so Cowork had no other route to the stored records.
-
-Each part of the 4g answer traces to a passage, not to a record:
-
-| Part of the answer | Came from |
-|---|---|
-| Short bullet points, five at most | The 4a passage |
-| No competitor names | The 4f passage |
-| Reviewing the Harbor Lane layout today | The 4d passage |
-| Demo on Tuesday 3 November | The 30 Oct passage "our demo is on Tuesday 3 November" |
-| Metric units (left out) | The 4b passage was returned but not used; the `metric_units` instruction and fact were never sent |
-
 So Cowork follows instructions only when the passage that stated them is recalled and Claude notices it; in 4f it did not use bullets, and in 4g it left out metric units.
-
-The structured records are written on every save but never read back in Cowork: only chat text goes round.
 
 The glossary says instructions are "applied at prompt assembly", but the plugin's hooks only inject recall results ([plugin source](https://github.com/surrealdb/ai-claude-plugin), `hooks/agent-memory.sh`, checked 29 Oct 2026).
 
@@ -79,8 +65,6 @@ Any job that reads preferences has to reconcile two record types that are not li
 ### 5. Claude repeating a rule stores it again (F1)
 
 Cowork's 4g answer restated the rules, and Agent Memory stored them as new instructions with new labels (`formatting_preference`, `competitor_mentions`) and a new fact.
-
-These records were made after the answer, by the save hook storing the exchange and extraction reading Cowork's reply; they are an output of the answer, not what the answer was built from.
 
 Eight messages left seven instructions, of which three rules are distinct and one is stale.
 
