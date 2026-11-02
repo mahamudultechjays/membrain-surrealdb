@@ -102,6 +102,39 @@ The Fresno depot is still a fact, still in the profile's "preferences" and still
 
 So forgetting what someone said does not forget what was extracted from it.
 
+## 6c: asking about the forgotten record in Cowork
+
+| Step | Sent in Cowork | Result |
+|---|---|---|
+| 6c, new task, 13:51 | `What do you know about Lab Carrier M11?` | The plugin's recall (no connector calls) returned the `depot = Fresno` and `on_time_rate = 88 percent` facts, and Cowork answered with both. The forgotten passage did not come back. |
+
+Cowork's reply was then saved, and extraction added a new link from it, "Lab Carrier M11 operates in Fresno" (source `turn`), plus an elaboration link "Fresno depot located in Fresno".
+
+### 9. Forgotten text stays out of recall, but its facts keep answering
+
+The passage forgotten in 6b did not return, while the facts extracted from it answered the question in full.
+
+### 10. Answering from a fact writes it back
+
+Cowork's answer restated the depot, and extraction stored that as a new chat-sourced link, so a forget that leaves facts behind is undone further each time the agent repeats them.
+
+## 6f: isolation for reflection and consolidation (T-2)
+
+Run on 2 Nov 2026 with the second test person's key, whose area held only the probe note "testuser2 keeps the Zebrafish ledger in Reno".
+
+| Call | Result |
+|---|---|
+| `POST /reflect`, 6 runs of 3 questions, two naming the person's carriers and name | Every answer described only the probe note; none contained the person's facts. Words from the question ("Boise", "Vidyul") were echoed back, with the answer saying memory held nothing about them. |
+| `GET /state`, `/profile`, `/uncertainty`, `/entities` | Nothing from the person's area |
+| `POST /consolidate` with `dryRun: true` | Nothing created and no outcomes |
+| Two writes into the second area (one structured, one chat-style) | Elaboration linked the new entities only to each other and to Reno, never to the person's carriers |
+
+### 11. Reflection, consolidation and elaboration stay inside the caller's area
+
+With an area-limited key, none of the three reached the other person's records, so T-2 holds for keys.
+
+It does not hold for the SurrealDB Cloud connector signed in as an admin (finding 1).
+
 ## Decision taken
 
 Keep the SurrealDB Cloud connector on in Cowork for the rest of testing (2 Nov 2026, Vidyul).
