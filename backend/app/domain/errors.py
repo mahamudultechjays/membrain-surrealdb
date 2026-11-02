@@ -17,5 +17,9 @@ class EntityNotFoundError(Exception):
     """No entity with that type and name is visible to this key."""
 
 
+class UnknownScopeError(Exception):
+    """The scope is not one of the configured demo scopes."""
+
+
 class UnsupportedDocumentError(Exception):
     """The file type can't be read, or the file holds no text."""

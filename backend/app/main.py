@@ -8,7 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.middleware import TRACE_ID_HEADER, ScopeContextMiddleware
 from app.api.v1.router import api_router
-from app.composition import get_agent_memory_client
+from app.composition import close_clients
 from app.core.config import settings
 from app.core.logging import setup_logging
 
@@ -18,9 +18,7 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
     try:
         yield
     finally:
-        client = get_agent_memory_client()
-        if client is not None:
-            await client.close()
+        await close_clients()
 
 
 def create_app() -> FastAPI:
