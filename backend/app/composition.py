@@ -4,9 +4,23 @@ from functools import lru_cache
 
 from surrealdb_memory import AsyncMemory
 
-from app.adapters.agent_memory import AgentMemoryProbe, NotConfiguredProbe
+from app.adapters.agent_memory import (
+    AgentMemoryCapture,
+    AgentMemoryDocuments,
+    AgentMemoryGraph,
+    AgentMemoryProbe,
+    NotConfiguredCapture,
+    NotConfiguredDocuments,
+    NotConfiguredGraph,
+    NotConfiguredProbe,
+)
+from app.adapters.files import PdfAndTextReader
 from app.core.config import settings
+from app.domain.ports.document_store import DocumentStore
+from app.domain.ports.memory_capture import MemoryCapture
+from app.domain.ports.memory_graph import MemoryGraph
 from app.domain.ports.memory_probe import MemoryProbe
+from app.domain.ports.text_reader import DocumentTextReader
 
 
 @lru_cache
@@ -32,3 +46,22 @@ def get_agent_memory_client() -> AsyncMemory | None:
 def get_memory_probe() -> MemoryProbe:
     client = get_agent_memory_client()
     return AgentMemoryProbe(client) if client else NotConfiguredProbe()
+
+
+def get_memory_capture() -> MemoryCapture:
+    client = get_agent_memory_client()
+    return AgentMemoryCapture(client) if client else NotConfiguredCapture()
+
+
+def get_document_store() -> DocumentStore:
+    client = get_agent_memory_client()
+    return AgentMemoryDocuments(client) if client else NotConfiguredDocuments()
+
+
+def get_memory_graph() -> MemoryGraph:
+    client = get_agent_memory_client()
+    return AgentMemoryGraph(client) if client else NotConfiguredGraph()
+
+
+def get_text_reader() -> DocumentTextReader:
+    return PdfAndTextReader()

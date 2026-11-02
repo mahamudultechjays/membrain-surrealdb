@@ -9,6 +9,8 @@ dependencies = [
     "uvicorn[standard]>=0.38.0",
     "pydantic>=2.12.0",
     "pydantic-settings>=2.11.0",
+    "python-multipart>=0.0.20",  # FastAPI file uploads
+    "pypdf>=6.0.0",  # text from PDFs, for the document preview
     # Official Agent Memory client. Beta, so pinned exactly: bump deliberately.
     "surrealdb-memory==1.0.0b1",
 ]
