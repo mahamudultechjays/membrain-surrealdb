@@ -35,6 +35,13 @@ class Settings(BaseSettings):
     AGENT_MEMORY_API_KEY: SecretStr | None = None
     AGENT_MEMORY_TIMEOUT_SECONDS: float = 30.0
 
+    # Governance: who may read or write which Agent Memory scope. Grants live in
+    # a local SQLite file; the org scope and the root for personal scopes
+    # (<root>/<firstname>_<lastname>) already exist in the Context.
+    USER_SCOPES_DB_PATH: str = "data/user_scopes.db"
+    ORG_SCOPE: str = "org/spreetail"
+    USER_SCOPE_ROOT: str = "org/spreetail/user"
+
 
 @lru_cache
 def get_settings() -> Settings:

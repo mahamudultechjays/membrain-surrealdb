@@ -10,20 +10,26 @@ from app.adapters.agent_memory import (
     AgentMemoryGraph,
     AgentMemoryProbe,
     AgentMemoryRecall,
+    AgentMemoryScopeRegistry,
     NotConfiguredCapture,
     NotConfiguredDocuments,
     NotConfiguredGraph,
     NotConfiguredProbe,
     NotConfiguredRecall,
+    NotConfiguredScopeRegistry,
 )
 from app.adapters.files import PdfAndTextReader
+from app.adapters.sqlite import SqliteUserScopes
 from app.core.config import settings
 from app.domain.ports.document_store import DocumentStore, DocumentStoreFactory
 from app.domain.ports.memory_capture import CaptureFactory, MemoryCapture
 from app.domain.ports.memory_graph import MemoryGraph
 from app.domain.ports.memory_probe import MemoryProbe
 from app.domain.ports.memory_recall import MemoryRecall, RecallFactory
+from app.domain.ports.scope_registry import ScopeRegistry
 from app.domain.ports.text_reader import DocumentTextReader
+from app.domain.ports.user_scopes import UserScopeRepository
+from app.services.access import AccessService
 from app.services.capture_flow import PreviewCache
 from app.services.scopes import DEMO_USERS, ActiveScopes, ScopeDirectory
 
@@ -106,6 +112,25 @@ def get_recall_factory() -> RecallFactory:
         return AgentMemoryRecall(client) if client else NotConfiguredRecall()
 
     return for_scope
+
+
+@lru_cache
+def get_user_scope_repository() -> UserScopeRepository:
+    return SqliteUserScopes(settings.USER_SCOPES_DB_PATH)
+
+
+def get_scope_registry() -> ScopeRegistry:
+    client = get_agent_memory_client()
+    return AgentMemoryScopeRegistry(client) if client else NotConfiguredScopeRegistry()
+
+
+def get_access_service() -> AccessService:
+    return AccessService(
+        get_user_scope_repository(),
+        get_scope_registry(),
+        org_scope=settings.ORG_SCOPE,
+        user_root=settings.USER_SCOPE_ROOT,
+    )
 
 
 @lru_cache

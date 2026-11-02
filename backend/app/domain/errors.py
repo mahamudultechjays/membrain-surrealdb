@@ -21,5 +21,9 @@ class UnknownScopeError(Exception):
     """The scope is not one of the configured demo scopes."""
 
 
+class ScopeNotGrantedError(Exception):
+    """The user holds no grant that allows this on that scope."""
+
+
 class UnsupportedDocumentError(Exception):
     """The file type can't be read, or the file holds no text."""

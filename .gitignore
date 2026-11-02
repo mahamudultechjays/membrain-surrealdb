@@ -27,3 +27,6 @@ coverage/
 
 # Claude Code
 .claude/settings.local.json
+
+# Local SQLite (user scope grants)
+backend/data/
