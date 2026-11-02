@@ -383,52 +383,25 @@ Switch active scope (for demo: simulate different users).
 
 ## Backend Build Plan (Mahamudul)
 
-### B1: Infrastructure & Setup (NOW)
-- [ ] Create SQLite schema & wrapper
+### B1: Infrastructure & Setup (NOW – 10:00 AM)
 - [ ] Add auth middleware (Bearer token → user context)
 - [ ] Create `/health` endpoint
-- [ ] Dependency injection for Agent Memory, SQLite, user context
+- [ ] Load API keys from .env
+- [ ] Set up console logger with prefixes
+- [ ] Dependency injection for Agent Memory, scope context
 
-**Files:**
-- `backend/app/adapters/db/sqlite/client.py` (new)
-- `backend/app/adapters/db/sqlite/schema.sql` (new)
-- `backend/app/api/middleware.py` (new)
+**Files to create:**
+- `backend/app/api/middleware.py` (new - auth + scope context)
+- `backend/app/services/logger.py` (new - console logger)
+- `backend/app/services/scopes.py` (new - scope manager)
 - `backend/app/api/v1/endpoints/capture.py` (stub)
 - `backend/app/api/v1/endpoints/ask.py` (stub)
 - `backend/app/api/v1/endpoints/findings.py` (stub)
+- `backend/app/api/v1/endpoints/scopes.py` (stub)
 
 ---
 
-### B2: Database & Traceability (NOW – 10:30 AM)
-
-**SQLite Schema (Traceability Only):**
-```sql
-CREATE TABLE IF NOT EXISTS capture_trace (
-  id TEXT PRIMARY KEY,
-  timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
-  scope TEXT NOT NULL,
-  input_type TEXT NOT NULL,
-  config_mode TEXT NOT NULL,
-  config_category TEXT NOT NULL,
-  content_preview TEXT,
-  extracted_count INTEGER,
-  stored_count INTEGER,
-  cost_tokens INTEGER,
-  agent_memory_trace_id TEXT,
-  result_snapshot TEXT
-);
-
-CREATE TABLE IF NOT EXISTS ask_trace (
-  id TEXT PRIMARY KEY,
-  timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
-  question TEXT NOT NULL,
-  scope TEXT NOT NULL,
-  facts_found INTEGER,
-  latency_ms INTEGER,
-  cost_tokens INTEGER,
-  result_snapshot TEXT
-);
-```
+### B2: Configuration & Logging (NOW – 10:30 AM)
 
 **API Key Configuration (.env - Demo Only):**
 ```bash
@@ -438,9 +411,15 @@ MEMBRAIN_USER_ARUN_KEY=sk_test_arun_b2e7f4a1c9
 MEMBRAIN_USER_DEENA_KEY=sk_test_deena_d8c3e9f2a4
 ```
 
-- [ ] Create traceability service
-- [ ] Load API keys from .env (hardcoded for demo)
-- [ ] Log every capture/ask call
+**Logging (Console to stdout - No persistence):**
+- Log every capture/preview call with: scope, input_type, config, extracted_count, cost_tokens
+- Log every ask call with: question, scope, facts_found, latency_ms, cost_tokens
+- Log every scope switch with: from_scopes, to_scopes, message
+- Use structured logging: `[CAPTURE] [scope=org/user/u-0001] extracted=7 cost=4200`
+
+- [ ] Load API keys from .env
+- [ ] Set up console logger with prefix (CAPTURE, ASK, SCOPING)
+- [ ] Include operation metadata in all API responses
 
 ---
 
@@ -548,26 +527,28 @@ MEMBRAIN_USER_DEENA_KEY=sk_test_deena_d8c3e9f2a4
 
 ---
 
-### B6: Access Control (Throughout)
+### B7: Scope & Access Control (Throughout)
 
-#### B6.1: Middleware
-- [ ] Extract Bearer token → validate (assume JWT with user_id, scopes)
-- [ ] Inject user_context
-- [ ] Return 401 if invalid
+#### B7.1: Scope Manager Service
+- [ ] Load API keys from .env by scope
+- [ ] Helper: `load_api_keys()` → {org/user/u-0001: "sk_test_priya_...", ...}
+- [ ] Helper: `get_api_key(scope)` → returns API key for scope
+- [ ] Hardcode scope grants for demo (Priya can access org/user/u-0001, etc.)
 
-#### B6.2: Scope Validation
-- [ ] Helper: `can_user_write(user_id, scope)`
-- [ ] Helper: `can_user_read(user_id, scope)`
-- [ ] Check `user_grants` table
+#### B7.2: Middleware Integration
+- [ ] Extract scope from request context (from FE scope selector)
+- [ ] Load API key for scope
+- [ ] Pass to Agent Memory SDK calls
 
-#### B6.3: Endpoint Enforcement
-- [ ] Capture: Validate user can write
-- [ ] Ask: Validate user can read (use as read lens)
-- [ ] Findings: Public
+#### B7.3: Endpoint Enforcement
+- [ ] Capture: Validate scope is valid (in .env keys)
+- [ ] Ask: Validate scope is valid (in .env keys)
+- [ ] Findings: Public (no scope check)
+- [ ] Scopes: Public (list available scopes)
 
 **Subtasks:**
-- [ ] Create `backend/app/services/access.py`
-- [ ] Hardcode test grants in `conftest.py`
+- [ ] Create `backend/app/services/scopes.py`
+- [ ] Hardcode test scope grants in service (for demo)
 
 ---
 
@@ -606,8 +587,9 @@ MEMBRAIN_USER_DEENA_KEY=sk_test_deena_d8c3e9f2a4
 - [ ] **Findings screen:** Tests, capabilities, gaps tabs ✓
 - [ ] Config selector on Capture (mode, category) ✓
 - [ ] All API endpoints respond to correct schema ✓
-- [ ] Traceability logged to SQLite ✓
+- [ ] Console logging for operations (no persistence needed) ✓
 - [ ] API keys loaded from .env ✓
+- [ ] Scope isolation demonstrated (Priya ≠ Arun data) ✓
 - [ ] No console errors ✓
 - [ ] All tests pass ✓
 
