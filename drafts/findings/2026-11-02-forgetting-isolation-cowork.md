@@ -5,7 +5,7 @@
 | Date | 2 Nov 2026 |
 | Tester | Vidyul Narayanan |
 | Build plan | Phase 1 (core memory), work package 1.5 (M13, M14; T-1, T-2) |
-| Status | Draft; 6a and 6b recorded, the remaining step 6 checks still to run |
+| Status | Draft; complete for step 6 (6d dropped because Cowork purged in 6a) |
 
 ## What this covers
 
@@ -134,6 +134,34 @@ Run on 2 Nov 2026 with the second test person's key, whose area held only the pr
 With an area-limited key, none of the three reached the other person's records, so T-2 holds for keys.
 
 It does not hold for the SurrealDB Cloud connector signed in as an admin (finding 1).
+
+## 6e: erasing a whole area
+
+Before the erase, the second test person's area held 3 entities (Reno, Zebrafish Ledger Co, Testuser2), 2 facts, 3 links and the probe passage, written with that person's key.
+
+The person ran `POST /scopes/forget` on `org/spreetail/user/testuser2` with the second person's own key on 2 Nov 2026.
+
+| Check, with the second key | Result |
+|---|---|
+| Entities, facts, links, `/state` | All empty |
+| Search for the probe note and the new records | No hits |
+| The key itself | Still accepted for reads (200) |
+
+| Check, with the person's key | Result |
+|---|---|
+| The person's own Reno entity and its 8 links | Unchanged |
+| Facts and links in the person's area | 12 facts and 61 links, the same as before plus the two 6c links |
+| Audit log | No entry for the erase |
+
+### 12. A person's key can erase its own area, completely
+
+The erase removed entities as well as facts, links and chat passages, and did not touch an entity with the same name in another area.
+
+On 30 Oct, by contrast, entities dated before that erase (Spreetail, 10 Oct; Techjays, 29 Oct) were found afterwards; whether they survived it or were re-created with their old dates is not known.
+
+### 13. The area erase is not audited either
+
+Like `forget` and purge in 6a, the erase left no audit entry, so a whole area can disappear with no record.
 
 ## Decision taken
 
