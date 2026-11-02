@@ -3,10 +3,11 @@ from collections.abc import Iterator
 import pytest
 from fastapi.testclient import TestClient
 
-from app.composition import get_recall_factory
+from app.composition import get_active_scopes, get_recall_factory
 from app.domain.errors import MemoryNotConfiguredError, MemoryUnavailableError
 from app.domain.ports.memory_recall import RecallHit, RecallResult
 from app.main import app
+from app.services.scopes import ActiveScopes
 
 PRIYA, ARUN, DEENA = "org/user/u-0001", "org/user/u-0002", "org/user/u-0003"
 
@@ -137,6 +138,15 @@ def test_unexpected_errors_become_503(client: TestClient, recall: FakeRecall) ->
     assert client.get("/api/v1/ask", params={"q": "x", "scope": PRIYA}).status_code == 503
 
 
-def test_scope_is_required_and_validated(client: TestClient) -> None:
-    assert client.get("/api/v1/ask", params={"q": "x"}).status_code == 422
+def test_unknown_scope_is_rejected(client: TestClient) -> None:
     assert client.get("/api/v1/ask", params={"q": "x", "scope": "nope"}).status_code == 422
+
+
+def test_without_scope_asks_as_the_active_scopes(client: TestClient, recall: FakeRecall) -> None:
+    active = ActiveScopes([DEENA])
+    app.dependency_overrides[get_active_scopes] = lambda: active
+
+    body = client.get("/api/v1/ask", params={"q": "x"}).json()
+
+    assert body["scopes"] == [DEENA]
+    assert {reader for reader, _, _ in recall.calls} == {DEENA}

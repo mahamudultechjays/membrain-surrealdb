@@ -9,4 +9,5 @@ Contract deviations for FE: confidence and cost_tokens are null (Agent Memory re
 Unverified against live Agent Memory: triple wire keys (snake_case memory_category, from the Swift SDK shape), correction field names (key/from/to), whether org/... scope paths are registered in the context.
 B4 done: GET /api/v1/ask?q=&scope=&include_inferred= (scope repeatable or comma-separated, e.g. Priya + Deena). One recall per readable layer in parallel (org k=20, team/personal k=10), each with the layer owner's client and lens=[layer path]; a hit seen in several layers is kept in the narrowest; a failing layer returns error, all failing gives 503. 100 backend tests pass.
 Contract deviations for FE: source.title/location/date are null (recall hits carry none); trust is the recall score; query_cost_tokens null; include_inferred is echoed but not applied (no matching recall option); layers add owner and error; response adds scopes and trace_id.
-Next action: B5 GET /scopes/list and POST /scopes/switch.
+B5 done: GET /scopes/list (users, team, readable layers, has_own_key; API keys are never returned, unlike the plan draft), GET /scopes/active, POST /scopes/switch {scopes:[...]} (422 on empty/unknown). Active scopes are process-wide, default Priya; GET /ask without scope asks as them. 105 backend tests pass.
+Next action: B6 findings endpoints from static JSON.

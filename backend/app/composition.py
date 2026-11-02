@@ -25,7 +25,7 @@ from app.domain.ports.memory_probe import MemoryProbe
 from app.domain.ports.memory_recall import MemoryRecall, RecallFactory
 from app.domain.ports.text_reader import DocumentTextReader
 from app.services.capture_flow import PreviewCache
-from app.services.scopes import ScopeDirectory
+from app.services.scopes import DEMO_USERS, ActiveScopes, ScopeDirectory
 
 _user_clients: dict[str, AsyncMemory] = {}
 
@@ -81,7 +81,12 @@ async def close_clients() -> None:
 
 @lru_cache
 def get_scope_directory() -> ScopeDirectory:
-    return ScopeDirectory()
+    return ScopeDirectory(keyed=frozenset(settings.api_key_scopes().values()))
+
+
+@lru_cache
+def get_active_scopes() -> ActiveScopes:
+    return ActiveScopes([DEMO_USERS[0].scope])
 
 
 def get_memory_probe() -> MemoryProbe:

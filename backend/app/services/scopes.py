@@ -35,8 +35,16 @@ DEMO_USERS: tuple[DemoUser, ...] = (
 
 
 class ScopeDirectory:
-    def __init__(self, users: tuple[DemoUser, ...] = DEMO_USERS) -> None:
+    def __init__(
+        self, users: tuple[DemoUser, ...] = DEMO_USERS, keyed: frozenset[str] = frozenset()
+    ) -> None:
         self._users = {user.scope: user for user in users}
+        # Scopes with their own Agent Memory key: Agent Memory itself enforces
+        # their grant. The rest share one key and are kept apart only by lens.
+        self._keyed = keyed
+
+    def has_own_key(self, scope: str) -> bool:
+        return scope in self._keyed
 
     def users(self) -> list[DemoUser]:
         return list(self._users.values())
@@ -59,3 +67,18 @@ class ScopeDirectory:
     def describe(self, scopes: list[str]) -> str:
         """'Priya + Deena' for a list of known scopes."""
         return " + ".join(self.get(scope).name for scope in scopes)
+
+
+class ActiveScopes:
+    """Which users the demo is currently acting as. Process-wide, not per browser."""
+
+    def __init__(self, initial: list[str]) -> None:
+        self._scopes = list(initial)
+
+    def get(self) -> list[str]:
+        return list(self._scopes)
+
+    def switch(self, scopes: list[str]) -> list[str]:
+        """Set the active scopes and return the previous ones."""
+        previous, self._scopes = self._scopes, list(dict.fromkeys(scopes))
+        return previous

@@ -9,6 +9,7 @@ from typing import Annotated
 from fastapi import Depends, HTTPException, Request, status
 
 from app.composition import (
+    get_active_scopes,
     get_capture_factory,
     get_document_store,
     get_document_store_factory,
@@ -28,7 +29,7 @@ from app.domain.ports.memory_probe import MemoryProbe
 from app.domain.ports.memory_recall import RecallFactory
 from app.domain.ports.text_reader import DocumentTextReader
 from app.services.capture_flow import PreviewCache
-from app.services.scopes import ScopeDirectory
+from app.services.scopes import ActiveScopes, ScopeDirectory
 
 MemoryProbeDep = Annotated[MemoryProbe, Depends(get_memory_probe)]
 MemoryCaptureDep = Annotated[MemoryCapture, Depends(get_memory_capture)]
@@ -40,6 +41,7 @@ CaptureFactoryDep = Annotated[CaptureFactory, Depends(get_capture_factory)]
 DocumentStoreFactoryDep = Annotated[DocumentStoreFactory, Depends(get_document_store_factory)]
 PreviewCacheDep = Annotated[PreviewCache, Depends(get_preview_cache)]
 RecallFactoryDep = Annotated[RecallFactory, Depends(get_recall_factory)]
+ActiveScopesDep = Annotated[ActiveScopes, Depends(get_active_scopes)]
 
 
 def authorize_scopes(request: Request, directory: ScopeDirectory, scopes: list[str]) -> None:

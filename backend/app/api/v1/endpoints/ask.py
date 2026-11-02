@@ -5,7 +5,12 @@ from typing import Annotated
 
 from fastapi import APIRouter, HTTPException, Query, Request, status
 
-from app.api.deps import RecallFactoryDep, ScopeDirectoryDep, authorize_scopes
+from app.api.deps import (
+    ActiveScopesDep,
+    RecallFactoryDep,
+    ScopeDirectoryDep,
+    authorize_scopes,
+)
 from app.domain.errors import MemoryNotConfiguredError, MemoryUnavailableError
 from app.schemas.ask import AskFact, AskLayer, AskMetadata, AskResponse, FactSource
 from app.services import ask_flow, logger
@@ -22,13 +27,15 @@ async def ask(
     request: Request,
     directory: ScopeDirectoryDep,
     recalls: RecallFactoryDep,
+    active: ActiveScopesDep,
     q: Annotated[str, Query(min_length=1, max_length=1000)],
-    scope: Annotated[list[str], Query(min_length=1)],
+    scope: Annotated[list[str] | None, Query()] = None,
     include_inferred: bool = False,
 ) -> AskResponse:
     """Search every layer the scopes can read. Repeat `scope` (or comma-separate it)
-    to ask as several users at once, e.g. Priya + Deena."""
-    scopes = _split(scope)
+    to ask as several users at once, e.g. Priya + Deena. Without `scope`, asks as
+    the active scopes set by POST /scopes/switch."""
+    scopes = _split(scope or []) or active.get()
     authorize_scopes(request, directory, scopes)
     try:
         answer = await ask_flow.ask(recalls, directory, q=q, scopes=scopes)
