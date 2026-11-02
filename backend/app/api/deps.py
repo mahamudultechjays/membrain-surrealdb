@@ -16,6 +16,7 @@ from app.composition import (
     get_memory_probe,
     get_memory_recall,
     get_preview_cache,
+    get_scope_registry,
     get_text_reader,
 )
 from app.core.config import settings
@@ -24,6 +25,7 @@ from app.domain.ports.memory_capture import MemoryCapture
 from app.domain.ports.memory_graph import MemoryGraph
 from app.domain.ports.memory_probe import MemoryProbe
 from app.domain.ports.memory_recall import MemoryRecall
+from app.domain.ports.scope_registry import ScopeRegistry
 from app.domain.ports.text_reader import DocumentTextReader
 from app.schemas.auth import CurrentUser
 from app.services.access import AccessService
@@ -36,6 +38,7 @@ TextReaderDep = Annotated[DocumentTextReader, Depends(get_text_reader)]
 MemoryGraphDep = Annotated[MemoryGraph, Depends(get_memory_graph)]
 PreviewCacheDep = Annotated[PreviewCache, Depends(get_preview_cache)]
 MemoryRecallDep = Annotated[MemoryRecall, Depends(get_memory_recall)]
+ScopeRegistryDep = Annotated[ScopeRegistry, Depends(get_scope_registry)]
 AccessServiceDep = Annotated[AccessService, Depends(get_access_service)]
 
 

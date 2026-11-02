@@ -13,7 +13,9 @@ from app.domain.errors import (
 from app.domain.ports.document_store import DocumentDetail, DocumentPassage, DocumentUpload
 from app.domain.ports.memory_capture import CaptureResult, ExtractedEntity
 from app.main import app
+from app.services.access import AccessService
 from app.services.document_preview import PREVIEW_CHAR_LIMIT
+from tests.conftest import sign_in
 from tests.pdf import make_pdf
 
 
@@ -65,16 +67,23 @@ def store() -> FakeStore:
 
 
 @pytest.fixture
-def client(capture: FakeCapture, store: FakeStore) -> Iterator[TestClient]:
+def client(capture: FakeCapture, store: FakeStore, access: AccessService) -> Iterator[TestClient]:
     app.dependency_overrides[get_memory_capture] = lambda: capture
     app.dependency_overrides[get_document_store] = lambda: store
     app.dependency_overrides[get_text_reader] = PdfAndTextReader
     with TestClient(app) as test_client:
+        sign_in(test_client, "admin@x.com", "Ada Admin")
         yield test_client
     app.dependency_overrides.clear()
 
 
 PDF = ("policy.pdf", make_pdf("Customers may return items within 30 days."), "application/pdf")
+
+
+def test_non_admins_are_forbidden(client: TestClient) -> None:
+    sign_in(client, "priya.shah@x.com", "Priya Shah")
+
+    assert client.get("/api/v1/documents/d1").status_code == 403
 
 
 def test_preview_reads_the_pdf_and_saves_nothing(

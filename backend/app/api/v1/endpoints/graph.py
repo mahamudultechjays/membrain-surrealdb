@@ -2,13 +2,15 @@
 
 from typing import Annotated
 
-from fastapi import APIRouter, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 
-from app.api.deps import MemoryGraphDep
+from app.api.deps import MemoryGraphDep, require_admin
 from app.domain.errors import EntityNotFoundError, MemoryNotConfiguredError, MemoryUnavailableError
 from app.schemas.graph import NeighbourhoodResponse, NodeOut, SearchResponse
 
-router = APIRouter(prefix="/graph")
+# Admin-only: Agent Memory's entity and document reads take no lens, so with the
+# one admin key they would show every scope. Users read through /ask instead.
+router = APIRouter(prefix="/graph", dependencies=[Depends(require_admin)])
 
 
 @router.get("/search", response_model=SearchResponse)

@@ -7,6 +7,8 @@ from app.composition import get_memory_graph
 from app.domain.errors import EntityNotFoundError, MemoryNotConfiguredError, MemoryUnavailableError
 from app.domain.ports.memory_graph import EntityFact, EntityGraph, GraphEdge, GraphNode
 from app.main import app
+from app.services.access import AccessService
+from tests.conftest import sign_in
 
 ACME = GraphNode("Acme Logistics", "organisation", "knowledge", 3)
 RENO = GraphNode("Reno warehouse", "location", "context", 1)
@@ -44,11 +46,18 @@ def graph() -> FakeGraph:
 
 
 @pytest.fixture
-def client(graph: FakeGraph) -> Iterator[TestClient]:
+def client(graph: FakeGraph, access: AccessService) -> Iterator[TestClient]:
     app.dependency_overrides[get_memory_graph] = lambda: graph
     with TestClient(app) as test_client:
+        sign_in(test_client, "admin@x.com", "Ada Admin")
         yield test_client
     app.dependency_overrides.clear()
+
+
+def test_non_admins_are_forbidden(client: TestClient) -> None:
+    sign_in(client, "priya.shah@x.com", "Priya Shah")
+
+    assert client.get("/api/v1/graph/search?q=acme").status_code == 403
 
 
 def test_search(client: TestClient, graph: FakeGraph) -> None:

@@ -1,0 +1,150 @@
+"""Admin endpoints: assign and revoke users' scope grants, list and register scopes.
+
+This is the governance layer the backend owns: Agent Memory is reached with one
+admin key, so who may read or write which scope lives here. Only emails in
+ADMIN_EMAILS get past `require_admin`. Scopes are kept under ORG_SCOPE.
+"""
+
+from collections import defaultdict
+
+from fastapi import APIRouter, HTTPException, Request, status
+
+from app.api.deps import AccessServiceDep, AdminUserDep, ScopeRegistryDep, is_admin
+from app.core.config import settings
+from app.domain.errors import MemoryNotConfiguredError, MemoryUnavailableError
+from app.domain.ports.user_scopes import ScopeGrant
+from app.schemas.admin import (
+    GrantRequest,
+    RegisterScopeRequest,
+    ScopesResponse,
+    UserGrants,
+    UsersResponse,
+)
+from app.schemas.auth import GrantOut
+from app.services import logger
+
+router = APIRouter(prefix="/admin")
+
+
+@router.get("/users", response_model=UsersResponse)
+async def list_users(admin: AdminUserDep, access: AccessServiceDep) -> UsersResponse:
+    """Every user who has signed in (or been granted a scope), with their grants."""
+    by_user: dict[str, list[ScopeGrant]] = defaultdict(list)
+    for grant in await access.all_grants():
+        by_user[grant.email].append(grant)
+    return UsersResponse(
+        users=[
+            UserGrants(
+                email=email,
+                name=grants[0].name,
+                is_admin=is_admin(email),
+                grants=[GrantOut.model_validate(g) for g in grants],
+            )
+            for email, grants in by_user.items()
+        ]
+    )
+
+
+@router.post(
+    "/users/{email}/grants", response_model=UserGrants, status_code=status.HTTP_201_CREATED
+)
+async def add_grant(
+    email: str,
+    body: GrantRequest,
+    request: Request,
+    admin: AdminUserDep,
+    access: AccessServiceDep,
+) -> UserGrants:
+    """Give a user read or write on a scope, registering the scope if it is new."""
+    path = _under_org(body.scope_path)
+    held = await access.grants_for(email)
+    name = held[0].name if held else (body.name or email)
+    try:
+        await access.grant(email, name, path, body.access, body.layer)
+    except (MemoryNotConfiguredError, MemoryUnavailableError) as exc:
+        raise _unavailable(exc) from exc
+    _log(request, admin.email, "grant", email, path, body.access)
+    return await _user(access, email)
+
+
+@router.delete("/users/{email}/grants", status_code=status.HTTP_204_NO_CONTENT)
+async def remove_grant(
+    email: str, scope_path: str, request: Request, admin: AdminUserDep, access: AccessServiceDep
+) -> None:
+    """Take a scope away from a user. The scope and its data stay in Agent Memory."""
+    if not await access.revoke(email, scope_path):
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "That user does not hold that scope.")
+    _log(request, admin.email, "revoke", email, scope_path.strip("/"), None)
+
+
+@router.get("/scopes", response_model=ScopesResponse)
+async def list_scopes(
+    admin: AdminUserDep, registry: ScopeRegistryDep, prefix: str | None = None
+) -> ScopesResponse:
+    """Scopes registered in Agent Memory under ORG_SCOPE (or a narrower prefix)."""
+    try:
+        paths = await registry.list(_under_org(prefix or settings.ORG_SCOPE))
+    except (MemoryNotConfiguredError, MemoryUnavailableError) as exc:
+        raise _unavailable(exc) from exc
+    return ScopesResponse(scopes=sorted(paths))
+
+
+@router.post("/scopes", response_model=ScopesResponse, status_code=status.HTTP_201_CREATED)
+async def register_scope(
+    body: RegisterScopeRequest,
+    request: Request,
+    admin: AdminUserDep,
+    registry: ScopeRegistryDep,
+) -> ScopesResponse:
+    """Register a new scope path (and any missing parent) in Agent Memory."""
+    path = _under_org(body.path)
+    try:
+        await registry.ensure(path)
+    except (MemoryNotConfiguredError, MemoryUnavailableError) as exc:
+        raise _unavailable(exc) from exc
+    _log(request, admin.email, "register", None, path, None)
+    return ScopesResponse(scopes=[path])
+
+
+async def _user(access: AccessServiceDep, email: str) -> UserGrants:
+    grants = await access.grants_for(email)
+    return UserGrants(
+        email=email.strip().lower(),
+        name=grants[0].name if grants else email,
+        is_admin=is_admin(email),
+        grants=[GrantOut.model_validate(g) for g in grants],
+    )
+
+
+def _under_org(path: str) -> str:
+    """Keep admin changes inside the org tree, e.g. not at the Context root."""
+    path = path.strip("/")
+    org = settings.ORG_SCOPE.strip("/")
+    if path != org and not path.startswith(f"{org}/"):
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, f"Scopes must be under {org}.")
+    return path
+
+
+def _unavailable(exc: Exception) -> HTTPException:
+    if isinstance(exc, MemoryNotConfiguredError):
+        return HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, "Agent Memory is not configured.")
+    return HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, f"Agent Memory call failed: {exc}")
+
+
+def _log(
+    request: Request,
+    admin: str,
+    action: str,
+    user: str | None,
+    scope: str,
+    access: str | None,
+) -> None:
+    logger.log(
+        "[ADMIN]",
+        trace_id=getattr(request.state, "trace_id", None),
+        admin=admin,
+        action=action,
+        user=user,
+        scope=scope,
+        access=access,
+    )

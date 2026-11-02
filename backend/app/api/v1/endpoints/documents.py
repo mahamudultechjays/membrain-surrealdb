@@ -2,9 +2,9 @@
 
 from dataclasses import asdict
 
-from fastapi import APIRouter, HTTPException, UploadFile, status
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, status
 
-from app.api.deps import DocumentStoreDep, MemoryCaptureDep, TextReaderDep
+from app.api.deps import DocumentStoreDep, MemoryCaptureDep, TextReaderDep, require_admin
 from app.domain.errors import (
     DocumentNotFoundError,
     MemoryNotConfiguredError,
@@ -21,7 +21,9 @@ from app.schemas.documents import (
 )
 from app.services.document_preview import preview_document
 
-router = APIRouter(prefix="/documents")
+# Admin-only: Agent Memory's entity and document reads take no lens, so with the
+# one admin key they would show every scope. Users read through /ask instead.
+router = APIRouter(prefix="/documents", dependencies=[Depends(require_admin)])
 
 MAX_UPLOAD_BYTES = 10 * 1024 * 1024
 FALLBACK_TYPE = "application/octet-stream"
