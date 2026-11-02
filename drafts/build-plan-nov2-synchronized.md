@@ -26,6 +26,21 @@ Both teams work in parallel to the **API contract** defined in Phase 0. This ens
 
 ## Phase 0: API Contracts (Shared Interface)
 
+### Agent Memory Constraints (checked 2026-11-02)
+
+These limits come from the Agent Memory docs and the pinned `surrealdb-memory` Python SDK.
+The contracts below are written to fit them.
+
+| Constraint | Effect on our API | Source |
+|---|---|---|
+| `remember()` accepts only `infer` = `full`, `triples`, `preview` or `none`. | Our `config.mode` uses `full` or `triples`; preview always calls `infer="preview"`. | https://surrealdb.com/docs/agent-memory/ingest/experiential/remember |
+| `documents.upload()` has no `infer` argument and no dry run. | A document preview uploads the file once, then previews its extracted text with `remember(infer="preview")`. | SDK `_namespaces/documents.py` `upload()` |
+| A preview returns no id (`RememberResponse.preview` is a bool). | The backend creates `preview_id` and holds the preview in an in-process cache. Restarting the backend loses it, and it works only on one instance. | SDK `_models/memory.py` `RememberResponse` |
+| The extraction result has no per-fact confidence. | No `confidence` field in the preview, and no `high_confidence` stat. | SDK `_models/memory.py` `ExtractionResult` |
+| `recall()` has no `scopes` or `limit`. It takes `lens` (read scope, DNF) and `k` (default 10, max 50). | Our `/api/v1/ask?scope=` maps to `lens`; the result count maps to `k`. | https://surrealdb.com/docs/agent-memory/retrieve/recall |
+| A recall hit carries only `id`, `score`, `source` (record kind) and `text`. The docs say `/query` exposes no per-hit trust. | No `source.location`, `source.quote` or `source.trust` in Ask. `score` is a rank score, not trust. | Recall docs above; SDK `_models/memory.py` `RecallHit` |
+| No response reports token cost. | No `cost_tokens` or `query_cost_tokens` fields. | SDK `_models/memory.py` |
+
 ### Capture APIs
 
 #### POST /api/v1/capture/preview
@@ -37,7 +52,7 @@ Extracts facts from input without writing. Returns preview for user approval.
   "scope": "org/user/u-0001",
   "input_type": "text" | "document",
   "config": {
-    "mode": "infer_full" | "infer_text",
+    "mode": "triples" | "full",
     "memory_category": "identity" | "knowledge" | "context"
   },
   "content": "string or base64 bytes",
@@ -45,33 +60,44 @@ Extracts facts from input without writing. Returns preview for user approval.
 }
 ```
 
+`config.mode` decides what `/capture/store` writes later. Preview always calls `remember(infer="preview")`.
+- `triples` (default): write only the kept facts with `remember(infer="triples")`.
+- `full`: rerun full extraction on the source text with `remember(infer="full")`.
+
 **Response:**
 ```json
 {
   "preview_id": "prev_abc123",
+  "scope": "org/user/u-0001",
   "extracted": [
     {
       "id": "e1",
       "fact": "acme logistics · lead_time_days = 18",
       "type": "knowledge",
-      "confidence": 0.9,
-      "source": "text chunk 1-50",
-      "note": "correction: was 10"
+      "source": "text",
+      "note": "correction: was 10",
+      "storable": true
     }
   ],
-  "stats": { "total": 7, "high_confidence": 5, "corrections": 1 },
+  "stats": { "total": 7, "uncertain": 2, "corrections": 1 },
   "truncated": false,
   "truncated_reason": "Large document: preview shows first 500 words only",
-  "cost_tokens": 4200
+  "doc_id": null,
+  "trace_id": "d-abc123"
 }
 ```
+
+- `preview_id` is created by our backend, not Agent Memory. The backend keeps recent previews in memory, so an id expires on restart or after newer previews push it out.
+- `storable` is false when Agent Memory doesn't link the attribute to an entity. That fact can be stored only with mode `full`.
+- `stats.uncertain` counts facts Agent Memory raised an uncertainty about. There is no confidence score to count.
+- `doc_id` is set for document input, because the file is uploaded during preview.
 
 **Note:** Documents > 2000 words will show preview of first ~500 words only. UI should display truncation warning and suggest text extraction for large files.
 
 ---
 
 #### POST /api/v1/capture/store
-Writes selected facts to Agent Memory and logs to SQLite.
+Writes selected facts to Agent Memory and logs to the console.
 
 **Request:**
 ```json
@@ -79,10 +105,12 @@ Writes selected facts to Agent Memory and logs to SQLite.
   "preview_id": "prev_abc123",
   "scope": "org/user/u-0001",
   "kept": ["e1", "e3", "e5"],
-  "config": { "mode": "infer_text", "memory_category": "knowledge" },
+  "config": { "mode": "triples", "memory_category": "knowledge" },
   "trace_tags": { "session_id": "cc-abc", "source": "plugin" }
 }
 ```
+
+Returns 404 when `preview_id` is unknown or expired; the UI should ask the user to preview again.
 
 **Response:**
 ```json
@@ -129,6 +157,8 @@ Retrieves facts grouped by layer (org/team/personal).
 GET /api/v1/ask?q=What+do+we+know+about+Acme&scope=org/user/u-0001&include_inferred=false
 ```
 
+Our `scope` parameter stays. The backend maps each readable layer to an Agent Memory `lens`.
+
 **Response:**
 ```json
 {
@@ -143,11 +173,12 @@ GET /api/v1/ask?q=What+do+we+know+about+Acme&scope=org/user/u-0001&include_infer
           "fact": "returns policy · window_days = 30",
           "source": {
             "kind": "document",
-            "title": "returns-policy-2026.pdf",
-            "location": "§2 · chunk 3 of 14",
-            "quote": "Customers may return items within 30 days of delivery.",
-            "date": "2026-10-01",
-            "trust": 0.8
+            "hit_kind": "chunk",
+            "hit_id": "chunk:abc123",
+            "text": "Customers may return items within 30 days of delivery.",
+            "score": 0.82,
+            "title": null,
+            "date": null
           }
         }
       ]
@@ -166,11 +197,15 @@ GET /api/v1/ask?q=What+do+we+know+about+Acme&scope=org/user/u-0001&include_infer
   "metadata": {
     "total_facts": 5,
     "resolution_tier": "hybrid",
-    "latency_ms": 812,
-    "query_cost_tokens": 1100
+    "latency_ms": 812
   }
 }
 ```
+
+- `hit_kind` is Agent Memory's record kind: `entity`, `attribute`, `action`, `memory_chunk`, `chunk` or `section`.
+- `text` is the hit's own text, not a verified quote from the source document.
+- `score` is the recall rank score. It is not a trust value, so the UI must not label it as trust.
+- `title` and `date` stay null, because recall hits don't carry them. Filling them needs a separate read per hit, which is a later item.
 
 ---
 
@@ -313,7 +348,9 @@ Switch active scope (for demo: simulate different users).
 
 #### F2.2: Text Tab
 - [ ] Textarea + scope dropdown
-- [ ] Config: mode (infer_full/infer_text) + category (identity/knowledge/context)
+- [ ] Config: mode (triples/full) + category (identity/knowledge/context)
+- [ ] Disable the checkbox of a fact with `storable: false` unless mode is `full`
+- [ ] On a 404 from store, show "Preview expired; run preview again"
 - [ ] "Preview" → `POST /api/v1/capture/preview`
 - [ ] Facts table with checkboxes
 - [ ] "Store" → `POST /api/v1/capture/store`
@@ -337,7 +374,7 @@ Switch active scope (for demo: simulate different users).
 - [ ] Question input + quick-pick buttons
 - [ ] `GET /api/v1/ask?q=...&scope=...`
 - [ ] Group by layer (Org | Team | Personal)
-- [ ] Source drawer per fact
+- [ ] Source drawer per fact: show `hit_kind`, `text` and `score` (label it "match score", not trust)
 - [ ] Checkboxes: "Show inferred", "Show context block"
 
 **Dependency:** BE `/ask` endpoint by 1:30 PM
@@ -412,10 +449,11 @@ MEMBRAIN_USER_DEENA_KEY=sk_test_deena_d8c3e9f2a4
 ```
 
 **Logging (Console to stdout - No persistence):**
-- Log every capture/preview call with: scope, input_type, config, extracted_count, cost_tokens
-- Log every ask call with: question, scope, facts_found, latency_ms, cost_tokens
+- Log every capture/preview call with: scope, input_type, config, extracted_count
+- Log every ask call with: question, scope, facts_found, latency_ms
 - Log every scope switch with: from_scopes, to_scopes, message
-- Use structured logging: `[CAPTURE] [scope=org/user/u-0001] extracted=7 cost=4200`
+- Use structured logging: `[CAPTURE] [scope=org/user/u-0001] extracted=7`
+- Agent Memory reports no token cost, so no cost field is logged.
 
 - [ ] Load API keys from .env
 - [ ] Set up console logger with prefix (CAPTURE, ASK, SCOPING)
@@ -428,11 +466,12 @@ MEMBRAIN_USER_DEENA_KEY=sk_test_deena_d8c3e9f2a4
 #### B3.1: POST /api/v1/capture/preview
 - [ ] Validate scope (user can write)
 - [ ] Route by input_type → Agent Memory call
-  - text: `remember(text, infer="preview", memory_category=...)`
-  - document: `documents.upload(file, scopes=[scope], infer="preview")`
-  - chat: `remember_many(chats, extract="per_message")`
-- [ ] Extract facts → frontend schema
-- [ ] Log to SQLite
+  - text: `remember(text, infer="preview", scopes=[scope])`
+  - document: `documents.upload(file, scopes=[scope])` (no `infer` argument), then `remember(first_words, infer="preview", scopes=[scope])`
+  - chat: deferred
+- [ ] Extract facts → frontend schema (no confidence; mark `storable`)
+- [ ] Create `preview_id` and keep the preview in the in-process cache
+- [ ] Log to console
 - [ ] Return 200 + preview
 
 **Subtasks:**
@@ -444,12 +483,12 @@ MEMBRAIN_USER_DEENA_KEY=sk_test_deena_d8c3e9f2a4
 ---
 
 #### B3.2: POST /api/v1/capture/store
-- [ ] Validate scope + preview_id
-- [ ] Build triples from kept facts
-- [ ] Call Agent Memory: `remember(infer="triples")`
+- [ ] Validate scope + preview_id (404 when not in the cache)
+- [ ] Mode `triples`: build triples from kept facts, call `remember(infer="triples", triples=[...], scopes=[scope], memory_category=...)`
+- [ ] Mode `full`: call `remember(text, infer="full", scopes=[scope], memory_category=...)`
 - [ ] Read back with `entities.get()` per fact
 - [ ] Build history
-- [ ] Log to SQLite
+- [ ] Log to console
 - [ ] Return 200 + stored response
 
 **Subtasks:**
@@ -472,14 +511,15 @@ MEMBRAIN_USER_DEENA_KEY=sk_test_deena_d8c3e9f2a4
 - [ ] Parse `q`, `scope`, `include_inferred`
 - [ ] Build read lens from user scope
 - [ ] Parallel recalls per layer (org, team, personal)
-  - `recall(q, scopes=["org"], limit=20)`
-  - `recall(q, scopes=["org/team/ops"], limit=10)` (if user can read)
-  - `recall(q, scopes=["org/user/<id>"], limit=10)` (if user can read)
-- [ ] Fetch source for each hit
-  - document: `documents.chunks(doc_id, chunk_id)`
-  - entity: `entities.get() + entities.history()`
+  - `recall(q, lens=[["org"]], k=20)`
+  - `recall(q, lens=[["org/team/ops"]], k=10)` (if user can read)
+  - `recall(q, lens=[["org/user/<id>"]], k=10)` (if user can read)
+  - `k` is capped at 50
+- [ ] Map each hit to `source`: `hit_kind`, `hit_id`, `text`, `score`
+  - Use `score` as a rank score only; do not call it trust
+  - Leave `title` and `date` null; per-hit lookups are deferred
 - [ ] Group by layer → build source drawers
-- [ ] Log to SQLite
+- [ ] Log to console
 - [ ] Return 200 + answer
 
 **Subtasks:**
@@ -556,7 +596,7 @@ MEMBRAIN_USER_DEENA_KEY=sk_test_deena_d8c3e9f2a4
 
 | Time | FE Work | BE Work | Sync Action |
 |------|---------|---------|------------|
-| **10:30 AM** | F1: Setup | B1: Setup + SQLite | API schemas finalized ✓ |
+| **10:30 AM** | F1: Setup | B1: Setup + console logging | API schemas finalized ✓ |
 | **11:30 AM** | F2: Capture (text tab) | B3: `/capture/preview` + `/capture/store` | **Capture E2E test** |
 | **1:30 PM** | F2.3: Doc tab + F3: Ask | B4: `/api/v1/ask` + B5: `/scopes/list` | **SYNC BEFORE LUNCH** ← Review progress, plan afternoon |
 | **2:30 PM** | F3.5: Scoping demo | B5: `/scopes/switch` | Scoping E2E test |
@@ -597,8 +637,21 @@ MEMBRAIN_USER_DEENA_KEY=sk_test_deena_d8c3e9f2a4
 - [ ] Chat import tab (deferred)
 - [ ] Preferences editing (show read-only only)
 - [ ] Mechanisms discovery (if time)
-- [ ] Source drawer with full quote + context
+- [ ] Source drawer with document title, location and date (needs a per-hit read, such as `documents.chunks(doc_id, page=...)`)
 - [ ] History accordion with version timeline
+
+---
+
+## Changes Needed on `feat/capture-ak-scoping-api` (from the Nov 2 review)
+
+The branch already calls Agent Memory correctly. These changes bring its API in line with the contracts above.
+
+- [ ] `capture_flow.StoreMode` and `schemas/capture.py`: rename modes `infer_text` → `triples` and `infer_full` → `full`; default `triples`. Update messages that name the old values.
+- [ ] `schemas/capture.py`: remove `confidence` from extracted facts and `cost_tokens` from the preview response.
+- [ ] `schemas/capture.py` and `capture_flow.Preview`: rename stat `high_confidence` → `uncertain`, counting facts with an uncertainty note.
+- [ ] `schemas/ask.py` and `endpoints/ask.py`: rename `FactSource.trust` → `score`, rename `quote` → `text`, drop `location`, and drop `metadata.query_cost_tokens`.
+- [ ] Update tests and `capabilities.json` entries that use the old names.
+- [ ] Run `make check` and report the result.
 
 ---
 
