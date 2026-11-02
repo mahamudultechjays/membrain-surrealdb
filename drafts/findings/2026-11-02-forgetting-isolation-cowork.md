@@ -5,7 +5,7 @@
 | Date | 2 Nov 2026 |
 | Tester | Vidyul Narayanan |
 | Build plan | Phase 1 (core memory), work package 1.5 (M13, M14; T-1, T-2) |
-| Status | Draft; 6a recorded, the remaining step 6 checks still to run |
+| Status | Draft; 6a and 6b recorded, the remaining step 6 checks still to run |
 
 ## What this covers
 
@@ -77,9 +77,36 @@ There is no record afterwards of who erased what.
 
 After the purge, an exact search for the 3i text found nothing, and the new 6a passage does not contain the code.
 
+## 6b: soft forget by script
+
+Run on 2 Nov 2026 with the person's area-limited key, MCP `forget` without `purge`, on the made-up Lab Carrier M11 records (2 facts, 10 links, 1 chat passage).
+
+| Query | Result |
+|---|---|
+| `Lab Carrier M11` | `deleted: 0` |
+| `Lab Carrier M11's depot is Fresno` | `deleted: 1`: the chat passage "Lab Carrier M11 uses the Fresno depot …" left search; both facts and all links stayed |
+| `Lab Carrier M11's on time rate is 88 percent` | `deleted: 0` |
+| `on_time_rate of Lab Carrier M11` | `deleted: 0` |
+
+After all four calls, `GET /attributes`, search and the MCP `context` block still showed `depot: Fresno` and `on_time_rate: 88 percent`.
+
+### 7. Forget by wording removed a chat passage but no facts
+
+Four wordings removed one chat passage and no facts or links, so with this key a fact once extracted could not be forgotten through `forget`.
+
+The [forget tool description](https://surrealdb.com/docs/agent-memory/reference/mcp-tools) says it retires "memories that match a natural-language query, whatever table they are in" (checked 2 Nov 2026); here only the passage table matched.
+
+### 8. A forgotten passage leaves its facts behind
+
+The Fresno depot is still a fact, still in the profile's "preferences" and still given to the agent by `context`, although the sentence it came from is gone.
+
+So forgetting what someone said does not forget what was extracted from it.
+
 ## Decision taken
 
-Turn the SurrealDB Cloud connector off in Cowork for the rest of testing, so only the plugin's area-limited key touches memory (2 Nov 2026, Vidyul).
+Keep the SurrealDB Cloud connector on in Cowork for the rest of testing (2 Nov 2026, Vidyul).
+
+So later Cowork results may come from the connector, signed in as the person, as well as from the plugin's area-limited key; each check records which one was used.
 
 ## How this was checked
 
