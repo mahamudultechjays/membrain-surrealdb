@@ -9,10 +9,12 @@ from app.adapters.agent_memory import (
     AgentMemoryDocuments,
     AgentMemoryGraph,
     AgentMemoryProbe,
+    AgentMemoryRecall,
     NotConfiguredCapture,
     NotConfiguredDocuments,
     NotConfiguredGraph,
     NotConfiguredProbe,
+    NotConfiguredRecall,
 )
 from app.adapters.files import PdfAndTextReader
 from app.core.config import settings
@@ -20,6 +22,7 @@ from app.domain.ports.document_store import DocumentStore, DocumentStoreFactory
 from app.domain.ports.memory_capture import CaptureFactory, MemoryCapture
 from app.domain.ports.memory_graph import MemoryGraph
 from app.domain.ports.memory_probe import MemoryProbe
+from app.domain.ports.memory_recall import MemoryRecall, RecallFactory
 from app.domain.ports.text_reader import DocumentTextReader
 from app.services.capture_flow import PreviewCache
 from app.services.scopes import ScopeDirectory
@@ -113,6 +116,14 @@ def get_document_store_factory() -> DocumentStoreFactory:
     def for_scope(scope: str) -> DocumentStore:
         client = client_for_scope(scope)
         return AgentMemoryDocuments(client) if client else NotConfiguredDocuments()
+
+    return for_scope
+
+
+def get_recall_factory() -> RecallFactory:
+    def for_scope(scope: str) -> MemoryRecall:
+        client = client_for_scope(scope)
+        return AgentMemoryRecall(client) if client else NotConfiguredRecall()
 
     return for_scope
 

@@ -16,6 +16,7 @@ from app.composition import (
     get_memory_graph,
     get_memory_probe,
     get_preview_cache,
+    get_recall_factory,
     get_scope_directory,
     get_text_reader,
 )
@@ -24,6 +25,7 @@ from app.domain.ports.document_store import DocumentStore, DocumentStoreFactory
 from app.domain.ports.memory_capture import CaptureFactory, MemoryCapture
 from app.domain.ports.memory_graph import MemoryGraph
 from app.domain.ports.memory_probe import MemoryProbe
+from app.domain.ports.memory_recall import RecallFactory
 from app.domain.ports.text_reader import DocumentTextReader
 from app.services.capture_flow import PreviewCache
 from app.services.scopes import ScopeDirectory
@@ -37,6 +39,7 @@ ScopeDirectoryDep = Annotated[ScopeDirectory, Depends(get_scope_directory)]
 CaptureFactoryDep = Annotated[CaptureFactory, Depends(get_capture_factory)]
 DocumentStoreFactoryDep = Annotated[DocumentStoreFactory, Depends(get_document_store_factory)]
 PreviewCacheDep = Annotated[PreviewCache, Depends(get_preview_cache)]
+RecallFactoryDep = Annotated[RecallFactory, Depends(get_recall_factory)]
 
 
 def authorize_scopes(request: Request, directory: ScopeDirectory, scopes: list[str]) -> None:
