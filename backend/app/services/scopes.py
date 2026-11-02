@@ -35,16 +35,8 @@ DEMO_USERS: tuple[DemoUser, ...] = (
 
 
 class ScopeDirectory:
-    def __init__(
-        self, users: tuple[DemoUser, ...] = DEMO_USERS, keyed: frozenset[str] = frozenset()
-    ) -> None:
+    def __init__(self, users: tuple[DemoUser, ...] = DEMO_USERS) -> None:
         self._users = {user.scope: user for user in users}
-        # Scopes with their own Agent Memory key: Agent Memory itself enforces
-        # their grant. The rest share one key and are kept apart only by lens.
-        self._keyed = keyed
-
-    def has_own_key(self, scope: str) -> bool:
-        return scope in self._keyed
 
     def users(self) -> list[DemoUser]:
         return list(self._users.values())

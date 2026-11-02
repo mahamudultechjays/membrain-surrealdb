@@ -1,7 +1,7 @@
 """Capture endpoints: preview what Agent Memory extracts, then store the kept facts.
 
-Every call acts for one demo user scope, using that user's Agent Memory key
-when one is configured (see composition.client_for_scope).
+Every call acts for one demo user scope, through the one admin key; the scope
+is passed explicitly on every write.
 """
 
 import base64

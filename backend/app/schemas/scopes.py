@@ -12,10 +12,6 @@ class ScopeOut(BaseModel):
     team: str
     # Layers this user can read, org first.
     reads: list[str]
-    # True when the user has their own Agent Memory key in .env, so Agent Memory
-    # enforces isolation. False: shared key, kept apart only by the app's lens.
-    # Keys themselves are never returned.
-    has_own_key: bool
 
 
 class ScopeListResponse(BaseModel):

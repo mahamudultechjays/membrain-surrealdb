@@ -45,13 +45,9 @@ ActiveScopesDep = Annotated[ActiveScopes, Depends(get_active_scopes)]
 
 
 def authorize_scopes(request: Request, directory: ScopeDirectory, scopes: list[str]) -> None:
-    """422 for scopes the demo doesn't know; 403 when an X-API-Key caller asks for
-    any scope other than its own (the middleware put that on request.state)."""
+    """422 for scopes the demo doesn't know."""
     try:
         for scope in scopes:
             directory.get(scope)
     except UnknownScopeError as exc:
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, f"Unknown scope: {exc}") from exc
-    caller = getattr(request.state, "scope", None)
-    if caller is not None and any(scope != caller for scope in scopes):
-        raise HTTPException(status.HTTP_403_FORBIDDEN, f"This key may only act as {caller}.")

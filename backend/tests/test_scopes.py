@@ -17,7 +17,7 @@ def active() -> ActiveScopes:
 
 @pytest.fixture
 def client(active: ActiveScopes) -> Iterator[TestClient]:
-    directory = ScopeDirectory(keyed=frozenset({PRIYA}))
+    directory = ScopeDirectory()
     app.dependency_overrides[get_active_scopes] = lambda: active
     app.dependency_overrides[get_scope_directory] = lambda: directory
     with TestClient(app) as test_client:
@@ -25,7 +25,7 @@ def client(active: ActiveScopes) -> Iterator[TestClient]:
     app.dependency_overrides.clear()
 
 
-def test_list_shows_users_reads_and_key_status_but_no_keys(client: TestClient) -> None:
+def test_list_shows_users_and_reads_but_no_keys(client: TestClient) -> None:
     body = client.get("/api/v1/scopes/list").json()
 
     assert body["active_scopes"] == [PRIYA]
@@ -36,9 +36,7 @@ def test_list_shows_users_reads_and_key_status_but_no_keys(client: TestClient) -
         "type": "user",
         "team": "org/team/ops",
         "reads": ["org", "org/team/ops", PRIYA],
-        "has_own_key": True,
     }
-    assert body["scopes"][1]["has_own_key"] is False
     assert "api_key" not in str(body)
 
 

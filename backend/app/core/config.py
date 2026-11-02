@@ -35,23 +35,6 @@ class Settings(BaseSettings):
     AGENT_MEMORY_API_KEY: SecretStr | None = None
     AGENT_MEMORY_TIMEOUT_SECONDS: float = 30.0
 
-    # Demo user API keys (local .env only). A request sending one of these in
-    # X-API-Key acts in that user's scope; unset keys are simply not accepted.
-    MEMBRAIN_USER_PRIYA_KEY: SecretStr | None = None
-    MEMBRAIN_USER_ARUN_KEY: SecretStr | None = None
-    MEMBRAIN_USER_DEENA_KEY: SecretStr | None = None
-
-    def api_key_scopes(self) -> dict[str, str]:
-        """Configured API key -> the user scope it authenticates as."""
-        pairs = [
-            (self.MEMBRAIN_USER_PRIYA_KEY, "org/user/u-0001"),
-            (self.MEMBRAIN_USER_ARUN_KEY, "org/user/u-0002"),
-            (self.MEMBRAIN_USER_DEENA_KEY, "org/user/u-0003"),
-        ]
-        return {
-            key.get_secret_value(): scope for key, scope in pairs if key and key.get_secret_value()
-        }
-
 
 @lru_cache
 def get_settings() -> Settings:

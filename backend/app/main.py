@@ -6,7 +6,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api.middleware import TRACE_ID_HEADER, ScopeContextMiddleware
+from app.api.middleware import TRACE_ID_HEADER, TraceMiddleware
 from app.api.v1.router import api_router
 from app.composition import close_clients
 from app.core.config import settings
@@ -30,8 +30,8 @@ def create_app() -> FastAPI:
         docs_url="/docs",
         lifespan=lifespan,
     )
-    # Added first so it runs inside CORS: 401s still carry CORS headers.
-    app.add_middleware(ScopeContextMiddleware, key_scopes=settings.api_key_scopes())
+    # Added first so it runs inside CORS: errors still carry CORS headers.
+    app.add_middleware(TraceMiddleware)
     app.add_middleware(
         CORSMiddleware,
         allow_origins=settings.BACKEND_CORS_ORIGINS,

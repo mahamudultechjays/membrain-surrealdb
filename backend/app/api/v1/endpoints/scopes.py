@@ -25,7 +25,6 @@ async def list_scopes(directory: ScopeDirectoryDep, active: ActiveScopesDep) -> 
                 type="user",
                 team=user.team,
                 reads=[layer.path for layer in directory.read_layers(user.scope)],
-                has_own_key=directory.has_own_key(user.scope),
             )
             for user in directory.users()
         ],
