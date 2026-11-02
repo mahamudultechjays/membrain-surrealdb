@@ -1,0 +1,342 @@
+{
+  "source": "POC adapters + drafts/build-plan-verification.md (checked 30 Oct 2026)",
+  "checked": "2026-11-02",
+  "capabilities": [
+    {
+      "area": "Ingest",
+      "name": "Preview extraction (dry run)",
+      "call": "remember(text, infer=\"preview\", scopes=[scope])",
+      "mark": "native",
+      "screen": "capture",
+      "evidence": "POC code"
+    },
+    {
+      "area": "Ingest",
+      "name": "Store kept facts as given",
+      "call": "remember(infer=\"triples\", triples=[...], scopes=[scope])",
+      "mark": "native",
+      "screen": "capture",
+      "evidence": "POC code"
+    },
+    {
+      "area": "Ingest",
+      "name": "Store with full re-extraction",
+      "call": "remember(text, infer=\"full\", scopes=[scope])",
+      "mark": "native",
+      "screen": "capture",
+      "evidence": "POC code"
+    },
+    {
+      "area": "Ingest",
+      "name": "Upload a document into a scope",
+      "call": "documents.upload(file, scopes=[scope])",
+      "mark": "native",
+      "screen": "capture",
+      "evidence": "POC code"
+    },
+    {
+      "area": "Ingest",
+      "name": "Poll document processing",
+      "call": "documents.get(doc_id)",
+      "mark": "native",
+      "screen": "capture",
+      "evidence": "POC code"
+    },
+    {
+      "area": "Ingest",
+      "name": "Per-fact confidence in preview",
+      "call": null,
+      "mark": "missing",
+      "screen": "capture",
+      "evidence": "POC code"
+    },
+    {
+      "area": "Ingest",
+      "name": "Attribute -> entity link in preview",
+      "call": null,
+      "mark": "missing",
+      "screen": "capture",
+      "evidence": "POC code"
+    },
+    {
+      "area": "Retrieve",
+      "name": "Recall one layer by lens",
+      "call": "recall(q, lens=[path], include=[\"facts\",\"passages\"])",
+      "mark": "native",
+      "screen": "ask",
+      "evidence": "POC code"
+    },
+    {
+      "area": "Retrieve",
+      "name": "Layer-grouped answer",
+      "call": "one recall per layer, in parallel",
+      "mark": "workaround",
+      "screen": "ask",
+      "evidence": "POC code"
+    },
+    {
+      "area": "Retrieve",
+      "name": "Source title/location on a hit",
+      "call": null,
+      "mark": "missing",
+      "screen": "ask",
+      "evidence": "POC code"
+    },
+    {
+      "area": "Scoping",
+      "name": "Isolation per user",
+      "call": "one Agent Memory key per user; lens clamped to the key's grant",
+      "mark": "native",
+      "screen": "scoping",
+      "evidence": "POC code"
+    },
+    {
+      "area": "Scoping",
+      "name": "Combined view (Priya + Deena)",
+      "call": "union of each user's layers, read with each user's key",
+      "mark": "workaround",
+      "screen": "scoping",
+      "evidence": "POC code"
+    },
+    {
+      "area": "Plan check (30 Oct)",
+      "name": "Areas as scope paths; writes outside the key's region get 403",
+      "call": null,
+      "mark": "native",
+      "screen": null,
+      "evidence": "Yes: REST API: upload `scopes` \"must be narrower than the caller's write region, else 403\"; MCP tools: grant region \"cannot be widened\""
+    },
+    {
+      "area": "Plan check (30 Oct)",
+      "name": "Scopes must be registered before first write",
+      "call": null,
+      "mark": "native",
+      "screen": null,
+      "evidence": "Yes: Contexts and scope: \"Register a scope path ... before a write targets it\""
+    },
+    {
+      "area": "Plan check (30 Oct)",
+      "name": "Grants changed through the API (L2)",
+      "call": null,
+      "mark": "native",
+      "screen": null,
+      "evidence": "Yes, with limits: `POST/DELETE /principals/{id}/grants` need `grant:manage`. Principals themselves are created only in Studio or the Cloud API, not the data-plane API"
+    },
+    {
+      "area": "Plan check (30 Oct)",
+      "name": "One key per person and per job; short-lived keys",
+      "call": null,
+      "mark": "native",
+      "screen": null,
+      "evidence": "Yes: `POST /keys` mints a key for the caller's own principal, grants can only narrow; `max_token_ttl_seconds` policy"
+    },
+    {
+      "area": "Plan check (30 Oct)",
+      "name": "Labels on structured writes",
+      "call": null,
+      "mark": "native",
+      "screen": null,
+      "evidence": "Yes: SDK `remember(..., labels=...)`; MCP `remember` takes `labels`. The REST page doesn't list `labels` on `/facts`"
+    },
+    {
+      "area": "Plan check (30 Oct)",
+      "name": "Labels on document uploads",
+      "call": null,
+      "mark": "native",
+      "screen": null,
+      "evidence": "Yes: REST: metadata `labels` (no `_` prefix, count caps → 409)"
+    },
+    {
+      "area": "Plan check (30 Oct)",
+      "name": "Labels filter on /query",
+      "call": null,
+      "mark": "native",
+      "screen": null,
+      "evidence": "Yes: \"labels filter hits within the allowed region and never widen access\""
+    },
+    {
+      "area": "Plan check (30 Oct)",
+      "name": "Label filter is AND across several labels",
+      "call": null,
+      "mark": "check",
+      "screen": null,
+      "evidence": "Check: Not documented. V1 must test it (Ask a node depends on it)"
+    },
+    {
+      "area": "Plan check (30 Oct)",
+      "name": "Hits return their labels",
+      "call": null,
+      "mark": "check",
+      "screen": null,
+      "evidence": "Check, likely No: SDK `RecallHit` has only `id, score, source, text`. Decides G5"
+    },
+    {
+      "area": "Plan check (30 Oct)",
+      "name": "Hits say which area they came from",
+      "call": null,
+      "mark": "missing",
+      "screen": null,
+      "evidence": "No: Not in SDK model or docs. Matches SD-16; per-layer parallel queries (C5) are the right workaround"
+    },
+    {
+      "area": "Plan check (30 Oct)",
+      "name": "infer modes full, triples, preview, none",
+      "call": null,
+      "mark": "native",
+      "screen": null,
+      "evidence": "Yes: REST `/facts`"
+    },
+    {
+      "area": "Plan check (30 Oct)",
+      "name": "memory_category knowledge / identity / context; context expires after 7 days",
+      "call": null,
+      "mark": "native",
+      "screen": null,
+      "evidence": "Yes: REST `/facts`; caching page: hourly expiry sweep"
+    },
+    {
+      "area": "Plan check (30 Oct)",
+      "name": "Value change keeps history",
+      "call": null,
+      "mark": "native",
+      "screen": null,
+      "evidence": "Yes: `GET .../history/{key}`; \"Attributes are versioned ... superseded rather than overwritten\""
+    },
+    {
+      "area": "Plan check (30 Oct)",
+      "name": "/query k ≤ 50, lens, relevance order",
+      "call": null,
+      "mark": "native",
+      "screen": null,
+      "evidence": "Yes: REST `/query`"
+    },
+    {
+      "area": "Plan check (30 Oct)",
+      "name": "Hit source = provenance",
+      "call": null,
+      "mark": "missing",
+      "screen": null,
+      "evidence": "No: `source` on a hit is the ResultKind (`entity`, `attribute`, `memory_chunk`, `chunk`, `section`), not `turn`/`document`/`elaboration`"
+    },
+    {
+      "area": "Plan check (30 Oct)",
+      "name": "Provenance (source.kind, ref, span, session_id, trust) on records",
+      "call": null,
+      "mark": "native",
+      "screen": null,
+      "evidence": "Yes in docs, Check in API: Docs say every record carries it. SDK `AttributeDetail` and `EntityResponse` don't expose it, so read raw JSON. This is C1(c), which the plan never schedules"
+    },
+    {
+      "area": "Plan check (30 Oct)",
+      "name": "Read a turn's text",
+      "call": null,
+      "mark": "native",
+      "screen": null,
+      "evidence": "Yes: `GET /sessions/{id}/turns` (paged). There's no route to list sessions or read one session"
+    },
+    {
+      "area": "Plan check (30 Oct)",
+      "name": "\"Changed since\" listing",
+      "call": null,
+      "mark": "partial",
+      "screen": null,
+      "evidence": "Partly: `GET /actions` takes `since`/`until`; `GET /attributes` and `/relations` are newest-first and paged. Worth testing as the tagger's and promotion job's \"new since last run\""
+    },
+    {
+      "area": "Plan check (30 Oct)",
+      "name": "Consolidation pools everything the key can read",
+      "call": null,
+      "mark": "native",
+      "screen": null,
+      "evidence": "Yes: REST `/consolidate`: \"facts are pooled only from the caller's memory:read region, and persistence requires memory:write over each scope group\"; read-only groups come back as a dry-run preview"
+    },
+    {
+      "area": "Plan check (30 Oct)",
+      "name": "Consolidation runs only when we call it",
+      "call": null,
+      "mark": "missing",
+      "screen": null,
+      "evidence": "No: REST: \"The background scheduler pass is unchanged and pools every scope.\" Not calling `/consolidate` doesn't stop it. Its schedule and where its observations land are undocumented"
+    },
+    {
+      "area": "Plan check (30 Oct)",
+      "name": "Documents: async, status polling, chunks, raw, observedAt",
+      "call": null,
+      "mark": "native",
+      "screen": null,
+      "evidence": "Yes: Uploading documents page"
+    },
+    {
+      "area": "Plan check (30 Oct)",
+      "name": "Same file uploaded twice is stored twice (design D5)",
+      "call": null,
+      "mark": "missing",
+      "screen": null,
+      "evidence": "No: Content-addressed: a second upload of the same bytes \"unions their scope clause onto the existing document\". Writes also accept `Idempotency-Key`, so retries can be made safe"
+    },
+    {
+      "area": "Plan check (30 Oct)",
+      "name": "Derived links at trust 0.3",
+      "call": null,
+      "mark": "check",
+      "screen": null,
+      "evidence": "Check: Docs list upsert 0.95, document 0.80, turn 0.50, reflect 0.40; the elaboration value was cut off in search results"
+    },
+    {
+      "area": "Plan check (30 Oct)",
+      "name": "Conflicts become records",
+      "call": null,
+      "mark": "native",
+      "screen": null,
+      "evidence": "Yes: `GET /uncertainty`, `POST /uncertainty/{id}/resolve`; \"cross-provenance conflicts emit uncertainty records\". Whether this fires across areas is unverified"
+    },
+    {
+      "area": "Plan check (30 Oct)",
+      "name": "No aliases",
+      "call": null,
+      "mark": "native",
+      "screen": null,
+      "evidence": "Yes (gap confirmed): `same_as` is \"an ordinary relation, not an instruction to the reconciler\""
+    },
+    {
+      "area": "Plan check (30 Oct)",
+      "name": "No controlled vocabulary",
+      "call": null,
+      "mark": "check",
+      "screen": null,
+      "evidence": "Check: Docs have an \"Extraction vocabulary\" page on keeping entity names and keys consistent. Read it before calling PRO-3 a gap"
+    },
+    {
+      "area": "Plan check (30 Oct)",
+      "name": "No preference type",
+      "call": null,
+      "mark": "partial",
+      "screen": null,
+      "evidence": "Partly: No preference category, but `GET /profile` returns a `preferences` section and an `instructions` section. Could drive the preference filter (L6)"
+    },
+    {
+      "area": "Plan check (30 Oct)",
+      "name": "Plugin hooks",
+      "call": null,
+      "mark": "native",
+      "screen": null,
+      "evidence": "Yes: SessionStart and UserPromptSubmit recall; Stop saves the exchange with `infer: \"full\"`. Settings are only URL, token, on/off and timeout. No scope or label setting"
+    },
+    {
+      "area": "Plan check (30 Oct)",
+      "name": "Plugin recall with labels (V1 d)",
+      "call": null,
+      "mark": "partial",
+      "screen": null,
+      "evidence": "Partly: MCP `recall` takes `labels`, but the hooks don't pass any. Only explicit tool calls by Claude could"
+    },
+    {
+      "area": "Plan check (30 Oct)",
+      "name": "Forget, purge, delete area",
+      "call": null,
+      "mark": "native",
+      "screen": null,
+      "evidence": "Yes: `/forget` with `purge`/`dryRun`; `DELETE /scopes` (tombstone); `POST /scopes/forget`"
+    }
+  ]
+}
