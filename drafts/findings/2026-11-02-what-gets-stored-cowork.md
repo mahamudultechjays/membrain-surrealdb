@@ -42,11 +42,11 @@ Formatting (4a), units (4b) and a topic to avoid (4f) each became an instruction
 
 "Remember that …" also becomes an instruction, which is how the stale Kestrel instruction from step 3 arose.
 
-### 2. Cowork's recall does not use instructions, facts or the profile
+### 2. In 4f and 4g, recall returned chat passages but no instructions
 
 Both recalls in 4g returned only saved chat passages, 26 of them, which was every passage in the area including the locker code from step 3.
 
-So Cowork follows instructions only when the passage that stated them is recalled and Claude notices it; in 4f it did not use bullets, and in 4g it left out metric units.
+In this run Cowork did not apply all the stored instructions: in 4f it did not use bullets, and in 4g it left out metric units.
 
 The glossary says instructions are "applied at prompt assembly", but the plugin's hooks only inject recall results ([plugin source](https://github.com/surrealdb/ai-claude-plugin), `hooks/agent-memory.sh`, checked 29 Oct 2026).
 
