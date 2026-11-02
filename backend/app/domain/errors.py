@@ -17,10 +17,6 @@ class EntityNotFoundError(Exception):
     """No entity with that type and name is visible to this key."""
 
 
-class UnknownScopeError(Exception):
-    """The scope is not one of the configured demo scopes."""
-
-
 class ScopeNotGrantedError(Exception):
     """The user holds no grant that allows this on that scope."""
 

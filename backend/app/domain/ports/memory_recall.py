@@ -1,6 +1,5 @@
 """Port for searching memory within one scope path."""
 
-from collections.abc import Callable
 from dataclasses import dataclass, field
 from typing import Protocol
 
@@ -27,7 +26,3 @@ class MemoryRecall(Protocol):
     async def recall(self, query: str, *, lens: str, k: int) -> RecallResult:
         """Facts and passages matching `query`, read only from `lens`."""
         ...
-
-
-# Builds the MemoryRecall that reads as one user scope.
-RecallFactory = Callable[[str], MemoryRecall]

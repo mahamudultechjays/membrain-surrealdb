@@ -25,13 +25,12 @@ from app.domain.ports.document_store import DocumentStore
 from app.domain.ports.memory_capture import MemoryCapture
 from app.domain.ports.memory_graph import MemoryGraph
 from app.domain.ports.memory_probe import MemoryProbe
-from app.domain.ports.memory_recall import MemoryRecall, RecallFactory
+from app.domain.ports.memory_recall import MemoryRecall
 from app.domain.ports.scope_registry import ScopeRegistry
 from app.domain.ports.text_reader import DocumentTextReader
 from app.domain.ports.user_scopes import UserScopeRepository
 from app.services.access import AccessService
 from app.services.capture_flow import PreviewCache
-from app.services.scopes import DEMO_USERS, ActiveScopes, ScopeDirectory
 
 
 @lru_cache
@@ -62,16 +61,6 @@ async def close_clients() -> None:
         await client.close()
 
 
-@lru_cache
-def get_scope_directory() -> ScopeDirectory:
-    return ScopeDirectory()
-
-
-@lru_cache
-def get_active_scopes() -> ActiveScopes:
-    return ActiveScopes([DEMO_USERS[0].scope])
-
-
 def get_memory_probe() -> MemoryProbe:
     client = get_agent_memory_client()
     return AgentMemoryProbe(client) if client else NotConfiguredProbe()
@@ -92,12 +81,9 @@ def get_memory_graph() -> MemoryGraph:
     return AgentMemoryGraph(client) if client else NotConfiguredGraph()
 
 
-def get_recall_factory() -> RecallFactory:
-    def for_scope(scope: str) -> MemoryRecall:
-        client = get_agent_memory_client()
-        return AgentMemoryRecall(client) if client else NotConfiguredRecall()
-
-    return for_scope
+def get_memory_recall() -> MemoryRecall:
+    client = get_agent_memory_client()
+    return AgentMemoryRecall(client) if client else NotConfiguredRecall()
 
 
 @lru_cache

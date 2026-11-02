@@ -1,16 +1,14 @@
-"""Ask endpoint: what memory knows, grouped org -> team -> personal."""
+"""Ask endpoint: what memory knows, grouped org -> team -> personal.
+
+Reads only the scopes the signed-in user's grants allow, each through a lens.
+"""
 
 from datetime import UTC, datetime
 from typing import Annotated
 
 from fastapi import APIRouter, HTTPException, Query, Request, status
 
-from app.api.deps import (
-    ActiveScopesDep,
-    RecallFactoryDep,
-    ScopeDirectoryDep,
-    authorize_scopes,
-)
+from app.api.deps import AccessServiceDep, CurrentUserDep, MemoryRecallDep, is_admin
 from app.domain.errors import MemoryNotConfiguredError, MemoryUnavailableError
 from app.schemas.ask import AskFact, AskLayer, AskMetadata, AskResponse, FactSource
 from app.services import ask_flow, logger
@@ -25,20 +23,39 @@ router = APIRouter(prefix="/ask")
 )
 async def ask(
     request: Request,
-    directory: ScopeDirectoryDep,
-    recalls: RecallFactoryDep,
-    active: ActiveScopesDep,
+    user: CurrentUserDep,
+    access: AccessServiceDep,
+    recall: MemoryRecallDep,
     q: Annotated[str, Query(min_length=1, max_length=1000)],
     scope: Annotated[list[str] | None, Query()] = None,
+    as_user: Annotated[list[str] | None, Query()] = None,
     include_inferred: bool = False,
 ) -> AskResponse:
-    """Search every layer the scopes can read. Repeat `scope` (or comma-separate it)
-    to ask as several users at once, e.g. Priya + Deena. Without `scope`, asks as
-    the active scopes set by POST /scopes/switch."""
-    scopes = _split(scope or []) or active.get()
-    authorize_scopes(request, directory, scopes)
+    """Search every scope the signed-in user may read.
+
+    `scope` (repeatable or comma-separated) narrows the search to some of those
+    scopes. Admins may pass `as_user` emails to ask as other users, e.g. two
+    people at once; their combined grants are read.
+    """
+    emails = [user.email]
+    if as_user:
+        if not is_admin(user.email):
+            raise HTTPException(status.HTTP_403_FORBIDDEN, "Only admins can ask as other users.")
+        emails = [e.lower() for e in _split(as_user)]
+    grants = [g for email in emails for g in await access.readable(email)]
+    if not grants:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "No readable scopes for that user.")
+    if scope:
+        wanted = {s.strip("/") for s in _split(scope)}
+        missing = wanted - {g.scope_path for g in grants}
+        if missing:
+            raise HTTPException(
+                status.HTTP_403_FORBIDDEN, f"Not readable: {', '.join(sorted(missing))}"
+            )
+        grants = [g for g in grants if g.scope_path in wanted]
+    scopes = list(dict.fromkeys(g.scope_path for g in grants))
     try:
-        answer = await ask_flow.ask(recalls, directory, q=q, scopes=scopes)
+        answer = await ask_flow.ask(recall, grants, q=q)
     except MemoryNotConfiguredError as exc:
         raise HTTPException(
             status.HTTP_503_SERVICE_UNAVAILABLE,
@@ -53,6 +70,8 @@ async def ask(
     logger.log(
         "[ASK]",
         trace_id=trace_id,
+        user=user.email,
+        as_users=",".join(emails) if as_user else None,
         scopes=",".join(scopes),
         q=repr(q[:80]),
         facts_found=answer.total_facts,

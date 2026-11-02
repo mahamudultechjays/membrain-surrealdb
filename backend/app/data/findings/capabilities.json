@@ -85,15 +85,15 @@
     {
       "area": "Scoping",
       "name": "Isolation per user",
-      "call": "one Agent Memory key per user; lens clamped to the key's grant",
+      "call": "one admin key; our backend turns the user's grants into recall(lens=[scope]) and remember(scopes=[scope])",
       "mark": "native",
       "screen": "scoping",
-      "evidence": "POC code"
+      "evidence": "Tested 2026-11-02 with the admin key: lens=b never returned a's fact; no lens returns everything"
     },
     {
       "area": "Scoping",
-      "name": "Combined view (Priya + Deena)",
-      "call": "union of each user's layers, read with each user's key",
+      "name": "Combined view (two users at once)",
+      "call": "admin asks with as_user: the union of both users' grants, one lens per scope",
       "mark": "workaround",
       "screen": "scoping",
       "evidence": "POC code"

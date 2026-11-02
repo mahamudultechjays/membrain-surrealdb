@@ -10,38 +10,32 @@ from fastapi import Depends, HTTPException, Request, status
 
 from app.composition import (
     get_access_service,
-    get_active_scopes,
     get_document_store,
     get_memory_capture,
     get_memory_graph,
     get_memory_probe,
+    get_memory_recall,
     get_preview_cache,
-    get_recall_factory,
-    get_scope_directory,
     get_text_reader,
 )
 from app.core.config import settings
-from app.domain.errors import UnknownScopeError
 from app.domain.ports.document_store import DocumentStore
 from app.domain.ports.memory_capture import MemoryCapture
 from app.domain.ports.memory_graph import MemoryGraph
 from app.domain.ports.memory_probe import MemoryProbe
-from app.domain.ports.memory_recall import RecallFactory
+from app.domain.ports.memory_recall import MemoryRecall
 from app.domain.ports.text_reader import DocumentTextReader
 from app.schemas.auth import CurrentUser
 from app.services.access import AccessService
 from app.services.capture_flow import PreviewCache
-from app.services.scopes import ActiveScopes, ScopeDirectory
 
 MemoryProbeDep = Annotated[MemoryProbe, Depends(get_memory_probe)]
 MemoryCaptureDep = Annotated[MemoryCapture, Depends(get_memory_capture)]
 DocumentStoreDep = Annotated[DocumentStore, Depends(get_document_store)]
 TextReaderDep = Annotated[DocumentTextReader, Depends(get_text_reader)]
 MemoryGraphDep = Annotated[MemoryGraph, Depends(get_memory_graph)]
-ScopeDirectoryDep = Annotated[ScopeDirectory, Depends(get_scope_directory)]
 PreviewCacheDep = Annotated[PreviewCache, Depends(get_preview_cache)]
-RecallFactoryDep = Annotated[RecallFactory, Depends(get_recall_factory)]
-ActiveScopesDep = Annotated[ActiveScopes, Depends(get_active_scopes)]
+MemoryRecallDep = Annotated[MemoryRecall, Depends(get_memory_recall)]
 AccessServiceDep = Annotated[AccessService, Depends(get_access_service)]
 
 
@@ -68,12 +62,3 @@ async def require_admin(user: CurrentUserDep) -> CurrentUser:
 
 
 AdminUserDep = Annotated[CurrentUser, Depends(require_admin)]
-
-
-def authorize_scopes(request: Request, directory: ScopeDirectory, scopes: list[str]) -> None:
-    """422 for scopes the demo doesn't know."""
-    try:
-        for scope in scopes:
-            directory.get(scope)
-    except UnknownScopeError as exc:
-        raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, f"Unknown scope: {exc}") from exc
