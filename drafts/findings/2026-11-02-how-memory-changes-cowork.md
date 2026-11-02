@@ -45,7 +45,7 @@ Every exchange was saved as a chat passage within about 10 s, and every fact cam
 
 A plain statement became a fact in 3b, but an equally plain one on 30 Oct ("Acme Logistics ships late on most orders to Reno") did not.
 
-"Remember that" is not what makes the difference.
+"Remember that" is not what makes a fact, but it does make something else: 3a also created an **instruction** record, `remember_kestrel_freight_delay`, shown in `GET /state` and `GET /profile` (finding 4).
 
 ### 2. An exact repeat leaves no trace on the fact
 
@@ -64,6 +64,8 @@ Each rewording resets the fact instead of confirming it, which also works agains
 After 3e the structured memory holds nothing about Kestrel's shipping, while the chat says "now on time".
 
 The current answer survives only because search ranks the update passage above the three "late" passages.
+
+Worse, the 3a instruction "Remember that Kestrel Freight ships late on most orders to Boise" was not touched by the correction, so the person's profile still tells the agent the old value.
 
 This is worse than the 30 Oct result (finding 2 there), where no fact existed to lose.
 
@@ -85,9 +87,13 @@ The risk F3 describes, a late past-tense statement becoming current, did not hap
 
 Trust stayed at 0.5, so trust records the source and confidence records the speaker's certainty; phase 5 scoring must pick which to use.
 
+The hedge also produced an open **uncertainty** record in `GET /uncertainty`: "The user is not sure whether Pinewood Couriers will raise prices next month."
+
 ### 8. Relative dates are handled inconsistently
 
-"Next month" became `validFrom` 1 Dec 2026, but "March" and "as of October" got no dates, and "tomorrow" was stored as the word itself.
+"Next month" became `validFrom` 1 Dec 2026 and "tomorrow" became `validFrom` 3 Nov 2026, but "March" and "as of October" got no dates.
+
+The "tomorrow" fact keeps the word itself as its value, so anything that reads the value without the date shows "tomorrow".
 
 A future `validFrom` can also hide a fact that is true now from a "currently valid" filter.
 
@@ -114,6 +120,18 @@ This extends finding 3 from 30 Oct; elaboration also ran by itself at 09:11 IST,
 The 3a and 3b facts, sent in one task, sit in two different Agent Memory sessions.
 
 This confirms finding 9 from 30 Oct inside a single task.
+
+### 13. The profile files facts under the wrong headings
+
+`GET /profile` lists the Portland road distance and Pinewood's backup-carrier role under `preferences`, although neither is a preference.
+
+It also lists "demo date = tomorrow" under `dynamic`, so a prompt built from the profile would carry a wrong relative date after 2 Nov.
+
+### 14. Events are stored as actions
+
+`GET /state` holds three dated actions: "Agent Memory demo takes place tomorrow" (dated 3 Nov, from Cowork's 3g reply), "Phase one of the pilot starts next week" and "demo scheduled for Tuesday 3 November" (both from 30 Oct).
+
+So the demo date was stored on 30 Oct after all, as an action rather than a fact; the 30 Oct findings are corrected to match.
 
 ## Other observations
 
@@ -142,5 +160,6 @@ This confirms finding 9 from 30 Oct inside a single task.
 - **Audit log:** `GET /api/v1/{context}/audit` gave each recall and save with its time and latency.
 - **Facts and links:** `GET /attributes` and `GET /relations`, filtered to items created during the run, with `supersedes`, confidence, `validFrom`, category and session.
 - **Lookups:** `POST /lookup` per entity, and `GET /attributes/{id}` for replaced facts.
+- **State, profile and uncertainty:** `GET /state` (facts, links, actions and instructions per category), `GET /profile` (what the agent is given about the person) and `GET /uncertainty`.
 - **Saved messages:** `POST /query` with a lens on the person's area.
 - Our own checks also appear in the audit log as recalls; they are left out of the timings above.

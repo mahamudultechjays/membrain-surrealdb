@@ -63,7 +63,7 @@ Nothing else became a fact:
 
 - 2b-2, 2d and the second 2c produced no facts.
 - Nothing about Acme shipping late or on time was stored as a fact.
-- The demo date, 3 November, was not stored as a fact.
+- The demo date, 3 November, was not stored as a fact, but it was stored as a dated action ("demo scheduled for Tuesday 3 November"), found later in `GET /state`.
 - The other 14 links came from Agent Memory's own elaboration at trust 0.3 (finding 3).
 
 ## Findings
@@ -104,7 +104,7 @@ Replies also become facts. The person never mentioned Techjays in this run, but 
 
 "Leads project Agent Memory" was stored in the `context` category, which expires after 7 days.
 
-The demo date was not stored as a fact at all, although recall still found it in the saved message.
+The demo date was not stored as a fact; it was stored as a dated action, which `GET /attributes` and `GET /relations` do not list (see the [2 Nov findings](2026-11-02-how-memory-changes-cowork.md), finding 14).
 
 ### 6. Special characters work in Cowork
 
