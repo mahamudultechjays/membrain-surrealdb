@@ -139,7 +139,7 @@ async def preview(
         ],
         stats=CaptureStats(
             total=len(found.facts),
-            high_confidence=found.high_confidence,
+            uncertain=found.uncertain,
             corrections=len(found.corrections),
         ),
         truncated=found.truncated,
@@ -158,7 +158,7 @@ async def store(
     captures: CaptureFactoryDep,
     cache: PreviewCacheDep,
 ) -> CaptureStoreResponse:
-    """Write the kept facts (or, with infer_full, a fresh full extraction) to memory."""
+    """Write the kept facts (mode triples) or a fresh full extraction (mode full) to memory."""
     authorize_scopes(request, directory, [body.scope])
     found = cache.get(body.preview_id)
     if found is None:

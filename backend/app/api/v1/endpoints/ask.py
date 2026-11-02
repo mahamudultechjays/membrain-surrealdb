@@ -77,8 +77,8 @@ async def ask(
                             kind=ask_flow.source_kind(hit),
                             hit_kind=hit.kind,
                             hit_id=hit.id,
-                            quote=hit.text,
-                            trust=round(hit.score, 3),
+                            text=hit.text,
+                            score=round(hit.score, 3),
                         ),
                     )
                     for hit in layer.hits

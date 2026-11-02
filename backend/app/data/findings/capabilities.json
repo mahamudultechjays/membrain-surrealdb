@@ -12,7 +12,7 @@
     },
     {
       "area": "Ingest",
-      "name": "Store kept facts as given",
+      "name": "Store kept facts as given (mode triples)",
       "call": "remember(infer=\"triples\", triples=[...], scopes=[scope])",
       "mark": "native",
       "screen": "capture",
@@ -20,7 +20,7 @@
     },
     {
       "area": "Ingest",
-      "name": "Store with full re-extraction",
+      "name": "Store with full re-extraction (mode full)",
       "call": "remember(text, infer=\"full\", scopes=[scope])",
       "mark": "native",
       "screen": "capture",
@@ -48,7 +48,7 @@
       "call": null,
       "mark": "missing",
       "screen": "capture",
-      "evidence": "POC code"
+      "evidence": "SDK ExtractionResult has no confidence; preview reports stats.uncertain instead"
     },
     {
       "area": "Ingest",
@@ -61,7 +61,7 @@
     {
       "area": "Retrieve",
       "name": "Recall one layer by lens",
-      "call": "recall(q, lens=[path], include=[\"facts\",\"passages\"])",
+      "call": "recall(q, k=k, lens=[path], include=[\"facts\",\"passages\"])",
       "mark": "native",
       "screen": "ask",
       "evidence": "POC code"
@@ -76,11 +76,11 @@
     },
     {
       "area": "Retrieve",
-      "name": "Source title/location on a hit",
+      "name": "Source title, location or trust on a recall hit",
       "call": null,
       "mark": "missing",
       "screen": "ask",
-      "evidence": "POC code"
+      "evidence": "RecallHit has only id, score, source, text; Ask returns score (rank, not trust) and text"
     },
     {
       "area": "Scoping",

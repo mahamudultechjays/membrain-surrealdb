@@ -64,10 +64,10 @@ MAX_CONTENT_CHARS = 14_000_000
 
 
 class CaptureConfig(BaseModel):
-    # infer_full: re-run extraction on the source and store all of it.
-    # infer_text: store only the kept facts, as given.
-    mode: StoreMode = "infer_text"
-    # Overrides each kept fact's own category when storing with infer_text.
+    # triples: store only the kept facts, as given (infer="triples").
+    # full: re-run extraction on the source and store all of it (infer="full").
+    mode: StoreMode = "triples"
+    # Overrides each kept fact's own category when storing with mode triples.
     memory_category: MemoryCategory | None = None
 
 
@@ -84,17 +84,16 @@ class ExtractedFactOut(BaseModel):
     id: str
     fact: str
     type: str
-    # Agent Memory reports no per-fact confidence, so this is always null for now.
-    confidence: float | None = None
     source: str
     note: str | None
-    # False when the fact can only be stored with mode infer_full.
+    # False when the fact can only be stored with mode full.
     storable: bool
 
 
 class CaptureStats(BaseModel):
     total: int
-    high_confidence: int
+    # Facts Agent Memory raised an uncertainty about (it reports no confidence).
+    uncertain: int
     corrections: int
 
 
@@ -105,8 +104,6 @@ class CapturePreviewResponse(BaseModel):
     stats: CaptureStats
     truncated: bool
     truncated_reason: str | None
-    # Agent Memory does not report token cost; null until it does.
-    cost_tokens: int | None = None
     # Set for documents: the upload to poll at /capture/document/{doc_id}/status.
     doc_id: str | None = None
     corrections: list[str]

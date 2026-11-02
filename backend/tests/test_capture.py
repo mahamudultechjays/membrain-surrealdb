@@ -142,7 +142,6 @@ def test_text_preview_returns_reviewable_facts(
             "id": "e1",
             "fact": "Acme · lead_time_days = 18",
             "type": "knowledge",
-            "confidence": None,
             "source": "text",
             "note": None,
             "storable": True,
@@ -151,13 +150,13 @@ def test_text_preview_returns_reviewable_facts(
             "id": "e2",
             "fact": "Acme · ships_to → Reno",
             "type": "context",
-            "confidence": None,
             "source": "text",
             "note": "uncertain: hedged",
             "storable": True,
         },
     ]
-    assert body["stats"] == {"total": 2, "high_confidence": 1, "corrections": 1}
+    assert body["stats"] == {"total": 2, "uncertain": 1, "corrections": 1}
+    assert "cost_tokens" not in body
     assert body["truncated"] is False
     assert body["doc_id"] is None
     assert capture.calls[0] == ("preview", "Acme ships to Reno in 18 days", PRIYA)
@@ -173,7 +172,7 @@ def test_store_writes_only_kept_facts_as_triples(client: TestClient, capture: Fa
             "preview_id": preview_id,
             "scope": PRIYA,
             "kept": ["e1"],
-            "config": {"mode": "infer_text", "memory_category": "identity"},
+            "config": {"mode": "triples", "memory_category": "identity"},
         },
     )
 
@@ -191,12 +190,12 @@ def test_store_writes_only_kept_facts_as_triples(client: TestClient, capture: Fa
     assert facts == [FactTriple("Acme", "organisation", "lead_time_days", "18", "identity")]
 
 
-def test_store_infer_full_reextracts_source_text(client: TestClient, capture: FakeCapture) -> None:
+def test_store_full_reextracts_source_text(client: TestClient, capture: FakeCapture) -> None:
     preview_id = _preview(client)["preview_id"]
 
     response = client.post(
         "/api/v1/capture/store",
-        json={"preview_id": preview_id, "scope": PRIYA, "config": {"mode": "infer_full"}},
+        json={"preview_id": preview_id, "scope": PRIYA, "config": {"mode": "full"}},
     )
 
     assert response.status_code == 200

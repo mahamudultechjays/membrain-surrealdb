@@ -74,7 +74,10 @@ def test_layers_are_read_in_parallel_with_the_users_key(
     ]
     org_fact = body["layers"][0]["facts"][0]
     assert org_fact["source"]["kind"] == "document"
-    assert org_fact["source"]["quote"] == "Customers may return items within 30 days."
+    assert org_fact["source"]["text"] == "Customers may return items within 30 days."
+    assert org_fact["source"]["score"] == 0.8
+    assert {"trust", "quote", "location"}.isdisjoint(org_fact["source"])
+    assert "query_cost_tokens" not in body["metadata"]
     assert body["layers"][2]["owner"] == "Priya"
     assert body["layers"][2]["facts"][0]["source"]["kind"] == "memory"
     assert body["metadata"]["total_facts"] == 2

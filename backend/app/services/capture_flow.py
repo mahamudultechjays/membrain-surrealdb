@@ -2,12 +2,13 @@
 
 Preview runs Agent Memory's dry run and remembers the result here (in process,
 no persistence) under a preview id. Store then either re-runs full extraction
-on the source text ("infer_full") or writes only the kept facts as triples
-("infer_text").
+on the source text (mode "full") or writes only the kept facts as triples
+(mode "triples"). The mode names match Agent Memory's `infer` values.
 
 Agent Memory gives no per-fact confidence and, in previews, no link from an
-attribute to its entity. So confidence is left empty, and an attribute whose
-entity can't be told apart is shown but can only be stored with infer_full.
+attribute to its entity. So the preview counts facts with an uncertainty note
+instead, and an attribute whose entity can't be told apart is shown but can only
+be stored with mode full.
 """
 
 import json
@@ -24,7 +25,7 @@ from app.domain.ports.memory_capture import (
     MemoryCapture,
 )
 
-StoreMode = Literal["infer_full", "infer_text"]
+StoreMode = Literal["triples", "full"]
 
 # Documents longer than this are previewed from their first PREVIEW_WORDS only.
 LARGE_DOCUMENT_WORDS = 2000
@@ -33,7 +34,7 @@ TRUNCATED_REASON = f"Large document: preview shows first {PREVIEW_WORDS} words o
 
 MAX_PREVIEWS = 200
 CATEGORIES = frozenset({"identity", "knowledge", "context"})
-NO_ENTITY_NOTE = "entity not known in preview; store with infer_full"
+NO_ENTITY_NOTE = "entity not known in preview; store with mode full"
 
 
 class CaptureFlowError(Exception):
@@ -47,7 +48,7 @@ class ReviewFact:
     type: str
     source: str
     note: str | None = None
-    # What gets written for infer_text; None when the fact can't be a triple.
+    # What gets written with mode triples; None when the fact can't be a triple.
     triple: FactTriple | None = None
 
 
@@ -62,9 +63,9 @@ class Preview:
     doc_id: str | None = None
 
     @property
-    def high_confidence(self) -> int:
-        """Facts no uncertainty was raised about."""
-        return sum(1 for f in self.facts if not (f.note or "").startswith("uncertain"))
+    def uncertain(self) -> int:
+        """Facts Agent Memory raised an uncertainty about."""
+        return sum(1 for f in self.facts if (f.note or "").startswith("uncertain"))
 
 
 @dataclass(frozen=True, slots=True)
@@ -182,7 +183,7 @@ async def store(
     if unknown:
         raise CaptureFlowError(f"Unknown fact ids for this preview: {', '.join(unknown)}")
 
-    if mode == "infer_full":
+    if mode == "full":
         result = await capture.store(stored.text, stored.scope)
         written = len(result.attributes) + len(result.relations)
         triples: list[FactTriple] = []
@@ -194,7 +195,7 @@ async def store(
         ]
         if not triples:
             raise CaptureFlowError(
-                "None of the kept facts can be stored as triples; use mode infer_full."
+                "None of the kept facts can be stored as triples; use mode full."
             )
         result = await capture.store_facts(triples, stored.scope)
         written = len(triples)
