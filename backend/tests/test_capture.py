@@ -1,3 +1,4 @@
+import asyncio
 import base64
 import json
 from collections.abc import Iterator
@@ -7,9 +8,8 @@ from fastapi.testclient import TestClient
 
 from app.adapters.files import PdfAndTextReader
 from app.composition import (
-    get_capture_factory,
     get_document_store,
-    get_document_store_factory,
+    get_memory_capture,
     get_preview_cache,
     get_text_reader,
 )
@@ -28,9 +28,12 @@ from app.domain.ports.memory_capture import (
     FactTriple,
 )
 from app.main import app
+from app.services.access import AccessService
 from app.services.capture_flow import PreviewCache
+from tests.conftest import sign_in
 
-PRIYA, ARUN = "org/user/u-0001", "org/user/u-0002"
+# Personal scopes the access service creates for these users on first sign-in.
+PRIYA, ARUN = "org/spreetail/user/priya_shah", "org/spreetail/user/arun_das"
 
 
 class FakeCapture:
@@ -103,23 +106,14 @@ def store() -> FakeStore:
 
 
 @pytest.fixture
-def scopes_used() -> list[str]:
-    return []
-
-
-@pytest.fixture
-def client(capture: FakeCapture, store: FakeStore, scopes_used: list[str]) -> Iterator[TestClient]:
-    def captures(scope: str) -> FakeCapture:
-        scopes_used.append(scope)
-        return capture
-
+def client(capture: FakeCapture, store: FakeStore, access: AccessService) -> Iterator[TestClient]:
     cache = PreviewCache()
-    app.dependency_overrides[get_capture_factory] = lambda: captures
-    app.dependency_overrides[get_document_store_factory] = lambda: lambda scope: store
+    app.dependency_overrides[get_memory_capture] = lambda: capture
     app.dependency_overrides[get_document_store] = lambda: store
     app.dependency_overrides[get_preview_cache] = lambda: cache
     app.dependency_overrides[get_text_reader] = PdfAndTextReader
     with TestClient(app) as test_client:
+        sign_in(test_client, "priya.shah@x.com", "Priya Shah")
         yield test_client
     app.dependency_overrides.clear()
 
@@ -131,9 +125,7 @@ def _preview(client: TestClient, **overrides: object) -> dict[str, object]:
     return response.json()  # type: ignore[no-any-return]
 
 
-def test_text_preview_returns_reviewable_facts(
-    client: TestClient, capture: FakeCapture, scopes_used: list[str]
-) -> None:
+def test_text_preview_returns_reviewable_facts(client: TestClient, capture: FakeCapture) -> None:
     body = _preview(client)
 
     assert str(body["preview_id"]).startswith("prev_")
@@ -159,8 +151,56 @@ def test_text_preview_returns_reviewable_facts(
     assert "cost_tokens" not in body
     assert body["truncated"] is False
     assert body["doc_id"] is None
+    assert body["scope"] == PRIYA
     assert capture.calls[0] == ("preview", "Acme ships to Reno in 18 days", PRIYA)
-    assert scopes_used == [PRIYA]
+
+
+def test_scope_defaults_to_the_users_personal_scope(
+    client: TestClient, capture: FakeCapture
+) -> None:
+    response = client.post("/api/v1/capture/preview", json={"content": "Acme ships to Reno"})
+
+    assert response.json()["scope"] == PRIYA
+    assert capture.calls[0][2] == PRIYA
+
+
+@pytest.mark.parametrize("scope", ["org/spreetail", ARUN, "org/user/nobody"])
+def test_writing_outside_the_users_write_grants_is_forbidden(
+    client: TestClient, capture: FakeCapture, scope: str
+) -> None:
+    response = client.post("/api/v1/capture/preview", json={"scope": scope, "content": "x"})
+
+    assert response.status_code == 403
+    assert capture.calls == []
+
+
+def test_signed_out_is_401(client: TestClient) -> None:
+    client.post("/api/v1/auth/logout")
+
+    assert client.post("/api/v1/capture/preview", json={"content": "x"}).status_code == 401
+
+
+def test_another_user_cannot_store_from_your_preview(
+    client: TestClient, capture: FakeCapture
+) -> None:
+    preview_id = _preview(client)["preview_id"]
+    sign_in(client, "arun.das@x.com", "Arun Das")
+
+    response = client.post("/api/v1/capture/store", json={"preview_id": preview_id, "kept": ["e1"]})
+
+    assert response.status_code == 404
+    assert [op for op, _, _ in capture.calls] == ["preview"]
+
+
+def test_store_is_refused_after_the_grant_is_revoked(
+    client: TestClient, access: AccessService
+) -> None:
+    preview_id = _preview(client)["preview_id"]
+    asyncio.run(access.revoke("priya.shah@x.com", PRIYA))
+
+    response = client.post("/api/v1/capture/store", json={"preview_id": preview_id, "kept": ["e1"]})
+
+    assert response.status_code == 403
 
 
 def test_store_writes_only_kept_facts_as_triples(client: TestClient, capture: FakeCapture) -> None:
@@ -218,14 +258,6 @@ def test_store_rejects_unknown_preview_other_scope_and_unknown_ids(client: TestC
     assert none_kept.status_code == 422
 
 
-def test_unknown_scope_is_rejected(client: TestClient) -> None:
-    response = client.post(
-        "/api/v1/capture/preview", json={"scope": "org/user/nobody", "content": "x"}
-    )
-
-    assert response.status_code == 422
-
-
 def test_document_preview_uploads_and_truncates_large_files(
     client: TestClient, capture: FakeCapture, store: FakeStore
 ) -> None:
@@ -281,11 +313,15 @@ def test_503_when_memory_cannot_answer(
     assert response.status_code == 503
 
 
-@pytest.mark.parametrize("scope", [None, PRIYA])
-def test_document_status(client: TestClient, scope: str | None) -> None:
-    params = {"scope": scope} if scope else {}
+def _upload(client: TestClient) -> None:
+    content = base64.b64encode(b"Customers may return items within 30 days.").decode()
+    _preview(client, input_type="document", file_name="policy.txt", content=content)
 
-    response = client.get("/api/v1/capture/document/d1/status", params=params)
+
+def test_document_status_for_the_uploader(client: TestClient) -> None:
+    _upload(client)
+
+    response = client.get("/api/v1/capture/document/d1/status")
 
     assert response.status_code == 200
     assert response.json() == {
@@ -300,7 +336,19 @@ def test_document_status(client: TestClient, scope: str | None) -> None:
     }
 
 
+def test_document_status_hidden_from_other_users_but_not_admins(client: TestClient) -> None:
+    _upload(client)
+    sign_in(client, "arun.das@x.com", "Arun Das")
+    hidden = client.get("/api/v1/capture/document/d1/status")
+    sign_in(client, "admin@x.com", "Ada Admin")
+    admin = client.get("/api/v1/capture/document/d1/status")
+
+    assert hidden.status_code == 404
+    assert admin.status_code == 200
+
+
 def test_document_status_failed_and_missing(client: TestClient, store: FakeStore) -> None:
+    _upload(client)
     store.detail = DocumentDetail(id="d1", status="failed", title="p", error="bad pdf")
     failed = client.get("/api/v1/capture/document/d1/status").json()
     store.error = DocumentNotFoundError("d1")

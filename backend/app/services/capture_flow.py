@@ -55,6 +55,8 @@ class ReviewFact:
 @dataclass(frozen=True, slots=True)
 class Preview:
     id: str
+    # Email of the user who ran it; only they can store from it.
+    owner: str
     scope: str
     text: str
     facts: list[ReviewFact]
@@ -108,6 +110,10 @@ class PreviewCache:
     def get(self, preview_id: str) -> Preview | None:
         return self._previews.get(preview_id)
 
+    def owner_of_document(self, doc_id: str) -> str | None:
+        """Who uploaded this document through a preview, while it is still cached."""
+        return next((p.owner for p in self._previews.values() if p.doc_id == doc_id), None)
+
 
 def shorten_document(text: str) -> tuple[str, bool]:
     """The first PREVIEW_WORDS words of a large document, and whether it was cut."""
@@ -120,6 +126,7 @@ def shorten_document(text: str) -> tuple[str, bool]:
 async def preview(
     capture: MemoryCapture,
     *,
+    owner: str,
     scope: str,
     text: str,
     source: str,
@@ -129,6 +136,7 @@ async def preview(
     result = await capture.preview(text, scope)
     return Preview(
         id=f"prev_{uuid.uuid4().hex[:12]}",
+        owner=owner,
         scope=scope,
         text=text,
         facts=review_facts(result, source=source),

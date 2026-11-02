@@ -21,8 +21,8 @@ from app.adapters.agent_memory import (
 from app.adapters.files import PdfAndTextReader
 from app.adapters.sqlite import SqliteUserScopes
 from app.core.config import settings
-from app.domain.ports.document_store import DocumentStore, DocumentStoreFactory
-from app.domain.ports.memory_capture import CaptureFactory, MemoryCapture
+from app.domain.ports.document_store import DocumentStore
+from app.domain.ports.memory_capture import MemoryCapture
 from app.domain.ports.memory_graph import MemoryGraph
 from app.domain.ports.memory_probe import MemoryProbe
 from app.domain.ports.memory_recall import MemoryRecall, RecallFactory
@@ -90,20 +90,6 @@ def get_document_store() -> DocumentStore:
 def get_memory_graph() -> MemoryGraph:
     client = get_agent_memory_client()
     return AgentMemoryGraph(client) if client else NotConfiguredGraph()
-
-
-def get_capture_factory() -> CaptureFactory:
-    def for_scope(scope: str) -> MemoryCapture:
-        return get_memory_capture()
-
-    return for_scope
-
-
-def get_document_store_factory() -> DocumentStoreFactory:
-    def for_scope(scope: str) -> DocumentStore:
-        return get_document_store()
-
-    return for_scope
 
 
 def get_recall_factory() -> RecallFactory:

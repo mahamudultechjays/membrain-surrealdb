@@ -1,6 +1,5 @@
 """Port for sending text to memory and seeing what extraction makes of it."""
 
-from collections.abc import Callable
 from dataclasses import dataclass, field
 from typing import Literal, Protocol
 
@@ -85,7 +84,3 @@ class MemoryCapture(Protocol):
     async def store_facts(self, facts: list[FactTriple], scope: str) -> CaptureResult:
         """Save exactly these facts in `scope`, without running extraction."""
         ...
-
-
-# Builds the MemoryCapture that acts for one user scope.
-CaptureFactory = Callable[[str], MemoryCapture]

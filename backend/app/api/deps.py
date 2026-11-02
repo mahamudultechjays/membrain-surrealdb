@@ -11,9 +11,7 @@ from fastapi import Depends, HTTPException, Request, status
 from app.composition import (
     get_access_service,
     get_active_scopes,
-    get_capture_factory,
     get_document_store,
-    get_document_store_factory,
     get_memory_capture,
     get_memory_graph,
     get_memory_probe,
@@ -24,8 +22,8 @@ from app.composition import (
 )
 from app.core.config import settings
 from app.domain.errors import UnknownScopeError
-from app.domain.ports.document_store import DocumentStore, DocumentStoreFactory
-from app.domain.ports.memory_capture import CaptureFactory, MemoryCapture
+from app.domain.ports.document_store import DocumentStore
+from app.domain.ports.memory_capture import MemoryCapture
 from app.domain.ports.memory_graph import MemoryGraph
 from app.domain.ports.memory_probe import MemoryProbe
 from app.domain.ports.memory_recall import RecallFactory
@@ -41,8 +39,6 @@ DocumentStoreDep = Annotated[DocumentStore, Depends(get_document_store)]
 TextReaderDep = Annotated[DocumentTextReader, Depends(get_text_reader)]
 MemoryGraphDep = Annotated[MemoryGraph, Depends(get_memory_graph)]
 ScopeDirectoryDep = Annotated[ScopeDirectory, Depends(get_scope_directory)]
-CaptureFactoryDep = Annotated[CaptureFactory, Depends(get_capture_factory)]
-DocumentStoreFactoryDep = Annotated[DocumentStoreFactory, Depends(get_document_store_factory)]
 PreviewCacheDep = Annotated[PreviewCache, Depends(get_preview_cache)]
 RecallFactoryDep = Annotated[RecallFactory, Depends(get_recall_factory)]
 ActiveScopesDep = Annotated[ActiveScopes, Depends(get_active_scopes)]

@@ -72,7 +72,8 @@ class CaptureConfig(BaseModel):
 
 
 class CapturePreviewRequest(BaseModel):
-    scope: str
+    # A scope the signed-in user may write; omitted means their personal scope.
+    scope: str | None = None
     input_type: Literal["text", "document"] = "text"
     config: CaptureConfig = CaptureConfig()
     # Plain text, or the file's bytes base64-encoded when input_type is "document".
@@ -112,7 +113,8 @@ class CapturePreviewResponse(BaseModel):
 
 class CaptureStoreRequest(BaseModel):
     preview_id: str
-    scope: str
+    # Optional; when given it must match the preview's scope.
+    scope: str | None = None
     kept: list[str] = Field(default_factory=list)
     config: CaptureConfig = CaptureConfig()
     trace_tags: dict[str, str] | None = None

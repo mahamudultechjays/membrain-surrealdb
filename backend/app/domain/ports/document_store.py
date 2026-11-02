@@ -1,6 +1,5 @@
 """Port for uploading documents to memory and following their processing."""
 
-from collections.abc import Callable
 from dataclasses import dataclass, field
 from typing import Protocol
 
@@ -49,7 +48,3 @@ class DocumentStore(Protocol):
     async def get(self, document_id: str) -> DocumentDetail:
         """Current status, plus passages and keywords once ready."""
         ...
-
-
-# Builds the DocumentStore that acts for one user scope.
-DocumentStoreFactory = Callable[[str], DocumentStore]

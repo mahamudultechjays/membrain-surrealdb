@@ -1,7 +1,8 @@
 """Capture endpoints: preview what Agent Memory extracts, then store the kept facts.
 
-Every call acts for one demo user scope, through the one admin key; the scope
-is passed explicitly on every write.
+Every call acts for the signed-in user through the one admin key. Writes go
+only to a scope the user's grants allow (their personal scope by default), and
+that scope is passed explicitly on every Agent Memory write.
 """
 
 import base64
@@ -12,21 +13,22 @@ from collections.abc import Awaitable
 from fastapi import APIRouter, HTTPException, Request, status
 
 from app.api.deps import (
-    CaptureFactoryDep,
+    AccessServiceDep,
+    CurrentUserDep,
     DocumentStoreDep,
-    DocumentStoreFactoryDep,
+    MemoryCaptureDep,
     PreviewCacheDep,
-    ScopeDirectoryDep,
     TextReaderDep,
-    authorize_scopes,
+    is_admin,
 )
 from app.domain.errors import (
     DocumentNotFoundError,
     MemoryNotConfiguredError,
     MemoryUnavailableError,
+    ScopeNotGrantedError,
     UnsupportedDocumentError,
 )
-from app.domain.ports.document_store import FINISHED_STATUSES, DocumentStore
+from app.domain.ports.document_store import FINISHED_STATUSES
 from app.schemas.capture import (
     CapturePreviewRequest,
     CapturePreviewResponse,
@@ -60,16 +62,16 @@ STATUS_MESSAGES = {
 async def preview(
     body: CapturePreviewRequest,
     request: Request,
-    directory: ScopeDirectoryDep,
-    captures: CaptureFactoryDep,
-    documents: DocumentStoreFactoryDep,
+    user: CurrentUserDep,
+    access: AccessServiceDep,
+    capture: MemoryCaptureDep,
+    documents: DocumentStoreDep,
     reader: TextReaderDep,
     cache: PreviewCacheDep,
 ) -> CapturePreviewResponse:
     """What Agent Memory would extract. Text is not saved; a document is uploaded
     once (Agent Memory has no dry run for files) so its processing can be polled."""
-    authorize_scopes(request, directory, [body.scope])
-    capture = captures(body.scope)
+    scope = await _write_scope(access, user.email, body.scope)
 
     if body.input_type == "text":
         if len(body.content) > MAX_TEXT_CHARS:
@@ -78,7 +80,9 @@ async def preview(
                 f"Text is limited to {MAX_TEXT_CHARS} characters; use the document tab.",
             )
         found = await _call(
-            capture_flow.preview(capture, scope=body.scope, text=body.content, source="text")
+            capture_flow.preview(
+                capture, owner=user.email, scope=scope, text=body.content, source="text"
+            )
         )
     else:
         file_name = body.file_name or "document"
@@ -94,14 +98,13 @@ async def preview(
         except UnsupportedDocumentError as exc:
             raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, str(exc)) from exc
         shown, truncated = capture_flow.shorten_document(text)
-        uploaded = await _call(
-            documents(body.scope).upload(file_name, content, content_type, body.scope)
-        )
+        uploaded = await _call(documents.upload(file_name, content, content_type, scope))
         source = f"document {file_name}" + (" (first words)" if truncated else "")
         found = await _call(
             capture_flow.preview(
                 capture,
-                scope=body.scope,
+                owner=user.email,
+                scope=scope,
                 text=shown,
                 source=source,
                 truncated=truncated,
@@ -115,7 +118,8 @@ async def preview(
         "[CAPTURE]",
         op="preview",
         trace_id=trace_id,
-        scope=body.scope,
+        user=user.email,
+        scope=scope,
         input_type=body.input_type,
         mode=body.config.mode,
         category=body.config.memory_category,
@@ -154,23 +158,25 @@ async def preview(
 async def store(
     body: CaptureStoreRequest,
     request: Request,
-    directory: ScopeDirectoryDep,
-    captures: CaptureFactoryDep,
+    user: CurrentUserDep,
+    access: AccessServiceDep,
+    capture: MemoryCaptureDep,
     cache: PreviewCacheDep,
 ) -> CaptureStoreResponse:
     """Write the kept facts (mode triples) or a fresh full extraction (mode full) to memory."""
-    authorize_scopes(request, directory, [body.scope])
     found = cache.get(body.preview_id)
-    if found is None:
+    if found is None or found.owner != user.email:
         raise HTTPException(
             status.HTTP_404_NOT_FOUND, "Preview not found or expired; run preview again."
         )
-    if found.scope != body.scope:
-        raise HTTPException(status.HTTP_403_FORBIDDEN, "This preview belongs to another scope.")
+    if body.scope is not None and body.scope.strip("/") != found.scope:
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "This preview was for another scope.")
+    # Re-checked at store time: an admin may have revoked the grant since the preview.
+    await _write_scope(access, user.email, found.scope)
     try:
         outcome = await _call(
             capture_flow.store(
-                captures(body.scope),
+                capture,
                 found,
                 kept=body.kept,
                 mode=body.config.mode,
@@ -185,7 +191,8 @@ async def store(
         "[CAPTURE]",
         op="store",
         trace_id=trace_id,
-        scope=body.scope,
+        user=user.email,
+        scope=found.scope,
         preview_id=body.preview_id,
         mode=body.config.mode,
         category=body.config.memory_category,
@@ -207,19 +214,18 @@ async def store(
 @router.get("/document/{doc_id}/status", response_model=DocumentStatusResponse, responses=_ERRORS)
 async def document_status(
     doc_id: str,
-    request: Request,
-    directory: ScopeDirectoryDep,
-    documents: DocumentStoreFactoryDep,
-    shared: DocumentStoreDep,
-    scope: str | None = None,
+    user: CurrentUserDep,
+    documents: DocumentStoreDep,
+    cache: PreviewCacheDep,
 ) -> DocumentStatusResponse:
-    """Processing status of an uploaded document. Pass the uploader's scope."""
-    store: DocumentStore = shared
-    if scope is not None:
-        authorize_scopes(request, directory, [scope])
-        store = documents(scope)
+    """Processing status of a document the signed-in user uploaded (admins: any).
+
+    Agent Memory's document read takes no scope, so ownership is checked here.
+    """
+    if not is_admin(user.email) and cache.owner_of_document(doc_id) != user.email:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Document not found.")
     try:
-        detail = await _call(store.get(doc_id))
+        detail = await _call(documents.get(doc_id))
     except DocumentNotFoundError as exc:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Document not found.") from exc
     if detail.status == "failed":
@@ -236,6 +242,15 @@ async def document_status(
         updated_at=detail.updated_at,
         message=message,
     )
+
+
+async def _write_scope(access: AccessServiceDep, email: str, requested: str | None) -> str:
+    try:
+        return await access.write_scope(email, requested)
+    except ScopeNotGrantedError as exc:
+        raise HTTPException(
+            status.HTTP_403_FORBIDDEN, f"You may not write to that scope: {exc}"
+        ) from exc
 
 
 def _decode(content: str) -> bytes:
