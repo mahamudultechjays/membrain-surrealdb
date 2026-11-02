@@ -1,6 +1,6 @@
-Task: [current topic]
-Outputs: [draft and review paths]
-Completed: [finished stages and checks]
-Decisions: [confirmed choices and their sources]
-Open issues: [missing evidence or blockers]
-Next action: [one concrete continuation step]
+Task: Nov 2 Membrain deliverable, backend (Mahamudul), branch feat/capture-ak-scoping-api.
+Outputs: backend/app/api/middleware.py, backend/app/services/logger.py, backend/app/core/config.py, backend/tests/test_middleware.py; capture/documents/graph backend restored from stash@{0}.
+Completed: B1 infrastructure (API-key auth + scope context middleware, console trace logger, /health already present, user API keys read from .env). Backend half of the earlier capture-preview work restored. make test-backend: 68 passed, 100% coverage. make lint-backend: clean.
+Decisions: Demo user keys come from .env (MEMBRAIN_USER_PRIYA/ARUN/DEENA_KEY), sent as X-API-Key; valid key sets request.state.scope, unknown key gets 401, no key passes unscoped so the current frontend keeps working. Logging is console only ([TAG] key=value), no SQLite. Frontend changes from stash@{0} and the untracked frontend files are not taken on this branch (Mahamudul, Nov 2).
+Open issues: make check fails on lint-frontend because untracked frontend files (src/api/capture.ts, documents.ts) need client.ts changes that live only in stash@{0}. .env.example still lacks the three MEMBRAIN_USER_*_KEY lines (file is permission-blocked for Claude).
+Next action: B2, backend/app/services/scopes.py with hardcoded scope grants, then B3 capture endpoints against the contract in MAHAMUDUL_BACKEND_CONTEXT.md.

@@ -6,6 +6,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.api.middleware import TRACE_ID_HEADER, ScopeContextMiddleware
 from app.api.v1.router import api_router
 from app.composition import get_agent_memory_client
 from app.core.config import settings
@@ -31,12 +32,15 @@ def create_app() -> FastAPI:
         docs_url="/docs",
         lifespan=lifespan,
     )
+    # Added first so it runs inside CORS: 401s still carry CORS headers.
+    app.add_middleware(ScopeContextMiddleware, key_scopes=settings.api_key_scopes())
     app.add_middleware(
         CORSMiddleware,
         allow_origins=settings.BACKEND_CORS_ORIGINS,
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
+        expose_headers=[TRACE_ID_HEADER],
     )
     app.include_router(api_router, prefix=settings.API_V1_PREFIX)
     return app
