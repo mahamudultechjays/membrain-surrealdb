@@ -126,7 +126,7 @@ Between 15:20 and 15:29 IST, before the first test message, an identity other th
 
 Those searches returned 50 to 62 results while the person's area was still empty, so they read beyond that area.
 
-It may be the Agent Memory connector, which signs in as the user rather than with the area-limited key. If so, Claude in Cowork can search the whole context, which would weaken finding 7 for chat. This needs checking.
+**Answered on 2 Nov:** these match the SurrealDB Cloud connector in Cowork, which signs in as the person (an organisation admin) and can search every context in the organisation ([forgetting and isolation findings](2026-11-02-forgetting-isolation-cowork.md), findings 1 and 2).
 
 ### 9. Saves do not share a session
 
