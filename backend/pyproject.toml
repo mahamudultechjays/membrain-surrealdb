@@ -11,6 +11,10 @@ dependencies = [
     "pydantic-settings>=2.11.0",
     "python-multipart>=0.0.20",  # FastAPI file uploads
     "pypdf>=6.0.0",  # text from PDFs, for the document preview
+    # Entra ID SSO, as in membrain: Authlib OAuth client + signed session cookie.
+    "authlib>=1.7.2",
+    "itsdangerous>=2.2.0",
+    "httpx>=0.28.1",  # Authlib's Starlette client makes its token calls with httpx
     # Official Agent Memory client. Beta, so pinned exactly: bump deliberately.
     "surrealdb-memory==1.0.0b1",
 ]
@@ -57,6 +61,11 @@ python_version = "3.12"
 strict = true
 plugins = ["pydantic.mypy"]
 exclude = ["tests/"]
+
+[[tool.mypy.overrides]]
+# Authlib ships no type hints (same override as membrain).
+module = ["authlib.*"]
+ignore_missing_imports = true
 
 [tool.importlinter]
 root_package = "app"

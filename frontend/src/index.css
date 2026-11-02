@@ -38,3 +38,93 @@ body {
 .status [data-state='down'] {
   color: #dc2626;
 }
+
+.muted {
+  opacity: 0.7;
+}
+
+.small {
+  font-size: 0.85rem;
+}
+
+.login {
+  display: flex;
+  min-height: 100dvh;
+  align-items: center;
+  justify-content: center;
+  padding: 0 1rem;
+}
+
+.login-card {
+  width: 100%;
+  max-width: 22rem;
+  padding: 2rem;
+  border: 1px solid color-mix(in srgb, currentColor 15%, transparent);
+  border-radius: 1rem;
+}
+
+.login-card h1 {
+  margin: 0.5rem 0 0;
+  font-size: 1.25rem;
+}
+
+.login-card form {
+  display: grid;
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.login-card label {
+  display: grid;
+  gap: 0.25rem;
+  font-size: 0.9rem;
+}
+
+.login-card input {
+  padding: 0.5rem;
+  font: inherit;
+}
+
+.wordmark {
+  font-weight: 800;
+  font-size: 1.1rem;
+}
+
+.wordmark span,
+.badge {
+  color: #7c3aed;
+}
+
+button.primary {
+  width: 100%;
+  margin-top: 1rem;
+  padding: 0.6rem 1rem;
+  border: 0;
+  border-radius: 0.5rem;
+  background: #7c3aed;
+  color: white;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+button.primary:disabled {
+  opacity: 0.6;
+}
+
+.account-head {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.account-head h2 {
+  margin-bottom: 0;
+}
+
+.badge {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}

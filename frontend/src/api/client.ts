@@ -31,3 +31,28 @@ export async function apiGet<T>(
   }
   return (await response.json()) as T
 }
+
+/** POSTs JSON (or nothing) and returns the JSON reply, or undefined for 204. */
+export async function apiPost<T>(path: string, body?: unknown): Promise<T> {
+  const response = await fetch(`${BASE_URL}${path}`, {
+    method: 'POST',
+    headers: {
+      Accept: 'application/json',
+      ...(body === undefined ? {} : { 'Content-Type': 'application/json' }),
+    },
+    body: body === undefined ? undefined : JSON.stringify(body),
+  })
+  if (!response.ok) {
+    const detail = await response
+      .json()
+      .then((data: { detail?: unknown }) =>
+        typeof data.detail === 'string' ? data.detail : '',
+      )
+      .catch(() => '')
+    throw new ApiError(
+      response.status,
+      detail || `POST ${path} failed with ${response.status}`,
+    )
+  }
+  return (response.status === 204 ? undefined : await response.json()) as T
+}

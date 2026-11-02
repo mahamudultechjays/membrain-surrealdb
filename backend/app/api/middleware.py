@@ -28,6 +28,7 @@ class TraceMiddleware(BaseHTTPMiddleware):
             method=request.method,
             path=request.url.path,
             status=response.status_code,
+            user=(request.scope.get("session") or {}).get("user", {}).get("email"),
             ms=round((time.perf_counter() - started) * 1000),
         )
         return response

@@ -42,6 +42,49 @@ class Settings(BaseSettings):
     ORG_SCOPE: str = "org/spreetail"
     USER_SCOPE_ROOT: str = "org/spreetail/user"
 
+    # Login: Entra ID SSO, as in membrain (Authlib + a signed session cookie).
+    # The app registration must allow <FRONTEND_URL>/api/v1/auth/callback.
+    AZURE_CLIENT_ID: str | None = None
+    AZURE_CLIENT_SECRET: SecretStr | None = None
+    AZURE_TENANT_ID: str | None = None
+    AZURE_LOGIN_SCOPE: str = "openid profile email"
+    SESSION_SECRET_KEY: SecretStr = SecretStr("dev-insecure-change-me")
+    FRONTEND_URL: str = "http://localhost:5174"
+    # Comma-separated emails that may use the admin endpoints.
+    ADMIN_EMAILS: str = ""
+    # Email-only login for local demos. Unset: on in development when SSO is not
+    # configured, off otherwise.
+    DEV_LOGIN_ENABLED: bool | None = None
+
+    @property
+    def sso_configured(self) -> bool:
+        secret = self.AZURE_CLIENT_SECRET
+        return bool(
+            self.AZURE_CLIENT_ID and self.AZURE_TENANT_ID and secret and secret.get_secret_value()
+        )
+
+    @property
+    def dev_login_enabled(self) -> bool:
+        if self.DEV_LOGIN_ENABLED is not None:
+            return self.DEV_LOGIN_ENABLED
+        return self.ENVIRONMENT == "development" and not self.sso_configured
+
+    @property
+    def azure_metadata_url(self) -> str:
+        return (
+            f"https://login.microsoftonline.com/{self.AZURE_TENANT_ID}"
+            "/v2.0/.well-known/openid-configuration"
+        )
+
+    @property
+    def azure_redirect_uri(self) -> str:
+        return f"{self.FRONTEND_URL.rstrip('/')}{self.API_V1_PREFIX}/auth/callback"
+
+    def admin_emails(self) -> set[str]:
+        """ADMIN_EMAILS, lowercased. Accepts "a@x.com,b@x.com" or '["a@x.com"]'."""
+        raw = self.ADMIN_EMAILS.strip().strip("[]")
+        return {e.strip().strip("'\"").lower() for e in raw.split(",") if e.strip().strip("'\"")}
+
 
 @lru_cache
 def get_settings() -> Settings:
