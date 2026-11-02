@@ -8,13 +8,19 @@
 
 ## Overview
 
-Based on today's standup discussion and the mockup (`membrain-poc-v3.html`), we are building **three core screens** with real Agent Memory integration:
+Based on standup (10:30 AM) and follow-up with Arun (12:02 PM), we are building **four core screens**:
 
-1. **Capture** — text/document/chat input with preview, config selection, and storage
+1. **Capture** — text/document input with preview, config selection, and storage *(chat deferred)*
 2. **Ask** — search with layer-grouped results and source attribution
-3. **Findings** — test results, capability map, and gaps catalogue
+3. **Scoping/Access Control** — demonstrate scope isolation across users (NEW)
+4. **Findings** — test results, capability map, and gaps catalogue
 
 Both teams work in parallel to the **API contract** defined in Phase 0. This ensures FE can mock and BE can iterate independently.
+
+**Deferred (Later):**
+- Chat import tab (skip for MVP)
+- Preferences editing (show read-only only)
+- Mechanisms discovery (if time allows)
 
 ---
 
@@ -29,7 +35,7 @@ Extracts facts from input without writing. Returns preview for user approval.
 ```json
 {
   "scope": "org/user/u-0001",
-  "input_type": "text" | "document" | "chat",
+  "input_type": "text" | "document",
   "config": {
     "mode": "infer_full" | "infer_text",
     "memory_category": "identity" | "knowledge" | "context"
@@ -55,9 +61,12 @@ Extracts facts from input without writing. Returns preview for user approval.
   ],
   "stats": { "total": 7, "high_confidence": 5, "corrections": 1 },
   "truncated": false,
+  "truncated_reason": "Large document: preview shows first 500 words only",
   "cost_tokens": 4200
 }
 ```
+
+**Note:** Documents > 2000 words will show preview of first ~500 words only. UI should display truncation warning and suggest text extraction for large files.
 
 ---
 
@@ -226,6 +235,64 @@ Static gaps list.
 
 ---
 
+### Scoping/Access Control API (NEW)
+
+#### GET /api/v1/scopes/list
+List all available scopes for demonstration.
+
+**Response:**
+```json
+{
+  "scopes": [
+    {
+      "id": "org/user/u-0001",
+      "name": "Priya",
+      "type": "user",
+      "api_key": "sk_test_priya_xxx"
+    },
+    {
+      "id": "org/user/u-0002",
+      "name": "Arun",
+      "type": "user",
+      "api_key": "sk_test_arun_xxx"
+    },
+    {
+      "id": "org/user/u-0003",
+      "name": "Deena",
+      "type": "user",
+      "api_key": "sk_test_deena_xxx"
+    }
+  ]
+}
+```
+
+#### POST /api/v1/scopes/switch
+Switch active scope (for demo: simulate different users).
+
+**Request:**
+```json
+{
+  "scopes": ["org/user/u-0001", "org/user/u-0003"],
+  "api_keys": ["sk_test_priya_xxx", "sk_test_deena_xxx"]
+}
+```
+
+**Response:**
+```json
+{
+  "active_scopes": ["org/user/u-0001", "org/user/u-0003"],
+  "message": "Scope context switched (Priya + Deena)"
+}
+```
+
+**Demo Flow:**
+1. Capture as Priya → stores fact in `org/user/u-0001`
+2. Ask as Priya → ✓ retrieves (owns scope)
+3. Ask as Arun → ✗ retrieves nothing (no read grant)
+4. Switch to Priya+Deena → ✓ both can see
+
+---
+
 ## Frontend Build Plan (Arun)
 
 ### F1: Infrastructure & Setup (NOW)
@@ -257,27 +324,46 @@ Static gaps list.
 - [ ] "Upload" → `POST /api/v1/capture/preview`
 - [ ] **Poll `GET /api/v1/capture/document/{id}/status` every 2s**
 - [ ] Show stepper: queued → processing → ready → facts_readable
-
-#### F2.4: Chat Tab
-- [ ] Transcript display (mockup)
-- [ ] "Import" → `POST /api/v1/capture/preview`
+- [ ] **Add truncation warning:** "Documents > 2000 words show first ~500 words in preview"
+- [ ] Suggest: "For large files, extract text and use text tab"
 
 **Dependency:** BE `/capture/preview` & `/capture/store` by 11:30 AM
 
+**Note:** Chat import deferred to later release.
+
 ---
 
-### F3: Ask Screen (NOW – 2:00 PM)
+### F3: Ask Screen (NOW – 1:30 PM)
 - [ ] Question input + quick-pick buttons
 - [ ] `GET /api/v1/ask?q=...&scope=...`
 - [ ] Group by layer (Org | Team | Personal)
 - [ ] Source drawer per fact
 - [ ] Checkboxes: "Show inferred", "Show context block"
 
-**Dependency:** BE `/ask` endpoint by 2:00 PM
+**Dependency:** BE `/ask` endpoint by 1:30 PM
 
 ---
 
-### F4: Findings Screen (NOW – 3:00 PM)
+### F3.5: Scoping/Access Control Screen (1:30 – 2:30 PM)
+
+#### Scope Selector + Demo
+- [ ] Dropdown: Select user (Priya, Arun, Deena)
+- [ ] Multi-select: Combine scopes (e.g., Priya + Deena)
+- [ ] "Switch scope" button → calls `POST /api/v1/scopes/switch`
+- [ ] Show active scope/scopes at top
+
+#### Demo Flow
+- [ ] **Step 1:** Capture text as "Priya" → store fact
+- [ ] **Step 2:** Ask as "Priya" → ✓ retrieves own data
+- [ ] **Step 3:** Ask as "Arun" → ✗ sees nothing (scope isolation)
+- [ ] **Step 4:** Ask as "Priya + Deena" → both see Priya's data
+- [ ] Display: "✓ Scope isolation working" or "✗ Cross-scope leak detected"
+
+**Dependency:** BE `/scopes/list` & `/scopes/switch` by 2:30 PM
+
+---
+
+### F4: Findings Screen (2:30 – 3:00 PM)
 - [ ] 4 tabs: Tests | Capabilities | Gaps | Test Data
 - [ ] `GET /api/v1/findings/{tests,capabilities,gaps}`
 - [ ] Tables + filter pills
@@ -315,12 +401,11 @@ Static gaps list.
 
 ### B2: Database & Traceability (NOW – 10:30 AM)
 
-**SQLite Schema:**
+**SQLite Schema (Traceability Only):**
 ```sql
 CREATE TABLE IF NOT EXISTS capture_trace (
   id TEXT PRIMARY KEY,
   timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
-  user_id TEXT NOT NULL,
   scope TEXT NOT NULL,
   input_type TEXT NOT NULL,
   config_mode TEXT NOT NULL,
@@ -336,7 +421,6 @@ CREATE TABLE IF NOT EXISTS capture_trace (
 CREATE TABLE IF NOT EXISTS ask_trace (
   id TEXT PRIMARY KEY,
   timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
-  user_id TEXT NOT NULL,
   question TEXT NOT NULL,
   scope TEXT NOT NULL,
   facts_found INTEGER,
@@ -344,17 +428,18 @@ CREATE TABLE IF NOT EXISTS ask_trace (
   cost_tokens INTEGER,
   result_snapshot TEXT
 );
+```
 
-CREATE TABLE IF NOT EXISTS user_grants (
-  user_id TEXT NOT NULL,
-  scope TEXT NOT NULL,
-  can_read BOOLEAN DEFAULT 1,
-  can_write BOOLEAN DEFAULT 0,
-  PRIMARY KEY (user_id, scope)
-);
+**API Key Configuration (.env - Demo Only):**
+```bash
+# Test API keys stored in .env for demo (not production)
+MEMBRAIN_USER_PRIYA_KEY=sk_test_priya_f3a9c1d2e5
+MEMBRAIN_USER_ARUN_KEY=sk_test_arun_b2e7f4a1c9
+MEMBRAIN_USER_DEENA_KEY=sk_test_deena_d8c3e9f2a4
 ```
 
 - [ ] Create traceability service
+- [ ] Load API keys from .env (hardcoded for demo)
 - [ ] Log every capture/ask call
 
 ---
@@ -427,9 +512,29 @@ CREATE TABLE IF NOT EXISTS user_grants (
 
 ---
 
-### B5: Findings Endpoints (NOW – 3:00 PM)
+### B5: Scoping Endpoints (1:30 – 2:30 PM)
 
-#### B5.1–B5.3: GET /api/v1/findings/{tests,capabilities,gaps}
+#### B5.1: GET /api/v1/scopes/list
+- [ ] Load scope definitions from .env or hardcoded config
+- [ ] Return list: Priya, Arun, Deena (with API keys)
+- [ ] Return 200 + scopes array
+
+#### B5.2: POST /api/v1/scopes/switch
+- [ ] Accept array of scope IDs to switch to
+- [ ] Load corresponding API keys from .env
+- [ ] Store in request context (for next requests)
+- [ ] Return 200 + confirmation message
+
+**Subtasks:**
+- [ ] Create scope manager service
+- [ ] Load .env API keys into scope definitions
+- [ ] Unit tests
+
+---
+
+### B6: Findings Endpoints (2:30 – 3:00 PM)
+
+#### B6.1–B6.3: GET /api/v1/findings/{tests,capabilities,gaps}
 - [ ] Load static JSON from `backend/app/data/findings/`
 - [ ] Return 200 + data
 
@@ -468,14 +573,14 @@ CREATE TABLE IF NOT EXISTS user_grants (
 
 ## Synchronization Checkpoints
 
-| Time | FE Needs | BE Provides | Status |
-|------|----------|------------|--------|
-| NOW (10:30) | API schema ✓ | Shared contract ✓ | Go/no-go |
-| 10:00 AM | Health check | `/health` | Required |
-| 11:30 AM | Capture UI | `/capture/preview`, `/capture/store` | FE E2E |
-| 12:30 PM | Document polling | `/capture/document/{id}/status` | Document E2E |
-| 2:00 PM | Ask UI | `/api/v1/ask` | Ask E2E |
-| 3:00 PM | Findings UI | `/api/v1/findings/*` | Full app demo |
+| Time | FE Work | BE Work | Sync Action |
+|------|---------|---------|------------|
+| **10:30 AM** | F1: Setup | B1: Setup + SQLite | API schemas finalized ✓ |
+| **11:30 AM** | F2: Capture (text tab) | B3: `/capture/preview` + `/capture/store` | **Capture E2E test** |
+| **1:30 PM** | F2.3: Doc tab + F3: Ask | B4: `/api/v1/ask` + B5: `/scopes/list` | **SYNC BEFORE LUNCH** ← Review progress, plan afternoon |
+| **2:30 PM** | F3.5: Scoping demo | B5: `/scopes/switch` | Scoping E2E test |
+| **3:00 PM** | F4: Findings | B6: `/findings/*` | Findings E2E test |
+| **3:30–4:30 PM** | Integration testing | Bugfixes | **DEMO Ready** |
 
 ---
 
@@ -493,22 +598,25 @@ CREATE TABLE IF NOT EXISTS user_grants (
 
 ## Deliverable Checklist (EOD)
 
-### Must Have
-- [ ] Capture: text tab (input→preview→store)
-- [ ] Ask: question + layer-grouped results
-- [ ] Findings: tests, capabilities, gaps tabs
-- [ ] Scope selector on Capture
-- [ ] Config selector on Capture (mode, category)
-- [ ] All API endpoints respond correctly
-- [ ] Traceability logged to SQLite
-- [ ] No console errors
-- [ ] All tests pass
+### Must Have (EOD Deliverable)
+- [ ] **Capture screen:** Text tab (input→preview→store) ✓
+- [ ] **Capture screen:** Document tab with polling + truncation warning ✓
+- [ ] **Ask screen:** Question + layer-grouped results ✓
+- [ ] **Scoping screen:** User/scope selector + demo isolation ✓
+- [ ] **Findings screen:** Tests, capabilities, gaps tabs ✓
+- [ ] Config selector on Capture (mode, category) ✓
+- [ ] All API endpoints respond to correct schema ✓
+- [ ] Traceability logged to SQLite ✓
+- [ ] API keys loaded from .env ✓
+- [ ] No console errors ✓
+- [ ] All tests pass ✓
 
-### Nice to Have
-- [ ] Document tab with polling
-- [ ] Chat import tab
-- [ ] Source drawer on Ask
-- [ ] History accordion
+### Nice to Have (Later Release)
+- [ ] Chat import tab (deferred)
+- [ ] Preferences editing (show read-only only)
+- [ ] Mechanisms discovery (if time)
+- [ ] Source drawer with full quote + context
+- [ ] History accordion with version timeline
 
 ---
 
