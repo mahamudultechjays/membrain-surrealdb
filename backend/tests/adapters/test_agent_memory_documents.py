@@ -74,8 +74,21 @@ async def test_upload_uses_filename_as_title() -> None:
     assert docs.calls[0] == (
         "upload",
         b"%PDF",
-        {"filename": "policy.pdf", "content_type": "application/pdf", "title": "policy.pdf"},
+        {
+            "filename": "policy.pdf",
+            "content_type": "application/pdf",
+            "title": "policy.pdf",
+            "scopes": None,
+        },
     )
+
+
+async def test_upload_sends_scope() -> None:
+    docs = FakeDocuments()
+
+    await adapter(docs).upload("a.txt", b"x", "text/plain", "org/user/u-0001")
+
+    assert docs.calls[0][2]["scopes"] == ["org/user/u-0001"]
 
 
 async def test_ready_document_includes_passages_and_ranked_keywords() -> None:

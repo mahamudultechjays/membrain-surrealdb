@@ -6,6 +6,7 @@ from surrealdb_memory._models.memory import RememberResponse
 
 from app.adapters.agent_memory import AgentMemoryCapture, NotConfiguredCapture
 from app.domain.errors import MemoryNotConfiguredError, MemoryUnavailableError
+from app.domain.ports.memory_capture import FactTriple
 
 # Shape of a real `infer: "preview"` response, trimmed.
 PREVIEW = {
@@ -78,10 +79,14 @@ class FakeClient:
     def __init__(self, response: dict[str, Any] | None = None, error: Exception | None = None):
         self.response = response
         self.error = error
-        self.calls: list[tuple[str, str | None]] = []
+        self.calls: list[tuple[str | None, str | None]] = []
+        self.kwargs: dict[str, Any] = {}
 
-    async def remember(self, text: str, *, infer: str | None = None) -> RememberResponse:
+    async def remember(
+        self, text: str | None, *, infer: str | None = None, **kwargs: Any
+    ) -> RememberResponse:
         self.calls.append((text, infer))
+        self.kwargs = kwargs
         if self.error:
             raise self.error
         return RememberResponse.from_dict(self.response)
@@ -113,6 +118,38 @@ async def test_store_uses_full_extraction_and_resolves_entities() -> None:
     assert result.mode == "stored"
     assert result.turn_id == "t1"
     assert result.attributes[0].entity == "Acme Logistics"
+    assert result.attributes[0].id == "a1"
+
+
+async def test_scope_is_sent_as_write_region() -> None:
+    client = FakeClient(PREVIEW)
+
+    await AgentMemoryCapture(client).preview("text", "org/user/u-0001")  # type: ignore[arg-type]
+
+    assert client.kwargs["scopes"] == ["org/user/u-0001"]
+
+
+async def test_store_facts_sends_triples_without_text() -> None:
+    client = FakeClient(STORED)
+    fact = FactTriple("Acme Logistics", "organisation", "lead_time", "18 days", "knowledge")
+
+    result = await AgentMemoryCapture(client).store_facts(  # type: ignore[arg-type]
+        [fact], "org/user/u-0001"
+    )
+
+    assert client.calls == [(None, "triples")]
+    assert client.kwargs == {
+        "scopes": ["org/user/u-0001"],
+        "triples": [
+            {
+                "entity": {"type": "organisation", "name": "Acme Logistics"},
+                "key": "lead_time",
+                "value": "18 days",
+                "memory_category": "knowledge",
+            }
+        ],
+    }
+    assert result.mode == "stored"
 
 
 async def test_no_extraction_gives_empty_result() -> None:
@@ -136,3 +173,5 @@ async def test_not_configured() -> None:
         await NotConfiguredCapture().preview("text")
     with pytest.raises(MemoryNotConfiguredError):
         await NotConfiguredCapture().store("text")
+    with pytest.raises(MemoryNotConfiguredError):
+        await NotConfiguredCapture().store_facts([], "org/user/u-0001")

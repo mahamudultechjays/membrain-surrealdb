@@ -24,17 +24,24 @@ KEYWORDS_SHOWN = 15
 class AgentMemoryDocuments:
     """`POST /documents` once, then `GET /documents/{id}` to follow it.
 
-    Uploads go to the key's default area, with the filename as the title.
+    Uploads go to `scope` when given (else the key's default area), with the
+    filename as the title.
     There is no dry run for documents: an upload is stored immediately.
     """
 
     def __init__(self, client: AsyncMemory) -> None:
         self._client = client
 
-    async def upload(self, filename: str, content: bytes, content_type: str) -> DocumentUpload:
+    async def upload(
+        self, filename: str, content: bytes, content_type: str, scope: str | None = None
+    ) -> DocumentUpload:
         try:
             response = await self._client.documents.upload(
-                content, filename=filename, content_type=content_type, title=filename
+                content,
+                filename=filename,
+                content_type=content_type,
+                title=filename,
+                scopes=[scope] if scope else None,
             )
         except Exception as exc:
             logger.warning("Agent Memory document upload failed", exc_info=True)
@@ -69,13 +76,17 @@ class AgentMemoryDocuments:
             error=doc.error,
             passages=passages,
             keywords=keywords,
+            created_at=doc.created_at or None,
+            updated_at=doc.updated_at or None,
         )
 
 
 class NotConfiguredDocuments:
     """Stands in when AGENT_MEMORY_* settings are missing."""
 
-    async def upload(self, filename: str, content: bytes, content_type: str) -> DocumentUpload:
+    async def upload(
+        self, filename: str, content: bytes, content_type: str, scope: str | None = None
+    ) -> DocumentUpload:
         raise MemoryNotConfiguredError
 
     async def get(self, document_id: str) -> DocumentDetail:

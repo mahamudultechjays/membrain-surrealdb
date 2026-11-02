@@ -1,5 +1,6 @@
 """Port for sending text to memory and seeing what extraction makes of it."""
 
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from typing import Literal, Protocol
 
@@ -22,6 +23,8 @@ class ExtractedAttribute:
     # Name of the entity the value belongs to. Preview responses leave the
     # entity id empty, so this is None there.
     entity: str | None = None
+    # Stored attribute id; empty in previews, set once the value is saved.
+    id: str | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -59,11 +62,30 @@ class CaptureResult:
     corrections: list[str] = field(default_factory=list)
 
 
+@dataclass(frozen=True, slots=True)
+class FactTriple:
+    """One fact written as given, with no extraction: entity . key = value."""
+
+    entity_name: str
+    entity_type: str
+    key: str
+    value: str
+    memory_category: str
+
+
 class MemoryCapture(Protocol):
-    async def preview(self, text: str) -> CaptureResult:
+    async def preview(self, text: str, scope: str | None = None) -> CaptureResult:
         """Run extraction without saving anything."""
         ...
 
-    async def store(self, text: str) -> CaptureResult:
-        """Run extraction and save the result."""
+    async def store(self, text: str, scope: str | None = None) -> CaptureResult:
+        """Run extraction and save the result, in `scope` when given."""
         ...
+
+    async def store_facts(self, facts: list[FactTriple], scope: str) -> CaptureResult:
+        """Save exactly these facts in `scope`, without running extraction."""
+        ...
+
+
+# Builds the MemoryCapture that acts for one user scope.
+CaptureFactory = Callable[[str], MemoryCapture]

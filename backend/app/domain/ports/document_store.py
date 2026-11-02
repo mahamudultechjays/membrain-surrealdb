@@ -1,5 +1,6 @@
 """Port for uploading documents to memory and following their processing."""
 
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from typing import Protocol
 
@@ -33,13 +34,22 @@ class DocumentDetail:
     # Filled only once the document is ready.
     passages: list[DocumentPassage] = field(default_factory=list)
     keywords: list[str] = field(default_factory=list)
+    # ISO-8601 strings as Agent Memory sends them.
+    created_at: str | None = None
+    updated_at: str | None = None
 
 
 class DocumentStore(Protocol):
-    async def upload(self, filename: str, content: bytes, content_type: str) -> DocumentUpload:
-        """Send the file once; processing continues in the background."""
+    async def upload(
+        self, filename: str, content: bytes, content_type: str, scope: str | None = None
+    ) -> DocumentUpload:
+        """Send the file once, into `scope` when given; processing continues in the background."""
         ...
 
     async def get(self, document_id: str) -> DocumentDetail:
         """Current status, plus passages and keywords once ready."""
         ...
+
+
+# Builds the DocumentStore that acts for one user scope.
+DocumentStoreFactory = Callable[[str], DocumentStore]

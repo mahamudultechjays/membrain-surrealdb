@@ -15,6 +15,7 @@ from app.domain.ports.memory_capture import (
     ExtractedInstruction,
     ExtractedRelation,
     ExtractedUncertainty,
+    FactTriple,
 )
 
 logger = logging.getLogger(__name__)
@@ -26,20 +27,49 @@ class AgentMemoryCapture:
     Preview uses `infer: "preview"`, the documented dry run: extraction runs
     and nothing is saved. Store uses `infer: "full"`, which extracts again
     (a second model run, so the result can differ from the preview) and saves.
+    Store facts uses `infer: "triples"`: the given facts are saved as they are.
+    A scope, when given, is sent as the write region (`scopes`).
     """
 
     def __init__(self, client: AsyncMemory) -> None:
         self._client = client
 
-    async def preview(self, text: str) -> CaptureResult:
-        return await self._remember(text, infer="preview", mode="preview")
+    async def preview(self, text: str, scope: str | None = None) -> CaptureResult:
+        return await self._remember(text, scope, infer="preview", mode="preview")
 
-    async def store(self, text: str) -> CaptureResult:
-        return await self._remember(text, infer="full", mode="stored")
+    async def store(self, text: str, scope: str | None = None) -> CaptureResult:
+        return await self._remember(text, scope, infer="full", mode="stored")
 
-    async def _remember(self, text: str, *, infer: str, mode: CaptureMode) -> CaptureResult:
+    async def store_facts(self, facts: list[FactTriple], scope: str) -> CaptureResult:
+        triples = [
+            {
+                "entity": {"type": f.entity_type, "name": f.entity_name},
+                "key": f.key,
+                "value": f.value,
+                "memory_category": f.memory_category,
+            }
+            for f in facts
+        ]
+        return await self._call("triples", "stored", text=None, scopes=[scope], triples=triples)
+
+    async def _remember(
+        self, text: str, scope: str | None, *, infer: str, mode: CaptureMode
+    ) -> CaptureResult:
+        return await self._call(infer, mode, text=text, scopes=[scope] if scope else None)
+
+    async def _call(
+        self,
+        infer: str,
+        mode: CaptureMode,
+        *,
+        text: str | None,
+        scopes: list[str] | None,
+        triples: list[dict[str, Any]] | None = None,
+    ) -> CaptureResult:
         try:
-            response = await self._client.remember(text, infer=infer)
+            response = await self._client.remember(
+                text, infer=infer, scopes=scopes, triples=triples
+            )
         except Exception as exc:
             logger.warning("Agent Memory remember (%s) failed", infer, exc_info=True)
             raise MemoryUnavailableError(str(exc)) from exc
@@ -65,10 +95,13 @@ class AgentMemoryCapture:
 class NotConfiguredCapture:
     """Stands in when AGENT_MEMORY_* settings are missing."""
 
-    async def preview(self, text: str) -> CaptureResult:
+    async def preview(self, text: str, scope: str | None = None) -> CaptureResult:
         raise MemoryNotConfiguredError
 
-    async def store(self, text: str) -> CaptureResult:
+    async def store(self, text: str, scope: str | None = None) -> CaptureResult:
+        raise MemoryNotConfiguredError
+
+    async def store_facts(self, facts: list[FactTriple], scope: str) -> CaptureResult:
         raise MemoryNotConfiguredError
 
 
@@ -96,6 +129,7 @@ def _attribute(raw: dict[str, Any], names: dict[Any, str]) -> ExtractedAttribute
         value=_str(raw.get("value")),
         memory_category=_str(raw.get("memoryCategory")),
         entity=names.get(raw.get("entityId")) or None,
+        id=_str(raw.get("id")) or None,
     )
 
 

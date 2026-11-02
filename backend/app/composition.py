@@ -16,11 +16,12 @@ from app.adapters.agent_memory import (
 )
 from app.adapters.files import PdfAndTextReader
 from app.core.config import settings
-from app.domain.ports.document_store import DocumentStore
-from app.domain.ports.memory_capture import MemoryCapture
+from app.domain.ports.document_store import DocumentStore, DocumentStoreFactory
+from app.domain.ports.memory_capture import CaptureFactory, MemoryCapture
 from app.domain.ports.memory_graph import MemoryGraph
 from app.domain.ports.memory_probe import MemoryProbe
 from app.domain.ports.text_reader import DocumentTextReader
+from app.services.capture_flow import PreviewCache
 from app.services.scopes import ScopeDirectory
 
 _user_clients: dict[str, AsyncMemory] = {}
@@ -98,6 +99,27 @@ def get_document_store() -> DocumentStore:
 def get_memory_graph() -> MemoryGraph:
     client = get_agent_memory_client()
     return AgentMemoryGraph(client) if client else NotConfiguredGraph()
+
+
+def get_capture_factory() -> CaptureFactory:
+    def for_scope(scope: str) -> MemoryCapture:
+        client = client_for_scope(scope)
+        return AgentMemoryCapture(client) if client else NotConfiguredCapture()
+
+    return for_scope
+
+
+def get_document_store_factory() -> DocumentStoreFactory:
+    def for_scope(scope: str) -> DocumentStore:
+        client = client_for_scope(scope)
+        return AgentMemoryDocuments(client) if client else NotConfiguredDocuments()
+
+    return for_scope
+
+
+@lru_cache
+def get_preview_cache() -> PreviewCache:
+    return PreviewCache()
 
 
 def get_text_reader() -> DocumentTextReader:
