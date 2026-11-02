@@ -5,7 +5,7 @@
 | Date | 2 Nov 2026 |
 | Tester | Vidyul Narayanan |
 | Build plan | Phase 1 (core memory), work package 1.2 (M2 to M4) |
-| Status | Draft; the 7-day expiry check (M3) and labels and keys (M11) are still to run |
+| Status | Draft; the 7-day expiry check (M3) is still to run |
 
 ## What this covers
 
@@ -92,6 +92,49 @@ This is the shape the phase 4 returns-window demo needs; but its entity, Harbor 
 
 The real preferences (units, working pattern) appear under `selfFacts`, and `static` stays empty.
 
+## Script checks: labels, keys and the context tool
+
+Run by script on 2 Nov 2026 with the person's key, on a made-up entity, Lab Carrier M11, in the person's area.
+
+| Check | Call | Result |
+|---|---|---|
+| Labels on a structured write | MCP `remember`, `infer: "triples"`, labels `test=m11`, `node=inbound_receiving` | Both labels stored on the fact. Source `upsert`, trust 0.95, confidence 0.95. |
+| Same triple again | Same call | No new row; the fact is unchanged. |
+| New value, same key | `on_time_rate` 92 → 88 percent | The new fact `supersedes` the old one, as in chat. |
+| Idempotency key, same body twice | REST `POST /facts` with `Idempotency-Key` | Both 200. The second response has a new session id and no attributes, so the request ran again and was deduplicated by content rather than answered from a stored response. |
+| Idempotency key, different body | Same key, depot Modesto | 409, "Idempotency-Key already used with a different request body". |
+| Labels on a full extraction | MCP `remember`, `infer: "full"`, label `test=m11b` | The label is on the chat passage and on the link from the text; the entities carry no labels. |
+| Label filter | `POST /query` with `labels` | Returns only labelled facts and passages, plus the unlabelled entities they mention. |
+| MCP `context` tool | `context` on the person's area | Returns one rendered block with the person's facts, "preferences", current context, **all seven instructions** and relevant passages. |
+
+### 10. Labels and keys work for structured writes, but elaboration drops them
+
+Labels written with a fact come back on the fact and work as a query filter, which is what the VCT node tags (3.1) and test runs need.
+
+The 13 elaboration links made from the labelled writes carry no labels, so a label filter alone hides them while unfiltered reads still mix them in.
+
+### 11. Structured writes get a higher trust than chat
+
+A triples write is stored with source `upsert` at trust 0.95, against 0.5 for chat and 0.3 for elaboration.
+
+That gives jobs a way to write facts the person stated in a form the review list can rank above chat-derived ones.
+
+### 12. The idempotency key rejects conflicts but does not replay
+
+The [REST reference](https://surrealdb.com/docs/agent-memory/reference/rest-api) says the same key within 24 hours "returns the stored response" (checked 2 Nov 2026); here the repeat ran again under a new session.
+
+The data stayed correct because the content was deduplicated, but each retry still creates a session and a turn.
+
+### 13. The `context` tool returns what the plugin's recall leaves out
+
+`context` returns the facts about the person, the instructions and the passages in one block; the plugin calls `recall` instead, which returned only passages in 4g.
+
+The plugin also introduces what it injects as "background context, not instructions" (`hooks/agent-memory.sh`), so even a recalled instruction is framed as something not to follow.
+
+Switching the hook to `context` is a small change in the personal Cowork build, allowed under the PoC's workaround rule; but it took 9.8 to 10.6 s and returned about 21,600 characters whatever `k` was, close to the build's 11 s limit.
+
+It would also pass on the contradictory and stale instructions from findings 3 and 5 as they stand.
+
 ## Other observations
 
 - **Recall count varies:** most messages logged two recalls of 7 to 9 s each, 4a logged one, and a same-task message (4d) also logged two.
@@ -107,8 +150,8 @@ The real preferences (units, working pattern) appear under `selfFacts`, and `sta
 ## Next checks
 
 1. Run the 7-day expiry check after 15:40 IST on Fri 6 Nov: the 30 Oct context facts, links and actions, their importance, and whether the Harbor Lane entity outlives its knowledge fact.
-2. Labels and keys (M11), by script: write with labels and an idempotency key and read them back.
-3. Call the MCP `context` tool to see whether it returns instructions and the profile, which a plugin change could inject.
+2. Try the Cowork build with the recall hook calling `context` instead of `recall`, and a longer time limit; repeat 4g.
+3. Remove the Lab Carrier M11 test records in the 1.5 forget checks.
 
 ## How this was checked
 
