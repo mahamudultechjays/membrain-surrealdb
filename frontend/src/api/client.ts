@@ -27,13 +27,17 @@ export async function apiGet<T>(
     signal,
   })
   if (!response.ok && !acceptStatuses.includes(response.status)) {
-    throw new ApiError(response.status, `GET ${path} failed with ${response.status}`)
+    throw await errorFrom(response, `GET ${path}`)
   }
   return (await response.json()) as T
 }
 
 /** POSTs JSON (or nothing) and returns the JSON reply, or undefined for 204. */
-export async function apiPost<T>(path: string, body?: unknown): Promise<T> {
+export async function apiPost<T>(
+  path: string,
+  body?: unknown,
+  { signal }: { signal?: AbortSignal } = {},
+): Promise<T> {
   const response = await fetch(`${BASE_URL}${path}`, {
     method: 'POST',
     headers: {
@@ -41,18 +45,35 @@ export async function apiPost<T>(path: string, body?: unknown): Promise<T> {
       ...(body === undefined ? {} : { 'Content-Type': 'application/json' }),
     },
     body: body === undefined ? undefined : JSON.stringify(body),
+    signal,
   })
-  if (!response.ok) {
-    const detail = await response
-      .json()
-      .then((data: { detail?: unknown }) =>
-        typeof data.detail === 'string' ? data.detail : '',
-      )
-      .catch(() => '')
-    throw new ApiError(
-      response.status,
-      detail || `POST ${path} failed with ${response.status}`,
-    )
-  }
+  if (!response.ok) throw await errorFrom(response, `POST ${path}`)
   return (response.status === 204 ? undefined : await response.json()) as T
+}
+
+export async function apiDelete(
+  path: string,
+  { signal }: { signal?: AbortSignal } = {},
+): Promise<void> {
+  const response = await fetch(`${BASE_URL}${path}`, {
+    method: 'DELETE',
+    headers: { Accept: 'application/json' },
+    signal,
+  })
+  if (!response.ok) throw await errorFrom(response, `DELETE ${path}`)
+}
+
+/** FastAPI puts the reason in `detail`: a string, or a list of validation errors. */
+async function errorFrom(response: Response, call: string): Promise<ApiError> {
+  let reason = `${call} failed with ${response.status}`
+  try {
+    const { detail } = (await response.json()) as { detail?: unknown }
+    if (typeof detail === 'string') reason = detail
+    else if (Array.isArray(detail) && detail.length) {
+      reason = detail.map((d: { msg?: string }) => d.msg ?? String(d)).join('; ')
+    }
+  } catch {
+    // Not JSON: keep the generic message.
+  }
+  return new ApiError(response.status, reason)
 }

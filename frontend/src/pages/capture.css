@@ -1,0 +1,614 @@
+/* Capture screen. Shared tokens, controls and callouts live in index.css. */
+
+.capture h2,
+.capture h3 {
+  margin: 0;
+}
+
+.capture h2 {
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.capture h3 {
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.capture-muted {
+  color: var(--mb-muted);
+}
+
+.capture-hint {
+  display: block;
+  margin: 0;
+  font-size: 13px;
+  color: var(--mb-muted);
+}
+
+/* --- Steps --- */
+
+.capture-steps {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 20px;
+  padding: 0;
+  list-style: none;
+}
+
+.capture-steps li {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 14px 4px 4px;
+  border: 1px solid var(--mb-line);
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--mb-muted);
+  transition:
+    border-color 150ms var(--mb-ease),
+    color 150ms var(--mb-ease);
+}
+
+/* A short rule between steps reads as one sequence rather than three tags. */
+.capture-steps li + li::before {
+  content: '';
+  width: 12px;
+  height: 1px;
+  margin-left: -23px;
+  margin-right: 3px;
+  background: var(--mb-line-2);
+}
+
+.capture-steps li + li {
+  margin-left: 16px;
+}
+
+.capture-step-num {
+  display: inline-grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--mb-soft);
+  font-size: 12px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  transition:
+    background-color 150ms var(--mb-ease),
+    color 150ms var(--mb-ease);
+}
+
+.capture-steps li[data-state='current'] {
+  border-color: var(--mb-accent);
+  color: var(--mb-accent-ink);
+  font-weight: 600;
+}
+
+.capture-steps li[data-state='done'] {
+  color: var(--mb-ink-2);
+}
+
+.capture-steps li[data-state='current'] .capture-step-num,
+.capture-steps li[data-state='done'] .capture-step-num {
+  background: var(--mb-accent);
+  color: var(--mb-on-accent);
+}
+
+/* --- Layout --- */
+
+.capture-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(300px, 1fr);
+  gap: 20px;
+  align-items: start;
+}
+
+.capture-compose,
+.capture-results,
+.capture-preview,
+.capture-stored,
+.capture-doc {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.capture-results {
+  margin-top: 20px;
+}
+
+.capture-result-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 4px 12px;
+}
+
+.capture-row,
+.capture-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+}
+
+.capture-row {
+  justify-content: space-between;
+}
+
+/* The primary action closes the compose card, set off from the fields above it. */
+.capture-compose > .capture-actions {
+  padding-top: 16px;
+  border-top: 1px solid var(--mb-line);
+}
+
+.capture-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.capture-field > label,
+.capture-modes legend {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--mb-ink-2);
+}
+
+.capture-field p {
+  margin: 0;
+}
+
+/* --- Input --- */
+
+.capture-tabs {
+  display: flex;
+  gap: 4px;
+  margin: -4px 0 16px;
+  border-bottom: 1px solid var(--mb-line);
+}
+
+.capture-tabs [role='tab'] {
+  min-height: 44px;
+  padding: 0 14px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  background: none;
+  font-weight: 600;
+  color: var(--mb-muted);
+  cursor: pointer;
+  transition:
+    color 150ms var(--mb-ease),
+    border-color 150ms var(--mb-ease);
+}
+
+.capture-tabs [role='tab']:hover {
+  color: var(--mb-ink);
+  border-bottom-color: var(--mb-line-2);
+}
+
+.capture-tabs [role='tab'][aria-selected='true'] {
+  border-bottom-color: var(--mb-accent);
+  color: var(--mb-accent-ink);
+}
+
+.capture-tabs [role='tab']:focus-visible {
+  outline-offset: -2px;
+  border-radius: 4px 4px 0 0;
+}
+
+.capture textarea {
+  min-height: 180px;
+}
+
+.capture-count {
+  color: var(--mb-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.capture-count[data-over='true'] {
+  color: var(--mb-bad);
+  font-weight: 700;
+}
+
+.capture-file-meta {
+  font-size: 14px;
+}
+
+.capture-elapsed {
+  font-size: 14px;
+  color: var(--mb-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* --- Settings --- */
+
+.capture-settings {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.capture-modes {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+}
+
+.capture-modes legend {
+  padding: 0;
+  margin-bottom: 8px;
+}
+
+/* The radio sits in its own column; the label and its detail stack beside it. */
+.capture-radio {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  column-gap: 10px;
+  row-gap: 2px;
+  min-height: 44px;
+  padding: 12px 14px;
+  border: 1px solid var(--mb-line-2);
+  border-radius: var(--mb-radius-sm);
+  cursor: pointer;
+  transition:
+    border-color 150ms var(--mb-ease),
+    background-color 150ms var(--mb-ease);
+}
+
+.capture-radio:hover {
+  border-color: var(--mb-muted);
+}
+
+.capture-radio[data-checked='true'] {
+  border-color: var(--mb-accent);
+  background: var(--mb-accent-soft);
+}
+
+.capture-radio:has(input:focus-visible) {
+  outline: 2px solid var(--mb-accent);
+  outline-offset: 2px;
+}
+
+.capture-radio input {
+  grid-row: span 2;
+  width: 16px;
+  height: 16px;
+  margin: 3px 0 0;
+}
+
+.capture-radio input:focus-visible {
+  outline: none;
+}
+
+.capture-radio-label {
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.capture-radio-detail {
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--mb-muted);
+}
+
+/* --- Preview and store --- */
+
+.capture-stats {
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.capture-warn {
+  margin: 0;
+  padding: 10px 14px;
+  border: 1px solid color-mix(in srgb, var(--mb-warn) 26%, transparent);
+  border-radius: var(--mb-radius-sm);
+  background: var(--mb-warn-soft);
+  color: var(--mb-warn);
+  font-size: 14px;
+}
+
+/* Stored is the end of the flow: mark it as the success it is. */
+.capture-stored {
+  border-color: color-mix(in srgb, var(--mb-accent) 45%, var(--mb-line));
+}
+
+.capture-stored h2 {
+  color: var(--mb-accent-ink);
+}
+
+.capture-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.capture-table th {
+  text-align: left;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--mb-muted);
+  padding: 8px;
+  border-bottom: 1px solid var(--mb-line-2);
+}
+
+.capture-table td {
+  padding: 10px 8px;
+  border-bottom: 1px solid var(--mb-line);
+  vertical-align: top;
+  overflow-wrap: anywhere;
+}
+
+.capture-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.capture-table tbody tr {
+  transition: background-color 120ms var(--mb-ease);
+}
+
+.capture-table tbody tr:hover {
+  background: var(--mb-surface);
+}
+
+.capture-fact {
+  font-size: 13px;
+  color: var(--mb-ink);
+}
+
+.capture-facts tr[data-kept='false'] .capture-fact {
+  color: var(--mb-muted);
+}
+
+.capture-entity {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+  margin-top: 8px;
+  font-size: 13px;
+  color: var(--mb-muted);
+}
+
+.capture-entity select {
+  width: auto;
+  min-width: 220px;
+  max-width: 100%;
+  min-height: 40px;
+}
+
+.capture-check {
+  display: inline-grid;
+  place-items: center;
+  min-width: 44px;
+  min-height: 44px;
+  margin: -12px -8px;
+  cursor: pointer;
+}
+
+.capture-check input {
+  width: 18px;
+  height: 18px;
+  margin: 0;
+}
+
+.capture-check:has(input:disabled) {
+  cursor: not-allowed;
+}
+
+.capture-notes {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.capture-corrections ul,
+.capture-history {
+  margin: 8px 0 0;
+  padding-left: 18px;
+}
+
+/* In the stored card the heading and its list are separate flex items: pull them together. */
+.capture-stored > h3 + .capture-history {
+  margin-top: -8px;
+}
+
+.capture-corrections li,
+.capture-history li {
+  padding: 2px 0;
+}
+
+.capture-expired p {
+  margin: 0 0 10px;
+}
+
+/* Heading and status tag on one line; the message sits under them. */
+.capture-doc {
+  gap: 8px;
+}
+
+.capture-doc-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.capture-doc-body > * + * {
+  margin-top: 10px;
+}
+
+.capture-doc-status {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+  margin: 0;
+  color: var(--mb-ink-2);
+}
+
+.capture-doc-spinner {
+  flex: none;
+  width: 14px;
+  height: 14px;
+  border: 2px solid var(--mb-line-2);
+  border-top-color: var(--mb-accent);
+  border-radius: 50%;
+  animation: capture-doc-spin 0.9s linear infinite;
+}
+
+@keyframes capture-doc-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .capture-doc-spinner {
+    animation: none;
+  }
+}
+
+/* --- Developer details: the API calls, folded away --- */
+
+.capture-trace {
+  margin-top: 32px;
+  padding-top: 12px;
+  border-top: 1px dashed var(--mb-line-2);
+  color: var(--mb-muted);
+}
+
+.capture-trace .capture-trace-title {
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+}
+
+/* A drawn chevron replaces the browser's marker, which inline-flex hides. */
+.capture-trace .capture-trace-title::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  margin: 0 10px 0 2px;
+  border-right: 1.5px solid currentColor;
+  border-bottom: 1.5px solid currentColor;
+  transform: rotate(-45deg);
+  transition: transform 150ms var(--mb-ease);
+}
+
+.capture-trace[open] .capture-trace-title::before {
+  transform: rotate(45deg);
+}
+
+.capture-trace .capture-trace-title::-webkit-details-marker {
+  display: none;
+}
+
+.capture-trace .capture-trace-title:hover {
+  color: var(--mb-ink-2);
+}
+
+.capture-trace[open] .capture-trace-title {
+  margin-bottom: 6px;
+}
+
+.capture-trace ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.capture-trace p,
+.capture-trace li {
+  margin: 0;
+  padding: 2px 0;
+  overflow-wrap: anywhere;
+}
+
+/* --- Narrow screens: one column, tables become stacked cards --- */
+
+@media (max-width: 860px) {
+  .capture-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 640px) {
+  .capture-steps li + li {
+    margin-left: 0;
+  }
+
+  .capture-steps li + li::before {
+    display: none;
+  }
+
+  .capture-table thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+  }
+
+  .capture-table tr {
+    display: block;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--mb-line);
+  }
+
+  .capture-table tbody tr:last-child {
+    border-bottom: 0;
+  }
+
+  .capture-table tbody tr:hover {
+    background: none;
+  }
+
+  .capture-table td {
+    display: grid;
+    grid-template-columns: 72px minmax(0, 1fr);
+    gap: 8px;
+    padding: 4px 0;
+    border: 0;
+  }
+
+  /* Every child takes the value column; only the label sits in the first. */
+  .capture-table td > * {
+    grid-column: 2;
+    justify-self: start;
+    max-width: 100%;
+  }
+
+  .capture-table td::before {
+    content: attr(data-label);
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--mb-muted);
+  }
+
+  .capture-check {
+    margin: -10px 0;
+    justify-content: start;
+  }
+
+  .capture-entity select {
+    min-width: 0;
+    width: 100%;
+  }
+}

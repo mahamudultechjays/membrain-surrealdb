@@ -87,8 +87,16 @@ class ExtractedFactOut(BaseModel):
     type: str
     source: str
     note: str | None
-    # False when the fact can only be stored with mode full.
+    # False when the fact can only be stored with mode full, unless...
     storable: bool
+    # ...it needs_entity: the user picks one of the preview's entities for it,
+    # and it can then be stored as a triple.
+    needs_entity: bool = False
+
+
+class EntityChoiceOut(BaseModel):
+    name: str
+    entity_type: str
 
 
 class CaptureStats(BaseModel):
@@ -108,6 +116,8 @@ class CapturePreviewResponse(BaseModel):
     # Set for documents: the upload to poll at /capture/document/{doc_id}/status.
     doc_id: str | None = None
     corrections: list[str]
+    # Entities the preview found, for facts with needs_entity.
+    entities: list[EntityChoiceOut] = Field(default_factory=list)
     trace_id: str | None
 
 
@@ -117,6 +127,8 @@ class CaptureStoreRequest(BaseModel):
     scope: str | None = None
     kept: list[str] = Field(default_factory=list)
     config: CaptureConfig = CaptureConfig()
+    # Fact id -> entity name, for kept facts with needs_entity (mode triples).
+    entity_choices: dict[str, str] = Field(default_factory=dict)
     trace_tags: dict[str, str] | None = None
 
 

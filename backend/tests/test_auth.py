@@ -43,8 +43,13 @@ def test_dev_login_creates_default_scopes_once(
     assert body["email"] == "priya.shah@x.com"
     assert body["is_admin"] is False
     assert body["grants"] == [
-        {"scope_path": "org/spreetail", "access": "read", "layer": "org"},
-        {"scope_path": "org/spreetail/user/priya_shah", "access": "write", "layer": "personal"},
+        {"scope_path": "org/spreetail", "access": "read", "layer": "org", "owner": None},
+        {
+            "scope_path": "org/spreetail/user/priya_shah",
+            "access": "write",
+            "layer": "personal",
+            "owner": "Priya Shah",
+        },
     ]
     assert registry.ensured == ["org/spreetail/user/priya_shah"]
 

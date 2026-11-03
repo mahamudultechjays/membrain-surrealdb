@@ -34,6 +34,28 @@ def test_lists_users_with_their_grants(client: TestClient) -> None:
     ]
 
 
+def test_grants_name_whose_space_each_scope_is(client: TestClient) -> None:
+    priya_space = "org/spreetail/user/priya_shah"
+    client.post(
+        "/api/v1/admin/users/admin@x.com/grants",
+        json={"scope_path": priya_space, "access": "read", "layer": "team"},
+    )
+
+    # The session is the admin's: they now read Priya's space through a team grant.
+    owners = {g["scope_path"]: g["owner"] for g in client.get("/api/v1/auth/me").json()["grants"]}
+    users = {u["email"]: u for u in client.get("/api/v1/admin/users").json()["users"]}
+
+    assert owners == {
+        "org/spreetail": None,
+        "org/spreetail/user/ada_admin": "Ada Admin",
+        priya_space: "Priya Shah",
+    }
+    assert {g["scope_path"]: g["owner"] for g in users[PRIYA_EMAIL]["grants"]} == {
+        "org/spreetail": None,
+        priya_space: "Priya Shah",
+    }
+
+
 def test_grant_then_revoke_a_team_scope(client: TestClient, registry: FakeRegistry) -> None:
     url = f"/api/v1/admin/users/{PRIYA_EMAIL}/grants"
 
@@ -42,7 +64,9 @@ def test_grant_then_revoke_a_team_scope(client: TestClient, registry: FakeRegist
     again = client.delete(url, params={"scope_path": OPS})
 
     assert granted.status_code == 201
-    assert {"scope_path": OPS, "access": "read", "layer": "team"} in granted.json()["grants"]
+    assert {"scope_path": OPS, "access": "read", "layer": "team", "owner": None} in granted.json()[
+        "grants"
+    ]
     assert granted.json()["name"] == "Priya Shah"
     assert registry.ensured[-1] == OPS
     assert revoked.status_code == 204

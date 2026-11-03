@@ -36,6 +36,7 @@ from app.schemas.capture import (
     CaptureStoreRequest,
     CaptureStoreResponse,
     DocumentStatusResponse,
+    EntityChoiceOut,
     ExtractedFactOut,
 )
 from app.services import capture_flow, logger
@@ -138,6 +139,7 @@ async def preview(
                 source=f.source,
                 note=f.note,
                 storable=f.triple is not None,
+                needs_entity=f.unlinked is not None and bool(found.entities),
             )
             for f in found.facts
         ],
@@ -150,6 +152,7 @@ async def preview(
         truncated_reason=capture_flow.TRUNCATED_REASON if found.truncated else None,
         doc_id=found.doc_id,
         corrections=found.corrections,
+        entities=[EntityChoiceOut(name=e.name, entity_type=e.entity_type) for e in found.entities],
         trace_id=trace_id,
     )
 
@@ -181,6 +184,7 @@ async def store(
                 kept=body.kept,
                 mode=body.config.mode,
                 memory_category=body.config.memory_category,
+                entity_choices=body.entity_choices,
             )
         )
     except capture_flow.CaptureFlowError as exc:

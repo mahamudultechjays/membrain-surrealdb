@@ -97,11 +97,15 @@ async def logout(request: Request) -> None:
 async def me(user: CurrentUserDep, access: AccessServiceDep) -> MeResponse:
     """Who is signed in, whether they are an admin, and the scopes they hold."""
     grants = await access.grants_for(user.email)
+    owners = await access.owners()
     return MeResponse(
         email=user.email,
         name=user.name,
         is_admin=is_admin(user.email),
-        grants=[GrantOut.model_validate(g) for g in grants],
+        grants=[
+            GrantOut.model_validate(g).model_copy(update={"owner": owners.get(g.scope_path)})
+            for g in grants
+        ],
     )
 
 

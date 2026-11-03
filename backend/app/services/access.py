@@ -76,6 +76,18 @@ class AccessService:
     async def all_grants(self) -> list[ScopeGrant]:
         return await self._grants.all_grants()
 
+    async def owners(self) -> dict[str, str]:
+        """Scope path -> name of the user who holds it as their personal scope.
+
+        Two accounts can share a personal scope (it is named from the display
+        name); the first by email wins, since they share the name too.
+        """
+        owners: dict[str, str] = {}
+        for grant in await self._grants.all_grants():
+            if grant.layer == "personal":
+                owners.setdefault(grant.scope_path, grant.name)
+        return owners
+
     async def grant(
         self, email: str, name: str, scope_path: str, access: Access, layer: LayerName
     ) -> ScopeGrant:

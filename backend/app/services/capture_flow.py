@@ -50,6 +50,15 @@ class ReviewFact:
     note: str | None = None
     # What gets written with mode triples; None when the fact can't be a triple.
     triple: FactTriple | None = None
+    # An attribute Agent Memory gave no entity for (key, value, category): the
+    # user can pick its entity, which turns it into a triple at store time.
+    unlinked: tuple[str, str, str] | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class EntityChoice:
+    name: str
+    entity_type: str
 
 
 @dataclass(frozen=True, slots=True)
@@ -63,6 +72,8 @@ class Preview:
     corrections: list[str] = field(default_factory=list)
     truncated: bool = False
     doc_id: str | None = None
+    # Entities the preview found; the choices offered for an unlinked fact.
+    entities: list[EntityChoice] = field(default_factory=list)
 
     @property
     def uncertain(self) -> int:
@@ -143,6 +154,7 @@ async def preview(
         corrections=list(result.corrections),
         truncated=truncated,
         doc_id=doc_id,
+        entities=[EntityChoice(e.name, e.entity_type) for e in result.entities],
     )
 
 
@@ -151,8 +163,16 @@ def review_facts(result: CaptureResult, *, source: str) -> list[ReviewFact]:
     only_entity = result.entities[0].name if len(result.entities) == 1 else None
     facts: list[ReviewFact] = []
 
-    def add(text: str, category: str, triple: FactTriple | None, note: str | None) -> None:
-        facts.append(ReviewFact(f"e{len(facts) + 1}", text, category, source, note, triple))
+    def add(
+        text: str,
+        category: str,
+        triple: FactTriple | None,
+        note: str | None,
+        unlinked: tuple[str, str, str] | None = None,
+    ) -> None:
+        facts.append(
+            ReviewFact(f"e{len(facts) + 1}", text, category, source, note, triple, unlinked)
+        )
 
     described: set[str] = set()
     for a in result.attributes:
@@ -163,6 +183,7 @@ def review_facts(result: CaptureResult, *, source: str) -> list[ReviewFact]:
             a.memory_category,
             triple,
             None if entity else NO_ENTITY_NOTE,
+            None if entity else (a.key, a.value, a.memory_category),
         )
         if entity:
             described.add(entity)
@@ -185,11 +206,13 @@ async def store(
     kept: list[str],
     mode: StoreMode,
     memory_category: str | None,
+    entity_choices: dict[str, str] | None = None,
 ) -> StoreOutcome:
     by_id = {f.id: f for f in stored.facts}
     unknown = [fact_id for fact_id in kept if fact_id not in by_id]
     if unknown:
         raise CaptureFlowError(f"Unknown fact ids for this preview: {', '.join(unknown)}")
+    linked = _link_entities(stored, entity_choices or {})
 
     if mode == "full":
         result = await capture.store(stored.text, stored.scope)
@@ -197,9 +220,9 @@ async def store(
         triples: list[FactTriple] = []
     else:
         triples = [
-            _recategorised(f.triple, memory_category)
-            for f in (by_id[fact_id] for fact_id in kept)
-            if f.triple is not None
+            _recategorised(triple, memory_category)
+            for triple in (by_id[fact_id].triple or linked.get(fact_id) for fact_id in kept)
+            if triple is not None
         ]
         if not triples:
             raise CaptureFlowError(
@@ -227,6 +250,22 @@ def _triple(entity: str, types: dict[str, str], key: str, value: str, category: 
         value=value,
         memory_category=category if category in CATEGORIES else "knowledge",
     )
+
+
+def _link_entities(stored: Preview, choices: dict[str, str]) -> dict[str, FactTriple]:
+    """Triples for unlinked facts whose entity the user picked from the preview's entities."""
+    by_id = {f.id: f for f in stored.facts}
+    types = {e.name: e.entity_type for e in stored.entities}
+    linked: dict[str, FactTriple] = {}
+    for fact_id, entity in choices.items():
+        fact = by_id.get(fact_id)
+        if fact is None or fact.unlinked is None:
+            raise CaptureFlowError(f"Fact {fact_id} does not need an entity choice")
+        if entity not in types:
+            raise CaptureFlowError(f"{entity!r} is not an entity found in this preview")
+        key, value, category = fact.unlinked
+        linked[fact_id] = _triple(entity, types, key, value, category)
+    return linked
 
 
 def _recategorised(triple: FactTriple, category: str | None) -> FactTriple:

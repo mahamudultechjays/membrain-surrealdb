@@ -137,6 +137,7 @@ def test_text_preview_returns_reviewable_facts(client: TestClient, capture: Fake
             "source": "text",
             "note": None,
             "storable": True,
+            "needs_entity": False,
         },
         {
             "id": "e2",
@@ -145,8 +146,10 @@ def test_text_preview_returns_reviewable_facts(client: TestClient, capture: Fake
             "source": "text",
             "note": "uncertain: hedged",
             "storable": True,
+            "needs_entity": False,
         },
     ]
+    assert body["entities"] == [{"name": "Acme", "entity_type": "organisation"}]
     assert body["stats"] == {"total": 2, "uncertain": 1, "corrections": 1}
     assert "cost_tokens" not in body
     assert body["truncated"] is False

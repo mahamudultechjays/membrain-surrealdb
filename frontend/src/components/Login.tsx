@@ -30,36 +30,42 @@ export default function Login({ onSignedIn }: LoginProps) {
 
   return (
     <main className="login">
-      <div className="login-card">
-        <div className="wordmark">
-          Mem<span>Brain</span>
+      <div className="panel login-card">
+        <div className="brand login-brand">
+          MemBrain <span className="mono">POC</span>
         </div>
         <h1>Welcome back</h1>
-        <p className="muted">Sign in with your Spreetail account.</p>
+        <p className="login-muted">Sign in with your Spreetail account.</p>
 
         {config.status === 'loading' && (
-          <p className="muted">Checking sign-in options…</p>
+          <p className="login-muted">Checking sign-in options…</p>
         )}
-        {config.status === 'error' && <p role="alert">The API is unreachable.</p>}
+        {config.status === 'error' && (
+          <p className="error" role="alert">
+            The API is unreachable.
+          </p>
+        )}
 
         {config.status === 'success' && config.data.sso_enabled && (
           <>
             <button
               type="button"
-              className="primary"
+              className="btn login-sso"
               onClick={() => window.location.assign(SSO_LOGIN_URL)}
             >
               Login with SSO
             </button>
-            <p className="muted small">
+            <p className="login-muted login-small">
               You&apos;ll be redirected to Microsoft Entra ID.
             </p>
           </>
         )}
 
         {config.status === 'success' && config.data.dev_login_enabled && (
-          <form onSubmit={submit} aria-label="Developer sign-in">
-            <p className="muted small">Development sign-in (SSO not configured)</p>
+          <form className="login-form" onSubmit={submit} aria-label="Developer sign-in">
+            <p className="login-muted login-small">
+              Development sign-in (SSO not configured)
+            </p>
             <label>
               Email
               <input
@@ -79,13 +85,17 @@ export default function Login({ onSignedIn }: LoginProps) {
                 autoComplete="name"
               />
             </label>
-            <button type="submit" className="primary" disabled={busy}>
+            <button type="submit" className="btn" disabled={busy}>
               {busy ? 'Signing in…' : 'Sign in'}
             </button>
           </form>
         )}
 
-        {error && <p role="alert">{error}</p>}
+        {error && (
+          <p className="error" role="alert">
+            {error}
+          </p>
+        )}
       </div>
     </main>
   )

@@ -18,6 +18,9 @@ class GrantOut(BaseModel):
     scope_path: str
     access: Literal["read", "write"]
     layer: Literal["org", "team", "personal"]
+    # Whose space this is: the name of the user holding it as their personal
+    # scope. None for org and team scopes nobody owns.
+    owner: str | None = None
 
 
 class MeResponse(BaseModel):

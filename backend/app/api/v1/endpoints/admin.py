@@ -32,13 +32,14 @@ async def list_users(admin: AdminUserDep, access: AccessServiceDep) -> UsersResp
     by_user: dict[str, list[ScopeGrant]] = defaultdict(list)
     for grant in await access.all_grants():
         by_user[grant.email].append(grant)
+    owners = await access.owners()
     return UsersResponse(
         users=[
             UserGrants(
                 email=email,
                 name=grants[0].name,
                 is_admin=is_admin(email),
-                grants=[GrantOut.model_validate(g) for g in grants],
+                grants=_grants_out(grants, owners),
             )
             for email, grants in by_user.items()
         ]
@@ -112,8 +113,16 @@ async def _user(access: AccessServiceDep, email: str) -> UserGrants:
         email=email.strip().lower(),
         name=grants[0].name if grants else email,
         is_admin=is_admin(email),
-        grants=[GrantOut.model_validate(g) for g in grants],
+        grants=_grants_out(grants, await access.owners()),
     )
+
+
+def _grants_out(grants: list[ScopeGrant], owners: dict[str, str]) -> list[GrantOut]:
+    """The grants as returned, each with the name of whose space it is."""
+    return [
+        GrantOut.model_validate(g).model_copy(update={"owner": owners.get(g.scope_path)})
+        for g in grants
+    ]
 
 
 def _under_org(path: str) -> str:
