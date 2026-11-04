@@ -1,11 +1,14 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { askApi, type AskApi, type AskResponse } from '@/api/ask'
 import type { Me } from '@/api/auth'
+import type { ChatApi } from '@/api/chat'
 import { ApiError } from '@/api/client'
 import AskAnswer from '@/components/ask/AskAnswer'
+import AskChat from '@/components/ask/AskChat'
 import AskLoading from '@/components/ask/AskLoading'
 import { readAreas, spaceName } from '@/components/ask/layers'
 import HeaderSlot from '@/components/HeaderSlot'
+import { useHashSubRoute } from '@/hooks/useHashRoute'
 import ScopePicker from '@/components/ScopePicker'
 import '@/pages/ask.css'
 
@@ -31,7 +34,45 @@ interface Props {
   api?: AskApi
 }
 
-export default function AskPage({ me, api = askApi }: Props) {
+const MODES = ['search', 'chat'] as const
+type Mode = (typeof MODES)[number]
+const MODE_LABELS: Record<Mode, string> = { search: 'Search', chat: 'Chat' }
+const MODE_INTROS: Record<Mode, string> = {
+  search:
+    'Answers come from every scope you can read: org first, then team, then personal. Asking never writes.',
+  chat: 'A written answer from every scope you can read, citing its sources. Follow-ups keep the context.',
+}
+
+/** Ask has two modes, each with its own URL: #/ask/search and #/ask/chat. */
+export default function AskPage({
+  me,
+  api = askApi,
+  chatApi,
+}: Props & { chatApi?: ChatApi }) {
+  const mode = useHashSubRoute(MODES, 'search')
+  return (
+    <main className="page ask-page">
+      <div className="page-head">
+        <h1>Ask</h1>
+        <nav className="ask-modes" aria-label="Ask mode">
+          {MODES.map((m) => (
+            <a key={m} href={`#/ask/${m}`} aria-current={m === mode ? 'page' : undefined}>
+              {MODE_LABELS[m]}
+            </a>
+          ))}
+        </nav>
+        <p>{MODE_INTROS[mode]}</p>
+      </div>
+      {mode === 'chat' ? (
+        <AskChat me={me} api={chatApi} />
+      ) : (
+        <AskSearch me={me} api={api} />
+      )}
+    </main>
+  )
+}
+
+function AskSearch({ me, api = askApi }: Props) {
   // Spaces left out of the search. Everything is searched until the user
   // unticks something, so a newly granted space is included straight away.
   const [excluded, setExcluded] = useState<string[]>([])
@@ -98,15 +139,7 @@ export default function AskPage({ me, api = askApi }: Props) {
   }
 
   return (
-    <main className="page ask-page">
-      <div className="page-head">
-        <h1>Ask</h1>
-        <p>
-          Answers come from every scope you can read: org first, then team, then personal.
-          Asking never writes.
-        </p>
-      </div>
-
+    <>
       <section className="panel ask-who" aria-label="Spaces searched">
         {options.length > 1 && (
           <HeaderSlot>
@@ -177,7 +210,7 @@ export default function AskPage({ me, api = askApi }: Props) {
         {run.status === 'error' && <AskFailure error={run.error} />}
         {run.status === 'success' && <AskAnswer answer={run.answer} who={run.who} />}
       </div>
-    </main>
+    </>
   )
 }
 

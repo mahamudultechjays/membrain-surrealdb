@@ -3,6 +3,15 @@ import type { AdminApi, UserGrants } from '@/api/admin'
 import type { Me } from '@/api/auth'
 import AdminPage from '@/pages/AdminPage'
 
+// The memory jobs at the bottom of the page has its own tests; keep it quiet here.
+vi.mock('@/api/lab', async (original) => ({
+  ...(await original<typeof import('@/api/lab')>()),
+  labApi: {
+    scopes: () => Promise.resolve([]),
+    run: () => Promise.reject(new Error('not in these tests')),
+  },
+}))
+
 const ROOT = 'org/spreetail'
 const ME: Me = {
   email: 'priya@spreetail.com',
