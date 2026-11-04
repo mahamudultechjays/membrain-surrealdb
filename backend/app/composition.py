@@ -75,6 +75,8 @@ def _connect(api_key: str, *, timeout: float | None = None) -> AsyncMemory:
 
 # Consolidation and reflection run a model over the scope: allow minutes, not seconds.
 LAB_TIMEOUT_SECONDS = 180.0
+# Chat and reflect answers took 12-23 s live (2026-11-04): more than the default leaves spare.
+CHAT_TIMEOUT_SECONDS = 90.0
 
 
 async def close_clients() -> None:
@@ -122,7 +124,14 @@ def get_memory_recall() -> MemoryRecall:
 def get_memory_chat() -> AgentMemoryChat | NotConfiguredChat:
     """One per process: it holds the keys minted for each user's chats."""
     client = get_agent_memory_client()
-    return AgentMemoryChat(client, _connect) if client else NotConfiguredChat()
+    if client is None:
+        return NotConfiguredChat()
+    return AgentMemoryChat(client, lambda key: _connect(key, timeout=CHAT_TIMEOUT_SECONDS))
+
+
+def get_memory_reflect() -> AgentMemoryChat | NotConfiguredChat:
+    """Reflect shares chat's adapter, so a user's chat key serves both."""
+    return get_memory_chat()
 
 
 @lru_cache

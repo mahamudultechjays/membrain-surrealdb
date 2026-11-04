@@ -518,3 +518,14 @@
   justify-content: flex-end;
   gap: 8px;
 }
+
+/* --- Reflect --- */
+
+.reflect-entry {
+  display: grid;
+  gap: 12px;
+}
+
+.reflect-evidence-label {
+  margin: 4px 0 0;
+}

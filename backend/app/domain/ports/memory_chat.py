@@ -45,6 +45,22 @@ class ChatReply:
     facts_saved: int = 0
 
 
+@dataclass(frozen=True, slots=True)
+class Reflection:
+    """A synthesis across the readable scopes, with what it drew on."""
+
+    text: str
+    # The stored memories the answer was built from, as Agent Memory quotes them.
+    evidence: list[str] = field(default_factory=list)
+    trace_id: str | None = None
+
+
+class MemoryReflect(Protocol):
+    async def reflect(self, question: str, *, access: ChatAccess) -> Reflection:
+        """Synthesise an answer from `access.read` only. Never saves anything."""
+        ...
+
+
 class MemoryChat(Protocol):
     async def chat(self, message: str, *, access: ChatAccess, session_id: str | None) -> ChatReply:
         """Answer `message` from `access.read` only, storing it in `access.write`."""
