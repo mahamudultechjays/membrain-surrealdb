@@ -5,6 +5,7 @@ import { ApiError } from '@/api/client'
 import { mockAskApi } from '@/api/mock/ask'
 import { meOf } from '@/api/mock/auth'
 import { setMockLatencyScale, userByEmail } from '@/api/mock/backend'
+import { clearChats } from '@/components/ask/chatStore'
 import AskPage from '@/pages/AskPage'
 
 beforeAll(() => setMockLatencyScale(0))
@@ -246,5 +247,39 @@ describe('AskPage', () => {
       screen.getByRole('button', { name: 'Search in: All spaces' }),
     ).toBeInTheDocument()
     expect(api.ask).not.toHaveBeenCalled()
+  })
+})
+
+describe('AskPage modes', () => {
+  afterEach(() => {
+    window.location.hash = ''
+    clearChats()
+  })
+
+  it('opens in search mode, with the mode switch pointing at the two sub-URLs', async () => {
+    await renderPage()
+
+    const modes = screen.getByRole('navigation', { name: 'Ask mode' })
+    const search = within(modes).getByRole('link', { name: 'Search' })
+    expect(search).toHaveAttribute('aria-current', 'page')
+    expect(search).toHaveAttribute('href', '#/ask/search')
+    expect(within(modes).getByRole('link', { name: 'Chat' })).toHaveAttribute(
+      'href',
+      '#/ask/chat',
+    )
+    expect(screen.getByLabelText('Question')).toBeInTheDocument()
+  })
+
+  it('#/ask/chat shows the chat instead of search', () => {
+    window.location.hash = '#/ask/chat'
+
+    render(<AskPage me={PRIYA} api={mockAskApi} />)
+
+    expect(screen.getByLabelText('Message')).toBeInTheDocument()
+    expect(screen.queryByLabelText('Question')).not.toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Chat' })).toHaveAttribute(
+      'aria-current',
+      'page',
+    )
   })
 })

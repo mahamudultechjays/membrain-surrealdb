@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { getMe, logout, type Me } from '@/api/auth'
+import { clearChats } from '@/components/ask/chatStore'
 import { ApiError } from '@/api/client'
 import { USE_MOCK_API } from '@/api/config'
 import Account from '@/components/Account'
@@ -56,16 +57,22 @@ export default function App() {
     return <Login onSignedIn={(me) => setSession({ status: 'signed-in', me })} />
   }
 
+  // Chats are kept until sign-out, so the next person on this browser starts clean.
+  const signedOut = () => {
+    clearChats()
+    setSession({ status: 'signed-out' })
+  }
+
   const signOut = async () => {
     await logout().catch(() => undefined)
-    setSession({ status: 'signed-out' })
+    signedOut()
   }
 
   return (
     <Shell
       me={session.me}
       onMe={(me) => setSession({ status: 'signed-in', me })}
-      onSignedOut={() => setSession({ status: 'signed-out' })}
+      onSignedOut={signedOut}
       onSignOut={() => void signOut()}
     />
   )

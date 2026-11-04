@@ -7,6 +7,7 @@ from surrealdb_memory import AsyncMemory
 from app.adapters.agent_memory import (
     AgentMemoryBrain,
     AgentMemoryCapture,
+    AgentMemoryChat,
     AgentMemoryDocuments,
     AgentMemoryGraph,
     AgentMemoryProbe,
@@ -14,6 +15,7 @@ from app.adapters.agent_memory import (
     AgentMemoryScopeRegistry,
     NotConfiguredBrain,
     NotConfiguredCapture,
+    NotConfiguredChat,
     NotConfiguredDocuments,
     NotConfiguredGraph,
     NotConfiguredProbe,
@@ -34,6 +36,7 @@ from app.domain.ports.text_reader import DocumentTextReader
 from app.domain.ports.user_scopes import UserScopeRepository
 from app.services.access import AccessService
 from app.services.capture_flow import PreviewCache
+from app.services.chat_flow import ChatSessions
 
 
 @lru_cache
@@ -58,7 +61,20 @@ def get_agent_memory_client() -> AsyncMemory | None:
     )
 
 
+def _connect(api_key: str) -> AsyncMemory:
+    """A client on the same Context as the admin client, with another key."""
+    return AsyncMemory(
+        settings.AGENT_MEMORY_CONTEXT or "",
+        endpoint=(settings.AGENT_MEMORY_ENDPOINT or "").rstrip("/"),
+        api_key=api_key,
+        timeout=settings.AGENT_MEMORY_TIMEOUT_SECONDS,
+    )
+
+
 async def close_clients() -> None:
+    # Chat first: deleting its minted keys needs the admin client still open.
+    if get_memory_chat.cache_info().currsize:
+        await get_memory_chat().close()
     client = get_agent_memory_client()
     if client is not None:
         await client.close()
@@ -92,6 +108,18 @@ def get_memory_graph() -> MemoryGraph:
 def get_memory_recall() -> MemoryRecall:
     client = get_agent_memory_client()
     return AgentMemoryRecall(client) if client else NotConfiguredRecall()
+
+
+@lru_cache
+def get_memory_chat() -> AgentMemoryChat | NotConfiguredChat:
+    """One per process: it holds the keys minted for each user's chats."""
+    client = get_agent_memory_client()
+    return AgentMemoryChat(client, _connect) if client else NotConfiguredChat()
+
+
+@lru_cache
+def get_chat_sessions() -> ChatSessions:
+    return ChatSessions()
 
 
 @lru_cache
