@@ -112,6 +112,8 @@ class PreviewCache:
     def __init__(self, limit: int = MAX_PREVIEWS) -> None:
         self._limit = limit
         self._previews: OrderedDict[str, Preview] = OrderedDict()
+        # Documents uploaded by a direct extract (no preview): doc id -> owner.
+        self._documents: OrderedDict[str, str] = OrderedDict()
 
     def put(self, preview: Preview) -> None:
         self._previews[preview.id] = preview
@@ -121,9 +123,16 @@ class PreviewCache:
     def get(self, preview_id: str) -> Preview | None:
         return self._previews.get(preview_id)
 
+    def remember_document(self, doc_id: str, owner: str) -> None:
+        """Record who uploaded a document outside a preview."""
+        self._documents[doc_id] = owner
+        while len(self._documents) > self._limit:
+            self._documents.popitem(last=False)
+
     def owner_of_document(self, doc_id: str) -> str | None:
-        """Who uploaded this document through a preview, while it is still cached."""
-        return next((p.owner for p in self._previews.values() if p.doc_id == doc_id), None)
+        """Who uploaded this document, while it is still cached."""
+        from_preview = (p.owner for p in self._previews.values() if p.doc_id == doc_id)
+        return next(from_preview, None) or self._documents.get(doc_id)
 
 
 def shorten_document(text: str) -> tuple[str, bool]:
@@ -215,22 +224,30 @@ async def store(
     linked = _link_entities(stored, entity_choices or {})
 
     if mode == "full":
-        result = await capture.store(stored.text, stored.scope)
-        written = len(result.attributes) + len(result.relations)
-        triples: list[FactTriple] = []
-    else:
-        triples = [
-            _recategorised(triple, memory_category)
-            for triple in (by_id[fact_id].triple or linked.get(fact_id) for fact_id in kept)
-            if triple is not None
-        ]
-        if not triples:
-            raise CaptureFlowError(
-                "None of the kept facts can be stored as triples; use mode full."
-            )
-        result = await capture.store_facts(triples, stored.scope)
-        written = len(triples)
+        return await extract(capture, scope=stored.scope, text=stored.text)
 
+    triples = [
+        _recategorised(triple, memory_category)
+        for triple in (by_id[fact_id].triple or linked.get(fact_id) for fact_id in kept)
+        if triple is not None
+    ]
+    if not triples:
+        raise CaptureFlowError("None of the kept facts can be stored as triples; use mode full.")
+    result = await capture.store_facts(triples, stored.scope)
+    return _outcome(result, len(triples), triples)
+
+
+async def extract(capture: MemoryCapture, *, scope: str, text: str) -> StoreOutcome:
+    """Mode full with no preview: Agent Memory extracts from the text and saves all it finds.
+
+    A preview would be thrown away here anyway, since full extraction runs the
+    model again; skipping it saves one model run.
+    """
+    result = await capture.store(text, scope)
+    return _outcome(result, len(result.attributes) + len(result.relations), [])
+
+
+def _outcome(result: CaptureResult, written: int, triples: list[FactTriple]) -> StoreOutcome:
     created = [_created(a) for a in result.attributes if a.entity] or [
         CreatedFact(t.entity_name, t.key, t.value, None) for t in triples
     ]

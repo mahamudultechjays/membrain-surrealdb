@@ -263,11 +263,41 @@
   cursor: pointer;
   transition:
     border-color 150ms var(--mb-ease),
-    background-color 150ms var(--mb-ease);
+    background-color 150ms var(--mb-ease),
+    opacity 150ms var(--mb-ease);
 }
 
 .capture-radio:hover {
   border-color: var(--mb-muted);
+}
+
+/* The option not chosen recedes, so the chosen one reads at a glance. */
+.capture-radio[data-checked='false'] {
+  opacity: 0.5;
+}
+
+.capture-radio[data-checked='false']:hover,
+.capture-radio[data-checked='false']:has(input:focus-visible) {
+  opacity: 0.8;
+}
+
+/* A step this mode doesn't use (Preview when re-extracting everything). */
+.capture-steps li[data-state='skipped'] {
+  border-style: dashed;
+  color: var(--mb-muted);
+  text-decoration: line-through;
+}
+
+.capture-type-override {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+}
+
+.capture-type-override s {
+  font-size: 12px;
+  color: var(--mb-muted);
 }
 
 .capture-radio[data-checked='true'] {

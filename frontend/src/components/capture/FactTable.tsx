@@ -1,4 +1,9 @@
-import type { EntityChoice, ExtractedFact, StoreMode } from '@/api/capture'
+import type {
+  EntityChoice,
+  ExtractedFact,
+  MemoryCategory,
+  StoreMode,
+} from '@/api/capture'
 import { uncertaintyReason } from '@/components/capture/format'
 import { canKeep, factWithEntity, type EntityChoices } from '@/components/capture/keep'
 
@@ -11,6 +16,8 @@ interface Props {
   entities?: EntityChoice[]
   choices?: EntityChoices
   onChoose?: (id: string, entity: string) => void
+  /** The Memory category setting: when set, every kept fact is stored with it. */
+  category?: MemoryCategory | null
   disabled?: boolean
 }
 
@@ -22,6 +29,7 @@ export default function FactTable({
   entities = [],
   choices = {},
   onChoose,
+  category = null,
   disabled,
 }: Props) {
   if (!facts.length) {
@@ -79,7 +87,16 @@ export default function FactTable({
                 )}
               </td>
               <td data-label="Type">
-                <span className="tag">{fact.type}</span>
+                {category && category !== fact.type ? (
+                  <span
+                    className="capture-type-override"
+                    title={`Agent Memory said ${fact.type}; the Memory category setting stores it as ${category}`}
+                  >
+                    <s>{fact.type}</s> <span className="tag">{category}</span>
+                  </span>
+                ) : (
+                  <span className="tag">{fact.type}</span>
+                )}
               </td>
               <td data-label="Source" className="capture-muted">
                 {fact.source}

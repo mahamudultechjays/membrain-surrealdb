@@ -4,6 +4,7 @@ import type { Access, Grant, GrantLayer, Me } from '@/api/auth'
 import { cleanPath, unregisteredScopes } from '@/api/scopePaths'
 import { LAYER_LABELS } from '@/components/ask/layers'
 import { isAbort, messageOf } from '@/components/capture/format'
+import Modal from '@/components/Modal'
 import '@/pages/admin.css'
 
 interface Props {
@@ -21,6 +22,17 @@ type RegistryState =
   | { status: 'loading' }
   | { status: 'error'; message: string }
   | { status: 'ready'; paths: ReadonlySet<string> }
+
+/**
+ * The open dialog. A grant is either for someone already in the table (their
+ * row's "Add scope") or, with `user` null, for a person typed in by email:
+ * usually someone who has not signed in yet, so they are not in the table.
+ */
+type Dialog =
+  | { kind: 'scope' }
+  | { kind: 'grant'; user: UserGrants | null }
+  | { kind: 'revoke'; user: UserGrants; grant: Grant }
+  | null
 
 interface GrantForm {
   email: string
@@ -48,11 +60,11 @@ const USER_OPTIONS = 'admin-user-options'
 export default function AdminPage({ me, api = adminApi }: Props) {
   const [users, setUsers] = useState<UsersState>({ status: 'loading' })
   const [registry, setRegistry] = useState<RegistryState>({ status: 'loading' })
+  const [dialog, setDialog] = useState<Dialog>(null)
   const [form, setForm] = useState<GrantForm>(EMPTY_GRANT)
   // Scopes the grant would create; set until the admin confirms or goes back.
   const [missing, setMissing] = useState<string[] | null>(null)
   const [newScope, setNewScope] = useState('')
-  const [revoking, setRevoking] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [done, setDone] = useState<string | null>(null)
@@ -78,7 +90,14 @@ export default function AdminPage({ me, api = adminApi }: Props) {
   const known = registry.status === 'ready' ? registry.paths : null
   // The org scope is the shortest path the listing returns.
   const root = known ? [...known].sort((a, b) => a.length - b.length)[0] : undefined
-  const existingUser = list.find((u) => u.email === form.email.trim().toLowerCase())
+  // Who the open grant dialog is for, when they are already in the table.
+  const grantee =
+    dialog?.kind === 'grant'
+      ? (dialog.user ?? list.find((u) => u.email === form.email.trim().toLowerCase()))
+      : undefined
+  const alreadyHeld = grantee?.grants.find(
+    (g) => g.scope_path === cleanPath(form.scope_path),
+  )
 
   /** Run one change, then reload the users (and scopes, which a grant may add). */
   const run = async (call: () => Promise<unknown>, message: string) => {
@@ -100,6 +119,21 @@ export default function AdminPage({ me, api = adminApi }: Props) {
     }
   }
 
+  const open = (next: Exclude<Dialog, null>) => {
+    setError(null)
+    setDone(null)
+    setMissing(null)
+    if (next.kind === 'grant') setForm({ ...EMPTY_GRANT, email: next.user?.email ?? '' })
+    if (next.kind === 'scope') setNewScope('')
+    setDialog(next)
+  }
+
+  const closeDialog = () => {
+    setDialog(null)
+    setMissing(null)
+    setError(null)
+  }
+
   const editForm = (next: GrantForm) => {
     setForm(next)
     setMissing(null)
@@ -107,20 +141,18 @@ export default function AdminPage({ me, api = adminApi }: Props) {
 
   const sendGrant = async () => {
     const email = form.email.trim().toLowerCase()
+    const name = form.name.trim()
     const grant: GrantInput = {
       scope_path: cleanPath(form.scope_path),
       access: form.access,
       layer: form.layer,
-      name: existingUser ? null : form.name.trim() || null,
+      name: grantee ? null : name || null,
     }
     const ok = await run(
       () => api.grant(email, grant),
-      `Granted ${grant.access === 'write' ? 'read and write' : 'read'} on ${grant.scope_path} to ${existingUser?.name ?? email}.`,
+      `Granted ${grant.access === 'write' ? 'read and write' : 'read'} on ${grant.scope_path} to ${grantee?.name ?? (name || email)}.`,
     )
-    if (ok) {
-      setForm(EMPTY_GRANT)
-      setMissing(null)
-    }
+    if (ok) closeDialog()
   }
 
   // A grant registers any new path, so a typo would quietly create a scope: ask first.
@@ -130,7 +162,6 @@ export default function AdminPage({ me, api = adminApi }: Props) {
     const unknown = known && root ? unregisteredScopes([path], known, root) : []
     if (unknown.length) {
       setError(null)
-      setDone(null)
       setMissing(unknown)
       return
     }
@@ -142,28 +173,48 @@ export default function AdminPage({ me, api = adminApi }: Props) {
       () => api.revoke(user.email, grant.scope_path),
       `Revoked ${grant.scope_path} from ${user.name}. Its memories stay in Agent Memory.`,
     )
-    if (ok) setRevoking(null)
+    if (ok) closeDialog()
   }
 
   const register = async (event: FormEvent) => {
     event.preventDefault()
     const path = cleanPath(newScope)
     if (known?.has(path)) {
-      setDone(null)
       setError(`${path} is already registered.`)
       return
     }
-    if (await run(() => api.registerScope(path), `Registered ${path}.`)) setNewScope('')
+    if (await run(() => api.registerScope(path), `Registered ${path}.`)) closeDialog()
   }
+
+  // While a dialog is open its own errors show inside it, not behind the backdrop.
+  const dialogError = error && (
+    <p className="error" role="alert">
+      {error}
+    </p>
+  )
 
   return (
     <main className="page admin-page">
-      <div className="page-head">
-        <h1>Admin</h1>
-        <p>
-          Who may read or write which Agent Memory scope. Everyone reads through these
-          grants, so a change applies on their next Capture or Ask.
-        </p>
+      <div className="page-head admin-head">
+        <div>
+          <h1>Admin</h1>
+          <p>
+            Who may read or write which Agent Memory scope. Everyone reads through these
+            grants, so a change applies on their next Capture or Ask.
+          </p>
+        </div>
+        <div className="admin-head-actions">
+          <button
+            type="button"
+            className="btn-secondary"
+            onClick={() => open({ kind: 'grant', user: null })}
+          >
+            <span aria-hidden="true">+</span> Add person or grant access
+          </button>
+          <button type="button" className="btn" onClick={() => open({ kind: 'scope' })}>
+            <span aria-hidden="true">+</span> New scope
+          </button>
+        </div>
       </div>
 
       {registry.status === 'error' && (
@@ -185,7 +236,7 @@ export default function AdminPage({ me, api = adminApi }: Props) {
         ))}
       </datalist>
 
-      {error && (
+      {error && !dialog && (
         <p className="error admin-callout" role="alert">
           {error}
         </p>
@@ -203,232 +254,339 @@ export default function AdminPage({ me, api = adminApi }: Props) {
           <table className="admin-table">
             <thead>
               <tr>
-                <th scope="col">Name</th>
-                <th scope="col">Scopes</th>
+                <th scope="col" className="admin-col-person">
+                  Person
+                </th>
+                <th scope="col">Scope</th>
+                <th scope="col" className="admin-col-fit">
+                  Layer
+                </th>
+                <th scope="col" className="admin-col-fit">
+                  Access
+                </th>
+                <th scope="col" className="admin-col-fit">
+                  Revoke
+                </th>
+                <th scope="col" className="admin-col-fit admin-col-add">
+                  Add scope
+                </th>
               </tr>
             </thead>
-            <tbody>
-              {list.map((user) => (
-                <tr key={user.email}>
-                  <td data-label="Name" className="admin-person">
-                    <span className="admin-name">{user.name}</span>
-                    {user.is_admin && (
-                      <span className="tag" data-tone="good">
-                        admin
-                      </span>
-                    )}
-                    {user.email === me.email && <span className="tag">you</span>}
-                    <span className="mono admin-muted admin-email">{user.email}</span>
-                  </td>
-                  <td data-label="Scopes">
-                    {user.grants.length === 0 ? (
-                      <span className="admin-muted">No scopes</span>
-                    ) : (
-                      <ul className="admin-grants">
-                        {user.grants.map((grant) => {
-                          const key = `${user.email} ${grant.scope_path}`
-                          return (
-                            <li key={grant.scope_path} className="admin-grant">
-                              <span className="mono admin-path">{grant.scope_path}</span>
-                              <span className="admin-grant-tags">
-                                <span className="tag">{LAYER_LABELS[grant.layer]}</span>
-                                <span
-                                  className="tag"
-                                  data-tone={
-                                    grant.access === 'write' ? 'good' : undefined
-                                  }
-                                >
-                                  {grant.access === 'write' ? 'read & write' : 'read'}
-                                </span>
-                                {known && !known.has(grant.scope_path) && (
-                                  <span
-                                    className="tag"
-                                    data-tone="warn"
-                                    title="Writes here fail and reads come back empty until this scope exists"
-                                  >
-                                    not in Agent Memory
-                                  </span>
-                                )}
-                              </span>
-                              <span className="admin-grant-actions">
-                                {revoking === key ? (
-                                  <>
-                                    <button
-                                      type="button"
-                                      className="btn admin-danger"
-                                      disabled={busy}
-                                      onClick={() => void revoke(user, grant)}
-                                      aria-label={`Revoke ${grant.scope_path} from ${user.name}`}
-                                    >
-                                      Revoke
-                                    </button>
-                                    <button
-                                      type="button"
-                                      className="btn-secondary"
-                                      disabled={busy}
-                                      onClick={() => setRevoking(null)}
-                                    >
-                                      Keep
-                                    </button>
-                                  </>
-                                ) : (
-                                  <button
-                                    type="button"
-                                    className="btn-secondary"
-                                    disabled={busy}
-                                    onClick={() => setRevoking(key)}
-                                    aria-label={`Revoke ${grant.scope_path} from ${user.name}…`}
-                                  >
-                                    Revoke
-                                  </button>
-                                )}
-                              </span>
-                            </li>
-                          )
-                        })}
-                      </ul>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
+            {/* One tbody per person: their scopes are rows, name and Add scope span them. */}
+            {list.map((user) => {
+              const span = Math.max(user.grants.length, 1)
+              const person = (
+                <td rowSpan={span} data-label="Person" className="admin-person">
+                  <span className="admin-name">{user.name}</span>
+                  {user.is_admin && (
+                    <span className="tag" data-tone="good">
+                      admin
+                    </span>
+                  )}
+                  {user.email === me.email && <span className="tag">you</span>}
+                  <span className="mono admin-muted admin-email">{user.email}</span>
+                </td>
+              )
+              const addScope = (
+                <td rowSpan={span} className="admin-col-fit admin-col-add">
+                  <button
+                    type="button"
+                    className="admin-add-scope"
+                    disabled={busy}
+                    onClick={() => open({ kind: 'grant', user })}
+                    aria-label={`Add a scope for ${user.name}`}
+                  >
+                    <span aria-hidden="true">+</span> Add scope
+                  </button>
+                </td>
+              )
+              if (user.grants.length === 0) {
+                return (
+                  <tbody key={user.email} className="admin-person-group">
+                    <tr>
+                      {person}
+                      <td colSpan={4} className="admin-muted">
+                        No scopes
+                      </td>
+                      {addScope}
+                    </tr>
+                  </tbody>
+                )
+              }
+              return (
+                <tbody key={user.email} className="admin-person-group">
+                  {user.grants.map((grant, index) => {
+                    return (
+                      <tr key={grant.scope_path}>
+                        {index === 0 && person}
+                        <td data-label="Scope" className="admin-scope">
+                          <span className="mono admin-path">{grant.scope_path}</span>
+                          {known && !known.has(grant.scope_path) && (
+                            <span
+                              className="tag"
+                              data-tone="warn"
+                              title="Writes here fail and reads come back empty until this scope exists"
+                            >
+                              not in Agent Memory
+                            </span>
+                          )}
+                        </td>
+                        <td data-label="Layer" className="admin-col-fit">
+                          <span className="tag">{LAYER_LABELS[grant.layer]}</span>
+                        </td>
+                        <td data-label="Access" className="admin-col-fit">
+                          <span
+                            className="tag"
+                            data-tone={grant.access === 'write' ? 'good' : undefined}
+                          >
+                            {grant.access === 'write' ? 'read & write' : 'read'}
+                          </span>
+                        </td>
+                        <td className="admin-col-fit admin-grant-actions">
+                          <button
+                            type="button"
+                            className="btn-secondary"
+                            disabled={busy}
+                            onClick={() => open({ kind: 'revoke', user, grant })}
+                            aria-label={`Revoke ${grant.scope_path} from ${user.name}…`}
+                          >
+                            Revoke
+                          </button>
+                        </td>
+                        {index === 0 && addScope}
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              )
+            })}
           </table>
         )}
       </section>
 
-      <div className="admin-forms">
-        <form
-          className="panel admin-form"
-          onSubmit={submitGrant}
-          aria-label="Grant a scope"
+      {dialog?.kind === 'grant' && (
+        <Modal
+          title={
+            dialog.user
+              ? `Add a scope for ${dialog.user.name}`
+              : 'Add person or grant access'
+          }
+          description={
+            dialog.user ? (
+              <span className="mono">{dialog.user.email}</span>
+            ) : (
+              "Enter anyone's email, whether or not they're in the list. Someone who hasn't signed in yet is added now. When they first sign in, they also get their own personal scope and read access to the org."
+            )
+          }
+          onClose={closeDialog}
         >
-          <h2>Grant a scope</h2>
-          <div className="admin-fields">
-            <label>
-              <span>Person</span>
-              <input
-                type="email"
-                list={USER_OPTIONS}
-                value={form.email}
-                required
-                placeholder="name@spreetail.com"
-                onChange={(e) => editForm({ ...form, email: e.target.value })}
-              />
-            </label>
-            {!existingUser && form.email.trim() !== '' && (
-              <label>
-                <span>
-                  Name <span className="admin-muted">(not signed in yet)</span>
-                </span>
+          <form className="admin-form" onSubmit={submitGrant} aria-label="Grant a scope">
+            <div className="admin-fields">
+              {!dialog.user && (
+                <label className="admin-wide">
+                  <span>Email</span>
+                  <input
+                    type="email"
+                    list={USER_OPTIONS}
+                    value={form.email}
+                    required
+                    placeholder="name@spreetail.com"
+                    onChange={(e) => editForm({ ...form, email: e.target.value })}
+                  />
+                </label>
+              )}
+              {!dialog.user && grantee && (
+                <p className="admin-wide admin-muted admin-note">
+                  {grantee.name} is already in the list, so this adds a scope to them.
+                </p>
+              )}
+              {!dialog.user && !grantee && form.email.trim() !== '' && (
+                <label className="admin-wide">
+                  <span>
+                    Name <span className="admin-muted">(not signed in yet)</span>
+                  </span>
+                  <input
+                    value={form.name}
+                    maxLength={120}
+                    placeholder="Vidyul Narayanan"
+                    onChange={(e) => editForm({ ...form, name: e.target.value })}
+                  />
+                </label>
+              )}
+              <label className="admin-wide">
+                <span>Scope</span>
                 <input
-                  value={form.name}
-                  maxLength={120}
-                  placeholder="Vidyul Kumar"
-                  onChange={(e) => editForm({ ...form, name: e.target.value })}
+                  className="mono"
+                  list={SCOPE_OPTIONS}
+                  value={form.scope_path}
+                  required
+                  placeholder={root ? `${root}/team/ops` : 'org/spreetail/team/ops'}
+                  onChange={(e) => editForm({ ...form, scope_path: e.target.value })}
                 />
               </label>
+              {alreadyHeld && (
+                <p className="admin-wide admin-muted admin-note">
+                  {grantee?.name} already holds this scope (
+                  {alreadyHeld.access === 'write' ? 'read & write' : 'read'}). Granting
+                  replaces its access and layer.
+                </p>
+              )}
+              <label>
+                <span>Access</span>
+                <select
+                  value={form.access}
+                  onChange={(e) =>
+                    editForm({ ...form, access: e.target.value as Access })
+                  }
+                >
+                  <option value="read">Read</option>
+                  <option value="write">Read &amp; write</option>
+                </select>
+              </label>
+              <label>
+                <span>Layer</span>
+                <select
+                  value={form.layer}
+                  onChange={(e) =>
+                    editForm({ ...form, layer: e.target.value as GrantLayer })
+                  }
+                >
+                  <option value="org">Org</option>
+                  <option value="team">Team</option>
+                  <option value="personal">Personal</option>
+                </select>
+              </label>
+              {/* Sign-in creates a personal scope only when none is held, so this replaces it. */}
+              {!grantee && form.layer === 'personal' && (
+                <p className="admin-wide admin-note admin-warn-note">
+                  Someone who hasn&apos;t signed in yet treats this as their personal
+                  scope, so they won&apos;t get their own when they sign in.
+                </p>
+              )}
+            </div>
+            {missing && (
+              <section
+                className="admin-confirm"
+                aria-label="Create scopes in Agent Memory"
+              >
+                <p>
+                  {missing.length === 1 ? 'This scope does' : 'These scopes do'} not exist
+                  in Agent Memory yet:
+                </p>
+                <ul className="mono">
+                  {missing.map((path) => (
+                    <li key={path}>{path}</li>
+                  ))}
+                </ul>
+                <p className="admin-confirm-hint">
+                  Granting creates {missing.length === 1 ? 'it' : 'them'} in the shared
+                  Agent Memory context. Check the spelling, or pick an existing scope
+                  instead.
+                </p>
+                <div className="admin-actions">
+                  <button
+                    type="button"
+                    className="btn"
+                    disabled={busy}
+                    onClick={() => void sendGrant()}
+                  >
+                    Create {missing.length === 1 ? 'scope' : `${missing.length} scopes`}{' '}
+                    and grant
+                  </button>
+                  <button
+                    type="button"
+                    className="btn-secondary"
+                    disabled={busy}
+                    onClick={() => setMissing(null)}
+                  >
+                    Go back
+                  </button>
+                </div>
+              </section>
             )}
-            <label className="admin-wide">
-              <span>Scope</span>
+            {dialogError}
+            <div className="admin-dialog-actions">
+              <button type="button" className="btn-secondary" onClick={closeDialog}>
+                Cancel
+              </button>
+              <button type="submit" className="btn" disabled={busy || missing !== null}>
+                Grant
+              </button>
+            </div>
+          </form>
+        </Modal>
+      )}
+
+      {dialog?.kind === 'revoke' && (
+        <Modal
+          title="Revoke scope access?"
+          description={
+            <>
+              {dialog.user.name} will no longer be able to{' '}
+              {dialog.grant.access === 'write' ? 'read or write' : 'read'}{' '}
+              <span className="mono">{dialog.grant.scope_path}</span>. The scope and its
+              memories stay in Agent Memory, and you can grant it again later.
+            </>
+          }
+          onClose={closeDialog}
+        >
+          <div className="admin-form">
+            {dialogError}
+            <div className="admin-dialog-actions">
+              <button
+                type="button"
+                className="btn-secondary"
+                disabled={busy}
+                onClick={closeDialog}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="btn admin-danger"
+                disabled={busy}
+                onClick={() => void revoke(dialog.user, dialog.grant)}
+                aria-label={`Revoke ${dialog.grant.scope_path} from ${dialog.user.name}`}
+              >
+                Revoke access
+              </button>
+            </div>
+          </div>
+        </Modal>
+      )}
+
+      {dialog?.kind === 'scope' && (
+        <Modal
+          title="New scope"
+          description="Creates an empty scope in Agent Memory, for example a new team, before anyone is granted it."
+          onClose={closeDialog}
+        >
+          <form className="admin-form" onSubmit={register} aria-label="Register a scope">
+            <label className="admin-field">
+              <span>Scope path</span>
               <input
                 className="mono"
-                list={SCOPE_OPTIONS}
-                value={form.scope_path}
+                value={newScope}
                 required
-                placeholder={root ? `${root}/team/ops` : 'org/spreetail/team/ops'}
-                onChange={(e) => editForm({ ...form, scope_path: e.target.value })}
+                placeholder={root ? `${root}/team/eng` : 'org/spreetail/team/eng'}
+                onChange={(e) => {
+                  setNewScope(e.target.value)
+                  setError(null)
+                }}
               />
             </label>
-            <label>
-              <span>Access</span>
-              <select
-                value={form.access}
-                onChange={(e) => editForm({ ...form, access: e.target.value as Access })}
-              >
-                <option value="read">Read</option>
-                <option value="write">Read &amp; write</option>
-              </select>
-            </label>
-            <label>
-              <span>Layer</span>
-              <select
-                value={form.layer}
-                onChange={(e) =>
-                  editForm({ ...form, layer: e.target.value as GrantLayer })
-                }
-              >
-                <option value="org">Org</option>
-                <option value="team">Team</option>
-                <option value="personal">Personal</option>
-              </select>
-            </label>
-          </div>
-          {missing && (
-            <section className="admin-confirm" aria-label="Create scopes in Agent Memory">
-              <p>
-                {missing.length === 1 ? 'This scope does' : 'These scopes do'} not exist
-                in Agent Memory yet:
-              </p>
-              <ul className="mono">
-                {missing.map((path) => (
-                  <li key={path}>{path}</li>
-                ))}
-              </ul>
-              <p className="admin-confirm-hint">
-                Granting creates {missing.length === 1 ? 'it' : 'them'} in the shared
-                Agent Memory context. Check the spelling, or pick an existing scope
-                instead.
-              </p>
-              <div className="admin-actions">
-                <button
-                  type="button"
-                  className="btn"
-                  disabled={busy}
-                  onClick={() => void sendGrant()}
-                >
-                  Create {missing.length === 1 ? 'scope' : `${missing.length} scopes`} and
-                  grant
-                </button>
-                <button
-                  type="button"
-                  className="btn-secondary"
-                  disabled={busy}
-                  onClick={() => setMissing(null)}
-                >
-                  Go back
-                </button>
-              </div>
-            </section>
-          )}
-          <button type="submit" className="btn" disabled={busy || missing !== null}>
-            Grant
-          </button>
-        </form>
-
-        <form
-          className="panel admin-form"
-          onSubmit={register}
-          aria-label="Register a scope"
-        >
-          <h2>Register a scope</h2>
-          <p className="admin-muted admin-form-hint">
-            Creates an empty scope, for example a new team, before anyone is granted it.
-          </p>
-          <label className="admin-field">
-            <span>Scope path</span>
-            <input
-              className="mono"
-              value={newScope}
-              required
-              placeholder={root ? `${root}/team/eng` : 'org/spreetail/team/eng'}
-              onChange={(e) => setNewScope(e.target.value)}
-            />
-          </label>
-          <button type="submit" className="btn" disabled={busy}>
-            Register scope
-          </button>
-        </form>
-      </div>
+            {dialogError}
+            <div className="admin-dialog-actions">
+              <button type="button" className="btn-secondary" onClick={closeDialog}>
+                Cancel
+              </button>
+              <button type="submit" className="btn" disabled={busy}>
+                Register scope
+              </button>
+            </div>
+          </form>
+        </Modal>
+      )}
     </main>
   )
 }

@@ -1,4 +1,5 @@
-"""Capture endpoints: preview what Agent Memory extracts, then store the kept facts.
+"""Capture endpoints: preview what Agent Memory extracts, then store the kept facts,
+or extract and store everything in one call (mode full, no preview).
 
 Every call acts for the signed-in user through the one admin key. Writes go
 only to a scope the user's grants allow (their personal scope by default), and
@@ -9,6 +10,7 @@ import base64
 import binascii
 import mimetypes
 from collections.abc import Awaitable
+from dataclasses import dataclass
 
 from fastapi import APIRouter, HTTPException, Request, status
 
@@ -30,6 +32,9 @@ from app.domain.errors import (
 )
 from app.domain.ports.document_store import FINISHED_STATUSES
 from app.schemas.capture import (
+    CaptureExtractRequest,
+    CaptureExtractResponse,
+    CaptureInput,
     CapturePreviewRequest,
     CapturePreviewResponse,
     CaptureStats,
@@ -73,45 +78,18 @@ async def preview(
     """What Agent Memory would extract. Text is not saved; a document is uploaded
     once (Agent Memory has no dry run for files) so its processing can be polled."""
     scope = await _write_scope(access, user.email, body.scope)
-
-    if body.input_type == "text":
-        if len(body.content) > MAX_TEXT_CHARS:
-            raise HTTPException(
-                status.HTTP_422_UNPROCESSABLE_CONTENT,
-                f"Text is limited to {MAX_TEXT_CHARS} characters; use the document tab.",
-            )
-        found = await _call(
-            capture_flow.preview(
-                capture, owner=user.email, scope=scope, text=body.content, source="text"
-            )
+    source = await _read_input(body, scope, documents, reader)
+    found = await _call(
+        capture_flow.preview(
+            capture,
+            owner=user.email,
+            scope=scope,
+            text=source.text,
+            source=source.label,
+            truncated=source.truncated,
+            doc_id=source.doc_id,
         )
-    else:
-        file_name = body.file_name or "document"
-        content_type = mimetypes.guess_type(file_name)[0] or FALLBACK_TYPE
-        content = _decode(body.content)
-        if not reader.supports(file_name, content_type):
-            raise HTTPException(
-                status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
-                "Only PDF and plain-text files are supported.",
-            )
-        try:
-            text = reader.read(file_name, content, content_type)
-        except UnsupportedDocumentError as exc:
-            raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, str(exc)) from exc
-        shown, truncated = capture_flow.shorten_document(text)
-        uploaded = await _call(documents.upload(file_name, content, content_type, scope))
-        source = f"document {file_name}" + (" (first words)" if truncated else "")
-        found = await _call(
-            capture_flow.preview(
-                capture,
-                owner=user.email,
-                scope=scope,
-                text=shown,
-                source=source,
-                truncated=truncated,
-                doc_id=uploaded.id,
-            )
-        )
+    )
 
     cache.put(found)
     trace_id = getattr(request.state, "trace_id", None)
@@ -215,6 +193,55 @@ async def store(
     )
 
 
+@router.post("/extract", response_model=CaptureExtractResponse, responses=_ERRORS)
+async def extract(
+    body: CaptureExtractRequest,
+    request: Request,
+    user: CurrentUserDep,
+    access: AccessServiceDep,
+    capture: MemoryCaptureDep,
+    documents: DocumentStoreDep,
+    reader: TextReaderDep,
+    cache: PreviewCacheDep,
+) -> CaptureExtractResponse:
+    """Mode full in one call: Agent Memory extracts from the input and saves all it
+    finds. No preview, since a full store runs extraction again anyway."""
+    scope = await _write_scope(access, user.email, body.scope)
+    source = await _read_input(body, scope, documents, reader)
+    if source.doc_id:
+        # Lets the uploader poll the document's status, as after a preview.
+        cache.remember_document(source.doc_id, user.email)
+    outcome = await _call(capture_flow.extract(capture, scope=scope, text=source.text))
+
+    trace_id = getattr(request.state, "trace_id", None)
+    logger.log(
+        "[CAPTURE]",
+        op="extract",
+        trace_id=trace_id,
+        user=user.email,
+        scope=scope,
+        input_type=body.input_type,
+        mode="full",
+        written=outcome.written,
+        corrections=len(outcome.history),
+        truncated=source.truncated,
+        doc_id=source.doc_id,
+    )
+    return CaptureExtractResponse.model_validate(
+        {
+            "stored_id": outcome.stored_id,
+            "written": outcome.written,
+            "created_facts": outcome.created_facts,
+            "history": outcome.history,
+            "trace_id": trace_id,
+            "scope": scope,
+            "doc_id": source.doc_id,
+            "truncated": source.truncated,
+            "truncated_reason": capture_flow.TRUNCATED_REASON if source.truncated else None,
+        }
+    )
+
+
 @router.get("/document/{doc_id}/status", response_model=DocumentStatusResponse, responses=_ERRORS)
 async def document_status(
     doc_id: str,
@@ -246,6 +273,47 @@ async def document_status(
         updated_at=detail.updated_at,
         message=message,
     )
+
+
+@dataclass(frozen=True, slots=True)
+class _Source:
+    """The text extraction runs on, and where it came from."""
+
+    text: str
+    label: str
+    truncated: bool = False
+    doc_id: str | None = None
+
+
+async def _read_input(
+    body: CaptureInput, scope: str, documents: DocumentStoreDep, reader: TextReaderDep
+) -> _Source:
+    """Text as given, or a document's text. A document is uploaded once (Agent
+    Memory has no dry run for files) and a large one is cut to its first words."""
+    if body.input_type == "text":
+        if len(body.content) > MAX_TEXT_CHARS:
+            raise HTTPException(
+                status.HTTP_422_UNPROCESSABLE_CONTENT,
+                f"Text is limited to {MAX_TEXT_CHARS} characters; use the document tab.",
+            )
+        return _Source(body.content, "text")
+
+    file_name = body.file_name or "document"
+    content_type = mimetypes.guess_type(file_name)[0] or FALLBACK_TYPE
+    content = _decode(body.content)
+    if not reader.supports(file_name, content_type):
+        raise HTTPException(
+            status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
+            "Only PDF and plain-text files are supported.",
+        )
+    try:
+        text = reader.read(file_name, content, content_type)
+    except UnsupportedDocumentError as exc:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, str(exc)) from exc
+    shown, truncated = capture_flow.shorten_document(text)
+    uploaded = await _call(documents.upload(file_name, content, content_type, scope))
+    label = f"document {file_name}" + (" (first words)" if truncated else "")
+    return _Source(shown, label, truncated, uploaded.id)
 
 
 async def _write_scope(access: AccessServiceDep, email: str, requested: str | None) -> str:

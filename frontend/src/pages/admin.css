@@ -31,22 +31,46 @@
   color: var(--mb-muted);
   padding: 12px 8px 8px;
   border-bottom: 1px solid var(--mb-line-2);
+  white-space: nowrap;
 }
 
+/* Scope rows sit close together; a line separates one person from the next. */
 .admin-table td {
-  padding: 14px 8px;
-  border-bottom: 1px solid var(--mb-line);
-  vertical-align: top;
+  padding: 5px 8px;
+  vertical-align: middle;
   overflow-wrap: anywhere;
 }
 
-.admin-table th:first-child,
-.admin-table td:first-child {
-  width: 30%;
+.admin-person-group tr:first-child td {
+  padding-top: 14px;
 }
 
-.admin-table tbody tr:last-child td {
-  border-bottom: 0;
+.admin-person-group tr:last-child td,
+.admin-person-group td[rowspan] {
+  padding-bottom: 14px;
+}
+
+.admin-person-group + .admin-person-group tr:first-child td {
+  border-top: 1px solid var(--mb-line);
+}
+
+/* Name and Add scope span all of a person's rows, so pin them to the top. */
+.admin-table td[rowspan] {
+  vertical-align: top;
+}
+
+.admin-col-person {
+  width: 26%;
+}
+
+/* Layer, Access, Revoke and Add scope take only the width they need. */
+.admin-table .admin-col-fit {
+  width: 1%;
+  white-space: nowrap;
+}
+
+.admin-table .admin-col-add {
+  text-align: right;
 }
 
 .admin-person .tag {
@@ -63,20 +87,9 @@
   margin-top: 4px;
 }
 
-.admin-grants {
-  display: grid;
-  gap: 8px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-/* Path, its tags, then the action: one line on desktop, wrapping on a phone. */
-.admin-grant {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto auto;
-  align-items: center;
-  gap: 6px 12px;
+/* The "not in Agent Memory" warning, after the path it is about. */
+.admin-scope .tag {
+  margin-left: 8px;
 }
 
 .admin-path {
@@ -84,18 +97,9 @@
   color: var(--mb-ink);
 }
 
-.admin-grant-tags {
-  display: inline-flex;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-  gap: 6px;
-}
-
 .admin-grant-actions {
-  display: inline-flex;
-  justify-content: flex-end;
+  display: flex;
   gap: 6px;
-  min-width: 96px;
 }
 
 .admin-grant-actions .btn,
@@ -114,29 +118,73 @@
   background: color-mix(in srgb, var(--mb-bad) 82%, var(--mb-ink));
 }
 
-.admin-forms {
-  display: grid;
-  grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr);
-  gap: 20px;
-  align-items: start;
+/* Title and description on the left, the page's actions on the right. */
+.admin-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px 24px;
+}
+
+.admin-head > div:first-child {
+  flex: 1 1 420px;
+}
+
+.admin-head-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+/* Quiet, so a long list of rows doesn't turn into a wall of buttons. */
+.admin-add-scope {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 36px;
+  padding: 0 12px 0 10px;
+  border: 1px dashed var(--mb-line-2);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--mb-accent-ink);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.admin-add-scope:hover:not(:disabled) {
+  border-style: solid;
+  border-color: var(--mb-accent);
+  background: var(--mb-accent-soft);
+}
+
+.admin-add-scope:focus-visible {
+  outline: 2px solid var(--mb-accent);
+  outline-offset: 2px;
+}
+
+.admin-add-scope:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
 }
 
 .admin-form {
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
   gap: 16px;
 }
 
-.admin-form h2 {
-  margin: 0;
-  font-size: 18px;
-  font-weight: 600;
-}
-
-.admin-form-hint {
+.admin-note {
   margin: -8px 0 0;
   font-size: 13px;
+}
+
+.admin-dialog-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
 }
 
 .admin-fields {
@@ -206,14 +254,17 @@
   margin-top: 12px;
 }
 
-/* --- Narrow screens: one column; rows become stacked cards --- */
+.admin-warn-note {
+  color: var(--mb-warn);
+}
+
+/* --- Narrow screens: one card per person; each scope wraps onto its own line --- */
 
 @media (max-width: 860px) {
   .admin-users {
     padding: 4px 16px;
   }
 
-  .admin-forms,
   .admin-fields {
     grid-template-columns: minmax(0, 1fr);
   }
@@ -226,36 +277,50 @@
     clip: rect(0 0 0 0);
   }
 
-  .admin-table tr,
-  .admin-table td {
-    display: block;
-    width: auto;
+  /* The rows dissolve so a person's cells flow as one wrapping card. */
+  .admin-table .admin-person-group {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    padding: 14px 0;
+  }
+
+  .admin-person-group + .admin-person-group {
+    border-top: 1px solid var(--mb-line);
   }
 
   .admin-table tr {
-    padding: 12px 0;
-    border-bottom: 1px solid var(--mb-line);
-  }
-
-  .admin-table tbody tr:last-child {
-    border-bottom: 0;
+    display: contents;
   }
 
   .admin-table td,
-  .admin-table td:first-child {
+  .admin-table .admin-col-fit,
+  .admin-person-group tr:first-child td,
+  .admin-person-group tr:last-child td,
+  .admin-person-group td[rowspan] {
+    display: block;
     width: auto;
-    padding: 4px 0;
+    padding: 0;
     border: 0;
   }
 
-  .admin-grant {
-    grid-template-columns: minmax(0, 1fr);
-    padding: 8px 0;
+  /* Name first and Add scope last; each scope path starts a new line. */
+  .admin-table .admin-person {
+    order: -1;
+    flex-basis: 100%;
+  }
+
+  .admin-table .admin-scope {
+    flex-basis: 100%;
+    padding-top: 8px;
     border-top: 1px dashed var(--mb-line);
   }
 
-  .admin-grant-tags,
-  .admin-grant-actions {
-    justify-content: flex-start;
+  .admin-table .admin-col-add {
+    order: 1;
+    flex-basis: 100%;
+    padding-top: 4px;
+    text-align: left;
   }
 }

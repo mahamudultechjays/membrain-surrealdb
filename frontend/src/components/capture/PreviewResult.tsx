@@ -1,4 +1,4 @@
-import type { CapturePreviewResponse, StoreMode } from '@/api/capture'
+import type { CapturePreviewResponse, MemoryCategory, StoreMode } from '@/api/capture'
 import ElapsedSeconds from '@/components/capture/ElapsedSeconds'
 import FactTable from '@/components/capture/FactTable'
 import { describeCorrection, plural } from '@/components/capture/format'
@@ -17,6 +17,8 @@ interface Props {
   onToggle: (id: string) => void
   choices: EntityChoices
   onChoose: (id: string, entity: string) => void
+  /** The Memory category setting, shown in place of each fact's own. */
+  category: MemoryCategory | null
   store: StoreState
   onStore: () => void
   onPreviewAgain: () => void
@@ -29,6 +31,7 @@ export default function PreviewResult({
   onToggle,
   choices,
   onChoose,
+  category,
   store,
   onStore,
   onPreviewAgain,
@@ -68,6 +71,7 @@ export default function PreviewResult({
         entities={preview.entities}
         choices={choices}
         onChoose={onChoose}
+        category={category}
         disabled={storing}
       />
 

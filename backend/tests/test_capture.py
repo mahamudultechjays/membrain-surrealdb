@@ -246,6 +246,56 @@ def test_store_full_reextracts_source_text(client: TestClient, capture: FakeCapt
     assert capture.calls[-1] == ("store", "Acme ships to Reno in 18 days", PRIYA)
 
 
+def test_extract_stores_everything_without_a_preview(
+    client: TestClient, capture: FakeCapture
+) -> None:
+    response = client.post(
+        "/api/v1/capture/extract", json={"scope": PRIYA, "content": "Acme ships to Reno"}
+    )
+
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body["scope"] == PRIYA
+    assert body["written"] == 1
+    assert body["created_facts"] == [
+        {"entity": "Acme", "key": "lead_time_days", "value": "18", "id": "a1"}
+    ]
+    assert body["doc_id"] is None
+    assert body["truncated"] is False
+    assert capture.calls == [("store", "Acme ships to Reno", PRIYA)]
+
+
+def test_extract_checks_the_write_grant(client: TestClient, capture: FakeCapture) -> None:
+    response = client.post("/api/v1/capture/extract", json={"scope": ARUN, "content": "x"})
+
+    assert response.status_code == 403
+    assert capture.calls == []
+
+
+def test_extract_document_uploads_it_and_its_status_is_visible(
+    client: TestClient, capture: FakeCapture, store: FakeStore
+) -> None:
+    text = " ".join(f"w{i}" for i in range(2500))
+    response = client.post(
+        "/api/v1/capture/extract",
+        json={
+            "scope": PRIYA,
+            "input_type": "document",
+            "file_name": "policy.txt",
+            "content": base64.b64encode(text.encode()).decode(),
+        },
+    )
+
+    body = response.json()
+    assert response.status_code == 200, response.text
+    assert body["doc_id"] == "d1"
+    assert body["truncated"] is True
+    assert store.uploads == [("policy.txt", PRIYA)]
+    op, sent, _ = capture.calls[0]
+    assert op == "store" and isinstance(sent, str) and len(sent.split()) == 500
+    assert client.get("/api/v1/capture/document/d1/status").status_code == 200
+
+
 def test_store_rejects_unknown_preview_other_scope_and_unknown_ids(client: TestClient) -> None:
     preview_id = _preview(client)["preview_id"]
     url = "/api/v1/capture/store"

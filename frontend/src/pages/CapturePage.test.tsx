@@ -1,6 +1,7 @@
 import { act, fireEvent, render, screen, within, waitFor } from '@testing-library/react'
 import type {
   CaptureApi,
+  CaptureExtractResponse,
   CapturePreviewResponse,
   CaptureStoreResponse,
   DocumentStatus,
@@ -60,11 +61,24 @@ const STORED: CaptureStoreResponse = {
   trace_id: 't-store',
 }
 
+const EXTRACTED: CaptureExtractResponse = {
+  stored_id: 'store_2',
+  written: 1,
+  created_facts: [{ entity: 'acme', key: 'ships_to', value: 'reno', id: 'a1' }],
+  history: [],
+  trace_id: 't-extract',
+  scope: PRIYA,
+  doc_id: null,
+  truncated: false,
+  truncated_reason: null,
+}
+
 /** A fake whose methods default to the canned answers above. */
 function fakeApi(overrides: Partial<CaptureApi> = {}): CaptureApi {
   return {
     preview: vi.fn<CaptureApi['preview']>(async () => PREVIEW),
     store: vi.fn<CaptureApi['store']>(async () => STORED),
+    extract: vi.fn<CaptureApi['extract']>(async () => EXTRACTED),
     documentStatus: vi.fn<CaptureApi['documentStatus']>(async () => {
       throw new Error('not a document')
     }),
@@ -84,7 +98,7 @@ const previewButton = () => screen.getByRole('button', { name: 'Preview' })
 const keepBox = (fact: string) => screen.getByRole('checkbox', { name: `Keep ${fact}` })
 
 describe('CapturePage', () => {
-  it('previews the sample text with an uncertain fact and one only full mode can store', async () => {
+  it('previews the sample text with an uncertain fact, and drops it when switching to full', async () => {
     await renderPage()
 
     fireEvent.click(screen.getByRole('button', { name: 'Use sample text' }))
@@ -106,9 +120,57 @@ describe('CapturePage', () => {
     expect(pronoun).not.toBeChecked()
     expect(keepBox('acme · lead_time = 18 days')).toBeChecked()
 
+    // Re-extract everything has no preview: switching drops it, and Store replaces Preview.
     fireEvent.click(screen.getByRole('radio', { name: /Re-extract everything/ }))
-    expect(keepBox('? · is = late again')).toBeEnabled()
-    expect(screen.getByRole('button', { name: 'Store everything' })).toBeEnabled()
+    expect(
+      screen.queryByRole('table', { name: 'Extracted facts' }),
+    ).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Preview' })).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Store' })).toBeEnabled()
+  })
+
+  it('re-extract everything stores in one call, skipping the preview step', async () => {
+    const api = fakeApi()
+    await renderPage(api)
+
+    fireEvent.change(screen.getByLabelText('What do you want to remember?'), {
+      target: { value: 'Acme ships to Reno' },
+    })
+    fireEvent.click(screen.getByRole('radio', { name: /Re-extract everything/ }))
+    expect(screen.getByRole('radio', { name: /Re-extract everything/ })).toBeChecked()
+    const steps = screen.getByRole('list', { name: 'Capture progress' })
+    expect(within(steps).getByText('(skipped)', { exact: false })).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Store' }))
+
+    const created = await screen.findByRole('table', { name: 'Created facts' })
+    expect(within(created).getByText('ships_to')).toBeInTheDocument()
+    expect(screen.getByText(`Stored in ${PRIYA}`)).toBeInTheDocument()
+    expect(api.preview).not.toHaveBeenCalled()
+    expect(api.extract).toHaveBeenCalledWith(
+      { scope: PRIYA, input_type: 'text', content: 'Acme ships to Reno' },
+      expect.any(AbortSignal),
+    )
+    expect(
+      screen.getByText(/POST \/api\/v1\/capture\/extract · infer=full · ok/),
+    ).toBeInTheDocument()
+  })
+
+  it('shows the chosen memory category in place of the extracted one', async () => {
+    await renderPage(fakeApi())
+
+    fireEvent.change(screen.getByLabelText('What do you want to remember?'), {
+      target: { value: 'Acme ships to Reno' },
+    })
+    fireEvent.change(screen.getByLabelText('Memory category'), {
+      target: { value: 'identity' },
+    })
+    fireEvent.click(previewButton())
+
+    const table = await screen.findByRole('table', { name: 'Extracted facts' })
+    const row = within(table).getByText('acme logistics · ships_to = reno').closest('tr')
+    expect(row).not.toBeNull()
+    expect(within(row as HTMLElement).getByText('knowledge').tagName).toBe('S')
+    expect(within(row as HTMLElement).getByText('identity')).toBeInTheDocument()
   })
 
   it('stores the kept facts and shows what was created and changed', async () => {

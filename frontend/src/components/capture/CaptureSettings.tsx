@@ -10,7 +10,7 @@ const MODES: { mode: StoreMode; label: string; detail: string }[] = [
     mode: 'full',
     label: 'Re-extract everything (full)',
     detail:
-      'Agent Memory reads the whole input again and stores all it finds, including facts with no entity link.',
+      'No preview: Agent Memory reads the input and stores all it finds, including facts with no entity link.',
   },
 ]
 
@@ -77,7 +77,9 @@ export default function CaptureSettings({
         <span id="capture-category-hint" className="capture-hint">
           {mode === 'full'
             ? 'Full re-extraction keeps the categories Agent Memory chooses.'
-            : 'Overrides the category on every kept fact.'}
+            : category
+              ? `Every kept fact is stored as ${category}, whatever Agent Memory gave it. A fact already in memory with the same value keeps its old category.`
+              : 'Each fact keeps the category Agent Memory gave it. Pick one to store every kept fact with that category instead.'}
         </span>
       </div>
     </div>

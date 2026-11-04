@@ -4,7 +4,9 @@ import {
   MAX_FILE_BYTES,
   MAX_TEXT_CHARS,
   type CaptureApi,
+  type CaptureExtractRequest,
   type CapturePreviewResponse,
+  type CaptureStoreResponse,
   type CreatedFact,
   type ExtractedFact,
   type HistoryEntry,
@@ -154,31 +156,89 @@ function writeScope(requested: string | null | undefined): string {
   return path
 }
 
-export const mockCaptureApi: CaptureApi = {
-  async preview(body, signal) {
-    const scope = writeScope(body.scope)
-    let text = body.content
-    let source = 'text'
-    let truncated = false
-    let docId: string | null = null
+/** The text extraction runs on, as the backend's _read_input reads it. */
+function readInput(body: CaptureExtractRequest) {
+  const scope = writeScope(body.scope)
+  let text = body.content
+  let source = 'text'
+  let truncated = false
+  let docId: string | null = null
 
-    if (body.input_type === 'text') {
-      if (text.length > MAX_TEXT_CHARS) {
-        throw new ApiError(
-          422,
-          `Text is limited to ${MAX_TEXT_CHARS} characters; use the document tab.`,
-        )
-      }
-    } else {
-      const fileName = body.file_name || 'document'
-      text = decodeDocument(text, fileName)
-      const words = wordsOf(text)
-      truncated = words.length > LARGE_DOCUMENT_WORDS
-      if (truncated) text = words.slice(0, PREVIEW_WORDS).join(' ')
-      docId = newId('doc')
-      documents.set(docId, { uploadedAt: Date.now(), words: words.length })
-      source = `document ${fileName}${truncated ? ' (first words)' : ''}`
+  if (body.input_type === 'text') {
+    if (text.length > MAX_TEXT_CHARS) {
+      throw new ApiError(
+        422,
+        `Text is limited to ${MAX_TEXT_CHARS} characters; use the document tab.`,
+      )
     }
+  } else {
+    const fileName = body.file_name || 'document'
+    text = decodeDocument(text, fileName)
+    const words = wordsOf(text)
+    truncated = words.length > LARGE_DOCUMENT_WORDS
+    if (truncated) text = words.slice(0, PREVIEW_WORDS).join(' ')
+    docId = newId('doc')
+    documents.set(docId, { uploadedAt: Date.now(), words: words.length })
+    source = `document ${fileName}${truncated ? ' (first words)' : ''}`
+  }
+  return { scope, text, source, truncated, docId }
+}
+
+type Triple = { entity: string; key: string; value: string }
+
+/** Records the facts in the mock store and builds the store response. */
+function save(
+  scope: string,
+  written: Triple[],
+  corrections: Correction[],
+): CaptureStoreResponse {
+  const created: CreatedFact[] = written.map((t) => {
+    const id = newId('attribute')
+    records.push({
+      id,
+      area: scope,
+      kind: 'attribute',
+      text: `${t.entity} · ${t.key} = ${t.value}`,
+    })
+    return { entity: t.entity, key: t.key, value: t.value, id }
+  })
+  const changedAt = new Date().toISOString().replace(/\.\d+Z$/, '+00:00')
+  const history: HistoryEntry[] = corrections.map((c) => ({
+    fact_id: created.find((f) => f.key === c.key)?.id ?? null,
+    key: c.key,
+    old_value: c.from,
+    new_value: c.to,
+    changed_at: changedAt,
+  }))
+  return {
+    stored_id: newId('store'),
+    written: written.length,
+    created_facts: created,
+    history,
+    trace_id: traceId(),
+  }
+}
+
+export const mockCaptureApi: CaptureApi = {
+  async extract(body, signal) {
+    const { scope, text, truncated, docId } = readInput(body)
+    // One full extraction: about as long as a preview plus a store.
+    await delay(1800 + Math.min(text.length / 20, 1500), signal)
+    const { facts, corrections } = extract(text)
+    const written = facts.flatMap((f) =>
+      f.entity ? [{ entity: f.entity, key: f.key, value: f.value }] : [],
+    )
+    return {
+      ...save(scope, written, corrections),
+      scope,
+      doc_id: docId,
+      truncated,
+      truncated_reason: truncated ? TRUNCATED_REASON : null,
+    }
+  },
+
+  async preview(body, signal) {
+    const { scope, text, source, truncated, docId } = readInput(body)
 
     // Agent Memory's preview takes a few seconds per call.
     await delay(1200 + Math.min(text.length / 20, 1500), signal)
@@ -279,32 +339,7 @@ export const mockCaptureApi: CaptureApi = {
     }
 
     await delay(900 + written.length * 150, signal)
-
-    const created: CreatedFact[] = written.map((t) => {
-      const id = newId('attribute')
-      records.push({
-        id,
-        area: stored.response.scope,
-        kind: 'attribute',
-        text: `${t.entity} · ${t.key} = ${t.value}`,
-      })
-      return { entity: t.entity, key: t.key, value: t.value, id }
-    })
-    const changedAt = new Date().toISOString().replace(/\.\d+Z$/, '+00:00')
-    const history: HistoryEntry[] = stored.corrections.map((c) => ({
-      fact_id: created.find((f) => f.key === c.key)?.id ?? null,
-      key: c.key,
-      old_value: c.from,
-      new_value: c.to,
-      changed_at: changedAt,
-    }))
-    return {
-      stored_id: newId('store'),
-      written: written.length,
-      created_facts: created,
-      history,
-      trace_id: traceId(),
-    }
+    return save(stored.response.scope, written, stored.corrections)
   },
 
   async documentStatus(docId, signal) {

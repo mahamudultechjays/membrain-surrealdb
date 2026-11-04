@@ -52,14 +52,20 @@ function fakeApi(overrides: Partial<AdminApi> = {}): AdminApi {
 }
 
 const row = (name: string) =>
-  screen.getByRole('cell', { name: new RegExp(`^${name}`) }).closest('tr')!
+  screen.getByRole('cell', { name: new RegExp(`^${name}`) }).closest('tbody')!
 
-const grantForm = () => screen.getByRole('form', { name: 'Grant a scope' })
+/** Renders the page and waits for the users and the registered scopes. */
+async function renderPage(api: AdminApi) {
+  render(<AdminPage me={ME} api={api} />)
+  await screen.findAllByText('not in Agent Memory')
+}
 
-function fillGrant(email: string, scope: string) {
-  const form = within(grantForm())
-  fireEvent.change(form.getByLabelText('Person'), { target: { value: email } })
-  fireEvent.change(form.getByLabelText('Scope'), { target: { value: scope } })
+/** Opens the grant dialog from a user's row. */
+function addScopeFor(name: string) {
+  fireEvent.click(
+    within(row(name)).getByRole('button', { name: `Add a scope for ${name}` }),
+  )
+  return within(screen.getByRole('dialog', { name: `Add a scope for ${name}` }))
 }
 
 describe('AdminPage', () => {
@@ -72,18 +78,25 @@ describe('AdminPage', () => {
     const arun = row('Arun Das')
     expect(await within(arun).findByText('not in Agent Memory')).toBeInTheDocument()
     expect(within(priya).queryByText('not in Agent Memory')).not.toBeInTheDocument()
+    // Grants and new scopes live in dialogs, not in forms under the table.
+    expect(screen.queryByRole('form')).not.toBeInTheDocument()
   })
 
-  it('grants an existing scope straight away', async () => {
+  it("grants an existing scope from the person's row without typing their email", async () => {
     const api = fakeApi()
-    render(<AdminPage me={ME} api={api} />)
-    await screen.findByText('Arun Das')
-    await waitFor(() => expect(api.scopes).toHaveBeenCalled())
+    await renderPage(api)
 
-    fillGrant('Arun@Spreetail.com', `${ROOT}/team/ops/`)
-    fireEvent.click(within(grantForm()).getByRole('button', { name: 'Grant' }))
+    const dialog = addScopeFor('Arun Das')
+    expect(dialog.queryByLabelText('Email')).not.toBeInTheDocument()
+    expect(dialog.getByText('arun@spreetail.com')).toBeInTheDocument()
+    expect(dialog.getByLabelText('Scope')).toHaveFocus()
+    fireEvent.change(dialog.getByLabelText('Scope'), {
+      target: { value: `${ROOT}/team/ops/` },
+    })
+    fireEvent.click(dialog.getByRole('button', { name: 'Grant' }))
 
     await screen.findByText(`Granted read on ${ROOT}/team/ops to Arun Das.`)
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
     expect(api.grant).toHaveBeenCalledWith('arun@spreetail.com', {
       scope_path: `${ROOT}/team/ops`,
       access: 'read',
@@ -92,16 +105,28 @@ describe('AdminPage', () => {
     })
   })
 
+  it('says when the person already holds the scope', async () => {
+    await renderPage(fakeApi())
+
+    const dialog = addScopeFor('Arun Das')
+    fireEvent.change(dialog.getByLabelText('Scope'), {
+      target: { value: `${ROOT}/team/gone` },
+    })
+
+    expect(dialog.getByText(/Arun Das already holds this scope/)).toBeInTheDocument()
+  })
+
   it('asks before a grant creates scopes, listing parents first', async () => {
     const api = fakeApi()
-    render(<AdminPage me={ME} api={api} />)
-    await screen.findByText('Arun Das')
-    await screen.findAllByText('not in Agent Memory')
+    await renderPage(api)
 
-    fillGrant('arun@spreetail.com', `${ROOT}/team/qa/core`)
-    fireEvent.click(within(grantForm()).getByRole('button', { name: 'Grant' }))
+    const dialog = addScopeFor('Arun Das')
+    fireEvent.change(dialog.getByLabelText('Scope'), {
+      target: { value: `${ROOT}/team/qa/core` },
+    })
+    fireEvent.click(dialog.getByRole('button', { name: 'Grant' }))
 
-    const confirm = screen.getByRole('region', { name: 'Create scopes in Agent Memory' })
+    const confirm = dialog.getByRole('region', { name: 'Create scopes in Agent Memory' })
     expect(
       within(confirm)
         .getAllByRole('listitem')
@@ -115,59 +140,135 @@ describe('AdminPage', () => {
     await waitFor(() => expect(api.grant).toHaveBeenCalledTimes(1))
   })
 
-  it('asks for a name when granting someone who has not signed in yet', async () => {
+  it('adds a person who has not signed in yet, asking for their name', async () => {
     const api = fakeApi()
-    render(<AdminPage me={ME} api={api} />)
-    await screen.findByText('Arun Das')
-    await screen.findAllByText('not in Agent Memory')
+    await renderPage(api)
 
-    fillGrant('vidyul@spreetail.com', `${ROOT}/team/ops`)
-    fireEvent.change(within(grantForm()).getByLabelText(/^Name/), {
-      target: { value: 'Vidyul Kumar' },
+    fireEvent.click(screen.getByRole('button', { name: 'Add person or grant access' }))
+    const dialog = within(
+      screen.getByRole('dialog', { name: 'Add person or grant access' }),
+    )
+    fireEvent.change(dialog.getByLabelText('Email'), {
+      target: { value: 'vidyul@spreetail.com' },
     })
-    fireEvent.click(within(grantForm()).getByRole('button', { name: 'Grant' }))
+    fireEvent.change(dialog.getByLabelText(/^Name/), {
+      target: { value: 'Vidyul Narayanan' },
+    })
+    fireEvent.change(dialog.getByLabelText('Scope'), {
+      target: { value: `${ROOT}/team/ops` },
+    })
+    fireEvent.click(dialog.getByRole('button', { name: 'Grant' }))
 
-    await waitFor(() =>
-      expect(api.grant).toHaveBeenCalledWith(
-        'vidyul@spreetail.com',
-        expect.objectContaining({ name: 'Vidyul Kumar' }),
-      ),
+    await screen.findByText(`Granted read on ${ROOT}/team/ops to Vidyul Narayanan.`)
+    expect(api.grant).toHaveBeenCalledWith(
+      'vidyul@spreetail.com',
+      expect.objectContaining({ name: 'Vidyul Narayanan' }),
     )
   })
 
-  it('asks before revoking, then revokes', async () => {
+  it('treats an email already in the list as adding a scope to that person', async () => {
+    await renderPage(fakeApi())
+
+    fireEvent.click(screen.getByRole('button', { name: 'Add person or grant access' }))
+    const dialog = within(
+      screen.getByRole('dialog', { name: 'Add person or grant access' }),
+    )
+    fireEvent.change(dialog.getByLabelText('Email'), {
+      target: { value: 'Arun@Spreetail.com' },
+    })
+
+    expect(dialog.getByText(/Arun Das is already in the list/)).toBeInTheDocument()
+    expect(dialog.queryByLabelText(/^Name/)).not.toBeInTheDocument()
+    // Arun already has a personal scope, so picking Personal needs no warning.
+    fireEvent.change(dialog.getByLabelText('Layer'), { target: { value: 'personal' } })
+    expect(dialog.queryByText(/won't get their own/)).not.toBeInTheDocument()
+  })
+
+  it('warns that a Personal grant replaces the personal scope a new person would get', async () => {
+    await renderPage(fakeApi())
+
+    fireEvent.click(screen.getByRole('button', { name: 'Add person or grant access' }))
+    const dialog = within(
+      screen.getByRole('dialog', { name: 'Add person or grant access' }),
+    )
+    fireEvent.change(dialog.getByLabelText('Email'), {
+      target: { value: 'vidyul@spreetail.com' },
+    })
+    expect(dialog.queryByText(/won't get their own/)).not.toBeInTheDocument()
+    fireEvent.change(dialog.getByLabelText('Layer'), { target: { value: 'personal' } })
+
+    expect(dialog.getByText(/won't get their own/)).toBeInTheDocument()
+  })
+
+  it('closes a dialog on Escape and gives focus back to its button', async () => {
+    await renderPage(fakeApi())
+    const opener = screen.getByRole('button', { name: 'New scope' })
+    opener.focus()
+
+    fireEvent.click(opener)
+    expect(screen.getByRole('dialog', { name: 'New scope' })).toBeInTheDocument()
+    fireEvent.keyDown(document, { key: 'Escape' })
+
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    expect(opener).toHaveFocus()
+  })
+
+  it('asks in a popup before revoking, then revokes', async () => {
     const api = fakeApi()
     render(<AdminPage me={ME} api={api} />)
     const arun = await waitFor(() => row('Arun Das'))
-
-    fireEvent.click(
+    const revokeButton = () =>
       within(arun).getByRole('button', {
         name: `Revoke ${ROOT}/team/gone from Arun Das…`,
-      }),
-    )
+      })
+
+    // Cancel leaves the grant alone.
+    fireEvent.click(revokeButton())
+    let dialog = within(screen.getByRole('dialog', { name: 'Revoke scope access?' }))
+    expect(dialog.getByText(`${ROOT}/team/gone`)).toBeInTheDocument()
+    fireEvent.click(dialog.getByRole('button', { name: 'Cancel' }))
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
     expect(api.revoke).not.toHaveBeenCalled()
+
+    fireEvent.click(revokeButton())
+    dialog = within(screen.getByRole('dialog', { name: 'Revoke scope access?' }))
     fireEvent.click(
-      within(arun).getByRole('button', {
-        name: `Revoke ${ROOT}/team/gone from Arun Das`,
-      }),
+      dialog.getByRole('button', { name: `Revoke ${ROOT}/team/gone from Arun Das` }),
     )
 
     await screen.findByText(/Revoked org\/spreetail\/team\/gone from Arun Das/)
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
     expect(api.revoke).toHaveBeenCalledWith('arun@spreetail.com', `${ROOT}/team/gone`)
+  })
+
+  it('registers a new scope from the header button', async () => {
+    const api = fakeApi()
+    await renderPage(api)
+
+    fireEvent.click(screen.getByRole('button', { name: 'New scope' }))
+    const dialog = within(screen.getByRole('dialog', { name: 'New scope' }))
+    fireEvent.change(dialog.getByLabelText('Scope path'), {
+      target: { value: `${ROOT}/team/eng` },
+    })
+    fireEvent.click(dialog.getByRole('button', { name: 'Register scope' }))
+
+    await screen.findByText(`Registered ${ROOT}/team/eng.`)
+    expect(api.registerScope).toHaveBeenCalledWith(`${ROOT}/team/eng`)
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
   })
 
   it('does not register a scope that already exists', async () => {
     const api = fakeApi()
-    render(<AdminPage me={ME} api={api} />)
-    await screen.findAllByText('not in Agent Memory')
+    await renderPage(api)
 
-    const form = within(screen.getByRole('form', { name: 'Register a scope' }))
-    fireEvent.change(form.getByLabelText('Scope path'), {
+    fireEvent.click(screen.getByRole('button', { name: 'New scope' }))
+    const dialog = within(screen.getByRole('dialog', { name: 'New scope' }))
+    fireEvent.change(dialog.getByLabelText('Scope path'), {
       target: { value: `${ROOT}/team/ops` },
     })
-    fireEvent.click(form.getByRole('button', { name: 'Register scope' }))
+    fireEvent.click(dialog.getByRole('button', { name: 'Register scope' }))
 
-    expect(await screen.findByRole('alert')).toHaveTextContent('already registered')
+    expect(await dialog.findByRole('alert')).toHaveTextContent('already registered')
     expect(api.registerScope).not.toHaveBeenCalled()
   })
 })

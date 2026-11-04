@@ -95,6 +95,18 @@ export interface CaptureStoreResponse {
   trace_id: string | null
 }
 
+/** Mode full in one call: the input only, since there is nothing to review or override. */
+export type CaptureExtractRequest = Omit<CapturePreviewRequest, 'config'>
+
+export interface CaptureExtractResponse extends CaptureStoreResponse {
+  scope: string
+  /** Set for documents: the upload to poll with documentStatus. */
+  doc_id: string | null
+  /** Large documents are extracted from their first words; the whole file is uploaded. */
+  truncated: boolean
+  truncated_reason: string | null
+}
+
 export interface DocumentStatus {
   doc_id: string
   status: string
@@ -118,6 +130,11 @@ export interface CaptureApi {
     signal?: AbortSignal,
   ): Promise<CapturePreviewResponse>
   store(body: CaptureStoreRequest, signal?: AbortSignal): Promise<CaptureStoreResponse>
+  /** Re-extract everything (mode full): extract and store in one call, no preview. */
+  extract(
+    body: CaptureExtractRequest,
+    signal?: AbortSignal,
+  ): Promise<CaptureExtractResponse>
   /** Only the uploader (or an admin) can see a document's status. */
   documentStatus(docId: string, signal?: AbortSignal): Promise<DocumentStatus>
 }
@@ -127,6 +144,8 @@ export const httpCaptureApi: CaptureApi = {
     apiPost<CapturePreviewResponse>('/api/v1/capture/preview', body, { signal }),
   store: (body, signal) =>
     apiPost<CaptureStoreResponse>('/api/v1/capture/store', body, { signal }),
+  extract: (body, signal) =>
+    apiPost<CaptureExtractResponse>('/api/v1/capture/extract', body, { signal }),
   documentStatus: (docId, signal) =>
     apiGet<DocumentStatus>(
       `/api/v1/capture/document/${encodeURIComponent(docId)}/status`,

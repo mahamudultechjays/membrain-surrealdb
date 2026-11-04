@@ -71,14 +71,21 @@ class CaptureConfig(BaseModel):
     memory_category: MemoryCategory | None = None
 
 
-class CapturePreviewRequest(BaseModel):
+class CaptureInput(BaseModel):
     # A scope the signed-in user may write; omitted means their personal scope.
     scope: str | None = None
     input_type: Literal["text", "document"] = "text"
-    config: CaptureConfig = CaptureConfig()
     # Plain text, or the file's bytes base64-encoded when input_type is "document".
     content: str = Field(min_length=1, max_length=MAX_CONTENT_CHARS)
     file_name: str | None = None
+
+
+class CapturePreviewRequest(CaptureInput):
+    config: CaptureConfig = CaptureConfig()
+
+
+class CaptureExtractRequest(CaptureInput):
+    """Mode full in one call: extract and store, with no preview to review."""
 
 
 class ExtractedFactOut(BaseModel):
@@ -153,6 +160,16 @@ class CaptureStoreResponse(_FromDomain):
     created_facts: list[CreatedFactOut]
     history: list[HistoryOut]
     trace_id: str | None
+
+
+class CaptureExtractResponse(CaptureStoreResponse):
+    scope: str
+    # Set for documents: the upload to poll at /capture/document/{doc_id}/status.
+    doc_id: str | None = None
+    # Large documents are extracted from their first words only; the whole file
+    # is still uploaded and searchable.
+    truncated: bool = False
+    truncated_reason: str | None = None
 
 
 class DocumentStatusResponse(BaseModel):
