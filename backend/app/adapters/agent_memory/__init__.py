@@ -4,6 +4,7 @@ from app.adapters.agent_memory.capture import AgentMemoryCapture, NotConfiguredC
 from app.adapters.agent_memory.chat import AgentMemoryChat, NotConfiguredChat
 from app.adapters.agent_memory.documents import AgentMemoryDocuments, NotConfiguredDocuments
 from app.adapters.agent_memory.graph import AgentMemoryGraph, NotConfiguredGraph
+from app.adapters.agent_memory.lab import AgentMemoryLab, NotConfiguredLab
 from app.adapters.agent_memory.probe import AgentMemoryProbe, NotConfiguredProbe
 from app.adapters.agent_memory.scope_registry import (
     AgentMemoryScopeRegistry,
@@ -16,6 +17,7 @@ __all__ = [
     "AgentMemoryChat",
     "AgentMemoryDocuments",
     "AgentMemoryGraph",
+    "AgentMemoryLab",
     "AgentMemoryProbe",
     "AgentMemoryRecall",
     "AgentMemoryScopeRegistry",
@@ -24,6 +26,7 @@ __all__ = [
     "NotConfiguredChat",
     "NotConfiguredDocuments",
     "NotConfiguredGraph",
+    "NotConfiguredLab",
     "NotConfiguredProbe",
     "NotConfiguredRecall",
     "NotConfiguredScopeRegistry",

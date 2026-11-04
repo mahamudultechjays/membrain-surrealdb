@@ -259,3 +259,124 @@
     justify-content: flex-start;
   }
 }
+
+/* --- Memory jobs --- */
+
+.lab {
+  display: grid;
+  gap: 12px;
+  margin-top: 32px;
+}
+
+.lab h2 {
+  margin: 0;
+  font-size: 18px;
+}
+
+.lab p {
+  margin: 0;
+}
+
+.lab-label {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--mb-ink-2);
+}
+
+.lab-scope select {
+  min-width: min(100%, 360px);
+}
+
+.lab-jobs {
+  display: grid;
+  gap: 12px;
+}
+
+/* One job: its trigger, a one-line description, then its result. */
+.lab-job {
+  display: grid;
+  gap: 8px;
+  padding: 12px 14px;
+  border: 1px solid var(--mb-line);
+  border-radius: 8px;
+}
+
+.lab-job-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 16px;
+}
+
+.lab-job-desc {
+  font-size: 13px;
+}
+
+.lab-question {
+  flex: 1 1 260px;
+}
+
+.lab-question input {
+  width: 100%;
+  font: inherit;
+}
+
+.lab-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  color: var(--mb-ink-2);
+}
+
+.lab-running {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--mb-ink-2);
+}
+
+.lab-result {
+  border-top: 1px solid var(--mb-line);
+  padding-top: 8px;
+}
+
+.lab-result summary {
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.lab-result-body {
+  display: grid;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.lab-summary,
+.lab-text {
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+.lab-counts {
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+
+.lab-change {
+  color: var(--mb-accent-ink);
+}
+
+.lab-items {
+  margin: 0;
+  padding-left: 20px;
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+
+.lab-trace {
+  font-size: 12px;
+}

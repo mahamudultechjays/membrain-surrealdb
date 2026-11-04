@@ -1,7 +1,9 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { adminApi, type AdminApi, type GrantInput, type UserGrants } from '@/api/admin'
 import type { Access, Grant, GrantLayer, Me } from '@/api/auth'
+import type { LabApi } from '@/api/lab'
 import { cleanPath, unregisteredScopes } from '@/api/scopePaths'
+import MemoryLab from '@/components/admin/MemoryLab'
 import { LAYER_LABELS } from '@/components/ask/layers'
 import { isAbort, messageOf } from '@/components/capture/format'
 import '@/pages/admin.css'
@@ -9,6 +11,8 @@ import '@/pages/admin.css'
 interface Props {
   me: Me
   api?: AdminApi
+  /** The memory jobs' API; defaults to the real (or mock) one. */
+  labApi?: LabApi
 }
 
 type UsersState =
@@ -45,7 +49,7 @@ const USER_OPTIONS = 'admin-user-options'
  * Memory with one admin key, so these grants are the only thing keeping
  * people's memories apart.
  */
-export default function AdminPage({ me, api = adminApi }: Props) {
+export default function AdminPage({ me, api = adminApi, labApi }: Props) {
   const [users, setUsers] = useState<UsersState>({ status: 'loading' })
   const [registry, setRegistry] = useState<RegistryState>({ status: 'loading' })
   const [form, setForm] = useState<GrantForm>(EMPTY_GRANT)
@@ -429,6 +433,8 @@ export default function AdminPage({ me, api = adminApi }: Props) {
           </button>
         </form>
       </div>
+
+      <MemoryLab api={labApi} />
     </main>
   )
 }

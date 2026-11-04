@@ -10,6 +10,7 @@ from app.adapters.agent_memory import (
     AgentMemoryChat,
     AgentMemoryDocuments,
     AgentMemoryGraph,
+    AgentMemoryLab,
     AgentMemoryProbe,
     AgentMemoryRecall,
     AgentMemoryScopeRegistry,
@@ -18,6 +19,7 @@ from app.adapters.agent_memory import (
     NotConfiguredChat,
     NotConfiguredDocuments,
     NotConfiguredGraph,
+    NotConfiguredLab,
     NotConfiguredProbe,
     NotConfiguredRecall,
     NotConfiguredScopeRegistry,
@@ -61,20 +63,26 @@ def get_agent_memory_client() -> AsyncMemory | None:
     )
 
 
-def _connect(api_key: str) -> AsyncMemory:
+def _connect(api_key: str, *, timeout: float | None = None) -> AsyncMemory:
     """A client on the same Context as the admin client, with another key."""
     return AsyncMemory(
         settings.AGENT_MEMORY_CONTEXT or "",
         endpoint=(settings.AGENT_MEMORY_ENDPOINT or "").rstrip("/"),
         api_key=api_key,
-        timeout=settings.AGENT_MEMORY_TIMEOUT_SECONDS,
+        timeout=timeout or settings.AGENT_MEMORY_TIMEOUT_SECONDS,
     )
 
 
+# Consolidation and reflection run a model over the scope: allow minutes, not seconds.
+LAB_TIMEOUT_SECONDS = 180.0
+
+
 async def close_clients() -> None:
-    # Chat first: deleting its minted keys needs the admin client still open.
+    # Chat and lab first: deleting their minted keys needs the admin client still open.
     if get_memory_chat.cache_info().currsize:
         await get_memory_chat().close()
+    if get_memory_lab.cache_info().currsize:
+        await get_memory_lab().close()
     client = get_agent_memory_client()
     if client is not None:
         await client.close()
@@ -115,6 +123,21 @@ def get_memory_chat() -> AgentMemoryChat | NotConfiguredChat:
     """One per process: it holds the keys minted for each user's chats."""
     client = get_agent_memory_client()
     return AgentMemoryChat(client, _connect) if client else NotConfiguredChat()
+
+
+@lru_cache
+def get_memory_lab() -> AgentMemoryLab | NotConfiguredLab:
+    """One per process: it holds the keys minted for each lab scope."""
+    client = get_agent_memory_client()
+    if client is None:
+        return NotConfiguredLab()
+
+    def connect(key: str) -> AsyncMemory:
+        return _connect(key, timeout=LAB_TIMEOUT_SECONDS)
+
+    admin_key = settings.AGENT_MEMORY_API_KEY
+    whole = connect(admin_key.get_secret_value()) if admin_key else None
+    return AgentMemoryLab(client, connect, whole=whole)
 
 
 @lru_cache

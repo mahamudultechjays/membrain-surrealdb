@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { getMe, logout, type Me } from '@/api/auth'
+import { clearLabResults } from '@/components/admin/labResults'
 import { clearChats } from '@/components/ask/chatStore'
 import { ApiError } from '@/api/client'
 import { USE_MOCK_API } from '@/api/config'
@@ -57,9 +58,10 @@ export default function App() {
     return <Login onSignedIn={(me) => setSession({ status: 'signed-in', me })} />
   }
 
-  // Chats are kept until sign-out, so the next person on this browser starts clean.
+  // Chats and memory job results are kept until sign-out, so the next person on this browser starts clean.
   const signedOut = () => {
     clearChats()
+    clearLabResults()
     setSession({ status: 'signed-out' })
   }
 

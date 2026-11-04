@@ -16,6 +16,7 @@ from app.composition import (
     get_memory_capture,
     get_memory_chat,
     get_memory_graph,
+    get_memory_lab,
     get_memory_probe,
     get_memory_recall,
     get_preview_cache,
@@ -28,6 +29,7 @@ from app.domain.ports.memory_brain import MemoryBrain
 from app.domain.ports.memory_capture import MemoryCapture
 from app.domain.ports.memory_chat import MemoryChat
 from app.domain.ports.memory_graph import MemoryGraph
+from app.domain.ports.memory_lab import MemoryLab
 from app.domain.ports.memory_probe import MemoryProbe
 from app.domain.ports.memory_recall import MemoryRecall
 from app.domain.ports.scope_registry import ScopeRegistry
@@ -49,6 +51,7 @@ ScopeRegistryDep = Annotated[ScopeRegistry, Depends(get_scope_registry)]
 AccessServiceDep = Annotated[AccessService, Depends(get_access_service)]
 MemoryChatDep = Annotated[MemoryChat, Depends(get_memory_chat)]
 ChatSessionsDep = Annotated[ChatSessions, Depends(get_chat_sessions)]
+MemoryLabDep = Annotated[MemoryLab, Depends(get_memory_lab)]
 
 
 async def get_current_user(request: Request) -> CurrentUser:
