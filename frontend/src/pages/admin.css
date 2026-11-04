@@ -63,23 +63,96 @@
   width: 26%;
 }
 
-/* Layer, Access, Revoke and Add scope take only the width they need. */
+/* Layer, Access and Revoke take only the width they need. */
 .admin-table .admin-col-fit {
   width: 1%;
   white-space: nowrap;
 }
 
-.admin-table .admin-col-add {
-  text-align: right;
-}
-
-.admin-person .tag {
-  margin: 4px 6px 0 0;
+/* Name with the expand arrow beside it, then tags and Add scope on one line. */
+.admin-person-head {
+  display: flex;
+  align-items: center;
+  gap: 4px;
 }
 
 .admin-name {
-  display: block;
   font-weight: 600;
+}
+
+.admin-toggle {
+  display: inline-grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--mb-radius-sm);
+  background: transparent;
+  color: var(--mb-muted);
+  cursor: pointer;
+}
+
+.admin-toggle svg {
+  transition: transform 0.15s ease;
+}
+
+.admin-toggle[aria-expanded='true'] svg {
+  transform: rotate(180deg);
+}
+
+.admin-toggle:hover {
+  background: var(--mb-accent-soft);
+  color: var(--mb-accent-ink);
+}
+
+.admin-toggle:focus-visible,
+.admin-more:focus-visible {
+  outline: 2px solid var(--mb-accent);
+  outline-offset: 2px;
+}
+
+.admin-person-tags {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+/* Beside the tags, so about their height. */
+.admin-person-tags .admin-add-scope {
+  min-height: 28px;
+  padding: 0 10px 0 8px;
+  font-size: 12px;
+}
+
+/* "Show 2 more scopes": a quiet text link under a person's first scopes. */
+.admin-more-row td {
+  padding-top: 2px;
+}
+
+.admin-more {
+  min-height: 28px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--mb-accent-ink);
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.admin-more + .tag {
+  margin-left: 8px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .admin-toggle svg {
+    transition: none;
+  }
 }
 
 .admin-email {
@@ -97,11 +170,7 @@
   color: var(--mb-ink);
 }
 
-.admin-grant-actions {
-  display: flex;
-  gap: 6px;
-}
-
+/* Stays a table cell (no flex), so the line between people runs the full width. */
 .admin-grant-actions .btn,
 .admin-grant-actions .btn-secondary {
   min-height: 36px;
@@ -305,23 +374,20 @@
     border: 0;
   }
 
-  /* Name first and Add scope last; each scope path starts a new line. */
+  /* Name first; each scope path, and "Show more", starts a new line. */
   .admin-table .admin-person {
     order: -1;
     flex-basis: 100%;
   }
 
-  .admin-table .admin-scope {
+  .admin-table .admin-scope,
+  .admin-table .admin-more-row td {
     flex-basis: 100%;
-    padding-top: 8px;
-    border-top: 1px dashed var(--mb-line);
   }
 
-  .admin-table .admin-col-add {
-    order: 1;
-    flex-basis: 100%;
-    padding-top: 4px;
-    text-align: left;
+  .admin-table .admin-scope {
+    padding-top: 8px;
+    border-top: 1px dashed var(--mb-line);
   }
 }
 

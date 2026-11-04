@@ -39,6 +39,17 @@ const USERS: UserGrants[] = [
       { scope_path: `${ROOT}/team/gone`, access: 'read', layer: 'team' },
     ],
   },
+  {
+    email: 'ravi@spreetail.com',
+    name: 'Ravi Menon',
+    is_admin: false,
+    grants: [
+      { scope_path: ROOT, access: 'read', layer: 'org' },
+      { scope_path: `${ROOT}/team/ops`, access: 'read', layer: 'team' },
+      { scope_path: `${ROOT}/team`, access: 'read', layer: 'team' },
+      { scope_path: `${ROOT}/team/qa`, access: 'read', layer: 'team' },
+    ],
+  },
 ]
 
 const REGISTERED = [
@@ -89,6 +100,39 @@ describe('AdminPage', () => {
     expect(within(priya).queryByText('not in Agent Memory')).not.toBeInTheDocument()
     // Grants and new scopes live in dialogs, not in forms under the table.
     expect(screen.queryByRole('form')).not.toBeInTheDocument()
+  })
+
+  it('shows two scopes per person until the arrow or "Show more" opens the rest', async () => {
+    await renderPage(fakeApi())
+    const ravi = row('Ravi Menon')
+    const scopes = () =>
+      within(ravi)
+        .getAllByRole('cell')
+        .filter((cell) => cell.classList.contains('admin-scope'))
+        .map((cell) => cell.querySelector('.admin-path')?.textContent)
+
+    expect(scopes()).toEqual([ROOT, `${ROOT}/team/ops`])
+    // The hidden team/qa scope isn't registered; its warning stays in sight.
+    expect(within(ravi).getByText('1 not in Agent Memory')).toBeInTheDocument()
+    const arrow = within(ravi).getByRole('button', {
+      name: 'Show all 4 scopes for Ravi Menon',
+    })
+    expect(arrow).toHaveAttribute('aria-expanded', 'false')
+
+    fireEvent.click(within(ravi).getByRole('button', { name: 'Show 2 more scopes' }))
+    expect(scopes()).toHaveLength(4)
+    expect(arrow).toHaveAttribute('aria-expanded', 'true')
+    expect(within(ravi).getByText('not in Agent Memory')).toBeInTheDocument()
+
+    fireEvent.click(arrow)
+    expect(scopes()).toHaveLength(2)
+    expect(
+      within(ravi).getByRole('button', { name: 'Show 2 more scopes' }),
+    ).toHaveAttribute('aria-expanded', 'false')
+    // Two scopes or fewer: nothing to open.
+    expect(
+      within(row('Arun Das')).queryByRole('button', { name: /^Show/ }),
+    ).not.toBeInTheDocument()
   })
 
   it("grants an existing scope from the person's row without typing their email", async () => {

@@ -55,6 +55,8 @@ const EMPTY_GRANT: GrantForm = {
 }
 const SCOPE_OPTIONS = 'admin-scope-options'
 const USER_OPTIONS = 'admin-user-options'
+/** Scopes shown per person before "Show more". */
+const VISIBLE_SCOPES = 2
 
 /**
  * Who may read or write which Agent Memory scope. The backend reaches Agent
@@ -72,6 +74,16 @@ export default function AdminPage({ me, api = adminApi, labApi }: Props) {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [done, setDone] = useState<string | null>(null)
+  // People whose scopes are all shown, by email; others show the first few.
+  const [expanded, setExpanded] = useState<ReadonlySet<string>>(new Set())
+
+  const toggleExpanded = (email: string, show?: boolean) =>
+    setExpanded((prev) => {
+      const next = new Set(prev)
+      if (show ?? !next.has(email)) next.add(email)
+      else next.delete(email)
+      return next
+    })
 
   useEffect(() => {
     const controller = new AbortController()
@@ -156,7 +168,11 @@ export default function AdminPage({ me, api = adminApi, labApi }: Props) {
       () => api.grant(email, grant),
       `Granted ${grant.access === 'write' ? 'read and write' : 'read'} on ${grant.scope_path} to ${grantee?.name ?? (name || email)}.`,
     )
-    if (ok) closeDialog()
+    if (ok) {
+      // Open their scopes, so the new one is on screen even past the first few.
+      toggleExpanded(email, true)
+      closeDialog()
+    }
   }
 
   // A grant registers any new path, so a typo would quietly create a scope: ask first.
@@ -271,37 +287,79 @@ export default function AdminPage({ me, api = adminApi, labApi }: Props) {
                 <th scope="col" className="admin-col-fit">
                   Revoke
                 </th>
-                <th scope="col" className="admin-col-fit admin-col-add">
-                  Add scope
-                </th>
               </tr>
             </thead>
-            {/* One tbody per person: their scopes are rows, name and Add scope span them. */}
+            {/* One tbody per person: their scopes are rows, and their name spans them. */}
             {list.map((user) => {
-              const span = Math.max(user.grants.length, 1)
+              const groupId = `admin-scopes-${user.email.replace(/[^a-z0-9]/gi, '-')}`
+              const extra = user.grants.length - VISIBLE_SCOPES
+              const collapsible = extra > 0
+              const isOpen = expanded.has(user.email)
+              const shown =
+                collapsible && !isOpen
+                  ? user.grants.slice(0, VISIBLE_SCOPES)
+                  : user.grants
+              // A warning on a hidden scope must not vanish with it.
+              const hiddenMissing = known
+                ? user.grants
+                    .slice(VISIBLE_SCOPES)
+                    .filter((g) => !known.has(g.scope_path)).length
+                : 0
+              const toggle = () => toggleExpanded(user.email)
+              const span = Math.max(shown.length, 1) + (collapsible ? 1 : 0)
               const person = (
                 <td rowSpan={span} data-label="Person" className="admin-person">
-                  <span className="admin-name">{user.name}</span>
-                  {user.is_admin && (
-                    <span className="tag" data-tone="good">
-                      admin
-                    </span>
-                  )}
-                  {user.email === me.email && <span className="tag">you</span>}
+                  <span className="admin-person-head">
+                    <span className="admin-name">{user.name}</span>
+                    {collapsible && (
+                      <button
+                        type="button"
+                        className="admin-toggle"
+                        aria-expanded={isOpen}
+                        aria-controls={groupId}
+                        aria-label={
+                          isOpen
+                            ? `Show fewer scopes for ${user.name}`
+                            : `Show all ${user.grants.length} scopes for ${user.name}`
+                        }
+                        onClick={toggle}
+                      >
+                        <svg
+                          viewBox="0 0 16 16"
+                          width="16"
+                          height="16"
+                          aria-hidden="true"
+                        >
+                          <path
+                            d="M4 6l4 4 4-4"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="1.8"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          />
+                        </svg>
+                      </button>
+                    )}
+                  </span>
+                  <span className="admin-person-tags">
+                    {user.is_admin && (
+                      <span className="tag" data-tone="good">
+                        admin
+                      </span>
+                    )}
+                    {user.email === me.email && <span className="tag">you</span>}
+                    <button
+                      type="button"
+                      className="admin-add-scope"
+                      disabled={busy}
+                      onClick={() => open({ kind: 'grant', user })}
+                      aria-label={`Add a scope for ${user.name}`}
+                    >
+                      <span aria-hidden="true">+</span> Add scope
+                    </button>
+                  </span>
                   <span className="mono admin-muted admin-email">{user.email}</span>
-                </td>
-              )
-              const addScope = (
-                <td rowSpan={span} className="admin-col-fit admin-col-add">
-                  <button
-                    type="button"
-                    className="admin-add-scope"
-                    disabled={busy}
-                    onClick={() => open({ kind: 'grant', user })}
-                    aria-label={`Add a scope for ${user.name}`}
-                  >
-                    <span aria-hidden="true">+</span> Add scope
-                  </button>
                 </td>
               )
               if (user.grants.length === 0) {
@@ -312,14 +370,13 @@ export default function AdminPage({ me, api = adminApi, labApi }: Props) {
                       <td colSpan={4} className="admin-muted">
                         No scopes
                       </td>
-                      {addScope}
                     </tr>
                   </tbody>
                 )
               }
               return (
-                <tbody key={user.email} className="admin-person-group">
-                  {user.grants.map((grant, index) => {
+                <tbody key={user.email} id={groupId} className="admin-person-group">
+                  {shown.map((grant, index) => {
                     return (
                       <tr key={grant.scope_path}>
                         {index === 0 && person}
@@ -357,10 +414,31 @@ export default function AdminPage({ me, api = adminApi, labApi }: Props) {
                             Revoke
                           </button>
                         </td>
-                        {index === 0 && addScope}
                       </tr>
                     )
                   })}
+                  {collapsible && (
+                    <tr className="admin-more-row">
+                      <td colSpan={4}>
+                        <button
+                          type="button"
+                          className="admin-more"
+                          aria-expanded={isOpen}
+                          aria-controls={groupId}
+                          onClick={toggle}
+                        >
+                          {isOpen
+                            ? 'Show fewer'
+                            : `Show ${extra} more scope${extra === 1 ? '' : 's'}`}
+                        </button>
+                        {!isOpen && hiddenMissing > 0 && (
+                          <span className="tag" data-tone="warn">
+                            {hiddenMissing} not in Agent Memory
+                          </span>
+                        )}
+                      </td>
+                    </tr>
+                  )}
                 </tbody>
               )
             })}
