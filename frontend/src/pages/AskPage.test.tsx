@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, within } from '@testing-library/react'
+import { act, fireEvent, render, screen, within } from '@testing-library/react'
 import type { AskApi, AskResponse } from '@/api/ask'
 import type { Me } from '@/api/auth'
 import { ApiError } from '@/api/client'
@@ -281,5 +281,35 @@ describe('AskPage modes', () => {
       'aria-current',
       'page',
     )
+  })
+
+  it('keeps what was typed in each mode when switching between them', async () => {
+    await renderPage()
+    fireEvent.change(screen.getByLabelText('Question'), {
+      target: { value: 'Is dock 3 open?' },
+    })
+
+    act(() => {
+      window.location.hash = '#/ask/chat'
+      window.dispatchEvent(new HashChangeEvent('hashchange'))
+    })
+    fireEvent.change(screen.getByLabelText('Message'), {
+      target: { value: 'Who runs dock 3?' },
+    })
+    expect(screen.getByLabelText('Question')).not.toBeVisible()
+
+    act(() => {
+      window.location.hash = '#/ask/search'
+      window.dispatchEvent(new HashChangeEvent('hashchange'))
+    })
+    expect(screen.getByLabelText('Question')).toHaveValue('Is dock 3 open?')
+    // Only the mode on screen puts its picker in the header.
+    expect(screen.getAllByRole('button', { name: /^Search in/ })).toHaveLength(1)
+
+    act(() => {
+      window.location.hash = '#/ask/chat'
+      window.dispatchEvent(new HashChangeEvent('hashchange'))
+    })
+    expect(screen.getByLabelText('Message')).toHaveValue('Who runs dock 3?')
   })
 })

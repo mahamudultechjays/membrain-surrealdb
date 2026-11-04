@@ -6,9 +6,11 @@ import { ApiError } from '@/api/client'
 import { USE_MOCK_API } from '@/api/config'
 import Account from '@/components/Account'
 import { HeaderSlotContext } from '@/components/headerSlotContext'
+import KeepAlive from '@/components/KeepAlive'
 import Login from '@/components/Login'
-import { useHashRoute } from '@/hooks/useHashRoute'
+import { useHashRoute, useLastHashes } from '@/hooks/useHashRoute'
 import { useTheme } from '@/hooks/useTheme'
+import { useVisited } from '@/hooks/useVisited'
 import AdminPage from '@/pages/AdminPage'
 import AskPage from '@/pages/AskPage'
 import BrainPage from '@/pages/BrainPage'
@@ -72,6 +74,8 @@ export default function App() {
 
   return (
     <Shell
+      // Keyed by user, so signing in as someone else starts every page afresh.
+      key={session.me.email}
       me={session.me}
       onMe={(me) => setSession({ status: 'signed-in', me })}
       onSignedOut={signedOut}
@@ -92,6 +96,9 @@ interface ShellProps {
 function Shell({ me, onMe, onSignedOut, onSignOut }: ShellProps) {
   const routes = me.is_admin ? ADMIN_ROUTES : USER_ROUTES
   const route = useHashRoute<Route>(routes, 'capture')
+  const visited = useVisited(route)
+  // Each nav link goes back to where that page was left, e.g. #/ask/chat.
+  const lastHashes = useLastHashes()
 
   // Grants can change while signed in (on Admin, or by another admin), so
   // re-read them on every page change rather than trusting the sign-in copy.
@@ -122,7 +129,7 @@ function Shell({ me, onMe, onSignedOut, onSignOut }: ShellProps) {
               {PAGES.filter((page) => routes.includes(page.route)).map((page) => (
                 <a
                   key={page.route}
-                  href={`#/${page.route}`}
+                  href={lastHashes[page.route] ?? `#/${page.route}`}
                   aria-current={page.route === route ? 'page' : undefined}
                 >
                   {page.label}
@@ -149,11 +156,18 @@ function Shell({ me, onMe, onSignedOut, onSignOut }: ShellProps) {
             </div>
           </div>
         </header>
-        {/* Keyed by user, so signing in as someone else starts each page afresh. */}
-        {route === 'capture' && <CapturePage key={me.email} me={me} />}
-        {route === 'ask' && <AskPage key={me.email} me={me} />}
-        {route === 'admin' && <AdminPage key={me.email} me={me} />}
-        {route === 'brain' && <BrainPage key={me.email} me={me} />}
+        {/* A page stays mounted once opened, so switching tabs keeps its work. */}
+        {/* routes too: someone who stops being an admin loses the kept Admin page. */}
+        {PAGES.filter(
+          (page) => visited.includes(page.route) && routes.includes(page.route),
+        ).map(({ route: name }) => (
+          <KeepAlive key={name} active={name === route}>
+            {name === 'capture' && <CapturePage me={me} />}
+            {name === 'ask' && <AskPage me={me} />}
+            {name === 'admin' && <AdminPage me={me} />}
+            {name === 'brain' && <BrainPage me={me} />}
+          </KeepAlive>
+        ))}
       </div>
     </HeaderSlotContext.Provider>
   )

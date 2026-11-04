@@ -1,4 +1,5 @@
-import { useEffect, useId, useRef, type ReactNode } from 'react'
+import { useContext, useEffect, useId, useRef, type ReactNode } from 'react'
+import { PageActiveContext } from '@/components/pageActiveContext'
 
 interface Props {
   title: string
@@ -25,7 +26,12 @@ export default function Modal({ title, description, onClose, children }: Props) 
     close.current = onClose
   }, [onClose])
 
+  // A dialog left open on a page the user switched away from waits, hidden,
+  // without holding the scroll lock or the keyboard.
+  const active = useContext(PageActiveContext)
+
   useEffect(() => {
+    if (!active) return
     const opener =
       document.activeElement instanceof HTMLElement ? document.activeElement : null
     // The first field, not the close button in the corner.
@@ -62,7 +68,7 @@ export default function Modal({ title, description, onClose, children }: Props) 
       document.body.style.overflow = overflow
       opener?.focus()
     }
-  }, [])
+  }, [active])
 
   return (
     <div

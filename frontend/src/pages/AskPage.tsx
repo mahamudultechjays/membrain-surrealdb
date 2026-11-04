@@ -8,7 +8,9 @@ import AskChat from '@/components/ask/AskChat'
 import AskLoading from '@/components/ask/AskLoading'
 import { readAreas, spaceName } from '@/components/ask/layers'
 import HeaderSlot from '@/components/HeaderSlot'
+import KeepAlive from '@/components/KeepAlive'
 import { useHashSubRoute } from '@/hooks/useHashRoute'
+import { useVisited } from '@/hooks/useVisited'
 import ScopePicker from '@/components/ScopePicker'
 import '@/pages/ask.css'
 
@@ -50,6 +52,7 @@ export default function AskPage({
   chatApi,
 }: Props & { chatApi?: ChatApi }) {
   const mode = useHashSubRoute(MODES, 'search')
+  const visited = useVisited(mode)
   return (
     <main className="page ask-page">
       <div className="page-head">
@@ -63,11 +66,16 @@ export default function AskPage({
         </nav>
         <p>{MODE_INTROS[mode]}</p>
       </div>
-      {mode === 'chat' ? (
-        <AskChat me={me} api={chatApi} />
-      ) : (
-        <AskSearch me={me} api={api} />
-      )}
+      {/* Both modes stay mounted once opened, so switching keeps the question typed. */}
+      {visited.map((m) => (
+        <KeepAlive key={m} active={m === mode}>
+          {m === 'chat' ? (
+            <AskChat me={me} api={chatApi} />
+          ) : (
+            <AskSearch me={me} api={api} />
+          )}
+        </KeepAlive>
+      ))}
     </main>
   )
 }

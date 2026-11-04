@@ -40,6 +40,28 @@ export function useHashRoute<T extends string>(routes: readonly T[], fallback: T
 }
 
 /**
+ * The last full hash seen for each page, by its first segment:
+ * { ask: '#/ask/chat' }. Lets a nav link return to where that page was left.
+ */
+export function useLastHashes(): Partial<Record<string, string>> {
+  const [hashes, setHashes] = useState<Partial<Record<string, string>>>({})
+
+  useEffect(() => {
+    const remember = () => {
+      const hash = window.location.hash
+      const page = segments()[0]
+      if (!page) return
+      setHashes((seen) => (seen[page] === hash ? seen : { ...seen, [page]: hash }))
+    }
+    remember()
+    window.addEventListener('hashchange', remember)
+    return () => window.removeEventListener('hashchange', remember)
+  }, [])
+
+  return hashes
+}
+
+/**
  * The mode named second in the URL hash (#/ask/chat -> "chat"), or `fallback`.
  * `modes` must be stable, like `useHashRoute`'s routes.
  */
