@@ -1,0 +1,261 @@
+/* Brain screen. Shared tokens, controls and callouts live in index.css. */
+
+.brain-muted {
+  color: var(--mb-muted);
+}
+
+/* --- Filters --- */
+
+.brain-tools {
+  display: grid;
+  grid-template-columns: minmax(220px, 2fr) repeat(5, minmax(130px, 1fr));
+  gap: 12px 16px;
+  align-items: end;
+  margin-bottom: 16px;
+}
+
+.brain-tools label:not(.brain-check) {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--mb-ink-2);
+}
+
+/* The controls sit inside their labels; keep them at body weight. */
+.brain-tools input,
+.brain-tools select {
+  font-size: 14px;
+  font-weight: 400;
+}
+
+.brain-checks {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 24px;
+}
+
+.brain-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 32px;
+  font-size: 14px;
+  color: var(--mb-ink-2);
+  cursor: pointer;
+}
+
+.brain-check input {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+}
+
+.brain-summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 16px;
+  margin-bottom: 12px;
+}
+
+.brain-summary p {
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.brain-clear {
+  min-height: 36px;
+  padding: 0 14px;
+  font-size: 13px;
+}
+
+/* --- Fact list: one row per fact, opening into its details --- */
+
+.brain-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border: 1px solid var(--mb-line);
+  border-radius: var(--mb-radius);
+  background: var(--mb-bg);
+  overflow: hidden;
+}
+
+.brain-fact + .brain-fact {
+  border-top: 1px solid var(--mb-line);
+}
+
+.brain-row {
+  display: grid;
+  grid-template-columns: 12px minmax(0, 1fr) auto 170px;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 48px;
+  padding: 10px 16px;
+  border: 0;
+  background: none;
+  color: var(--mb-ink);
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 120ms var(--mb-ease);
+}
+
+.brain-row:hover,
+.brain-fact[data-open='true'] .brain-row {
+  background: var(--mb-surface);
+}
+
+.brain-row:focus-visible {
+  outline-offset: -2px;
+}
+
+/* A drawn chevron that turns when the row opens. */
+.brain-caret {
+  width: 7px;
+  height: 7px;
+  border-right: 1.5px solid var(--mb-muted);
+  border-bottom: 1.5px solid var(--mb-muted);
+  transform: rotate(-45deg);
+  transition: transform 150ms var(--mb-ease);
+}
+
+.brain-fact[data-open='true'] .brain-caret {
+  transform: rotate(45deg);
+}
+
+/* "entity · key = value" on one line, clipped when long; the details show it all. */
+.brain-text {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.brain-entity-name {
+  flex: none;
+  max-width: 30%;
+  overflow: hidden;
+  font-weight: 600;
+  text-overflow: ellipsis;
+}
+
+.brain-key {
+  flex: none;
+  max-width: 30%;
+  overflow: hidden;
+  font-size: 13px;
+  color: var(--mb-ink-2);
+  text-overflow: ellipsis;
+}
+
+.brain-value {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.brain-sep {
+  flex: none;
+  color: var(--mb-muted);
+}
+
+.brain-fact[data-replaced='true'] .brain-text {
+  color: var(--mb-muted);
+}
+
+.brain-tags {
+  display: inline-flex;
+  gap: 6px;
+}
+
+.brain-date {
+  color: var(--mb-muted);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.brain-detail {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: 8px 20px;
+  margin: 0;
+  padding: 12px 16px 16px 40px;
+  background: var(--mb-surface);
+  font-size: 14px;
+}
+
+.brain-detail dt {
+  color: var(--mb-muted);
+}
+
+.brain-detail dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.brain-detail dd .tag {
+  margin-left: 6px;
+}
+
+/* Labels are the value itself, so they start at the edge and wrap. */
+.brain-detail dd .brain-label {
+  margin: 0 6px 4px 0;
+}
+
+/* --- Narrow screens --- */
+
+@media (max-width: 1100px) {
+  .brain-tools {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .brain-search {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 640px) {
+  .brain-tools {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .brain-row {
+    grid-template-columns: 12px minmax(0, 1fr);
+    row-gap: 4px;
+  }
+
+  /* Let the fact wrap on a phone, and put its tags and date underneath. */
+  .brain-text {
+    flex-wrap: wrap;
+    white-space: normal;
+  }
+
+  .brain-entity-name,
+  .brain-key {
+    max-width: none;
+  }
+
+  .brain-tags,
+  .brain-date {
+    grid-column: 2;
+    text-align: left;
+  }
+
+  .brain-detail {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 2px;
+    padding: 12px;
+  }
+
+  .brain-detail dt {
+    margin-top: 6px;
+  }
+}

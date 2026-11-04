@@ -5,12 +5,14 @@ from functools import lru_cache
 from surrealdb_memory import AsyncMemory
 
 from app.adapters.agent_memory import (
+    AgentMemoryBrain,
     AgentMemoryCapture,
     AgentMemoryDocuments,
     AgentMemoryGraph,
     AgentMemoryProbe,
     AgentMemoryRecall,
     AgentMemoryScopeRegistry,
+    NotConfiguredBrain,
     NotConfiguredCapture,
     NotConfiguredDocuments,
     NotConfiguredGraph,
@@ -22,6 +24,7 @@ from app.adapters.files import PdfAndTextReader
 from app.adapters.sqlite import SqliteUserScopes
 from app.core.config import settings
 from app.domain.ports.document_store import DocumentStore
+from app.domain.ports.memory_brain import MemoryBrain
 from app.domain.ports.memory_capture import MemoryCapture
 from app.domain.ports.memory_graph import MemoryGraph
 from app.domain.ports.memory_probe import MemoryProbe
@@ -74,6 +77,11 @@ def get_memory_capture() -> MemoryCapture:
 def get_document_store() -> DocumentStore:
     client = get_agent_memory_client()
     return AgentMemoryDocuments(client) if client else NotConfiguredDocuments()
+
+
+def get_memory_brain() -> MemoryBrain:
+    client = get_agent_memory_client()
+    return AgentMemoryBrain(client) if client else NotConfiguredBrain()
 
 
 def get_memory_graph() -> MemoryGraph:

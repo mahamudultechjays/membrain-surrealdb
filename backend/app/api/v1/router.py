@@ -6,6 +6,7 @@ from app.api.v1.endpoints import (
     admin,
     ask,
     auth,
+    brain,
     capture,
     documents,
     findings,
@@ -22,3 +23,4 @@ api_router.include_router(findings.router, tags=["findings"])
 api_router.include_router(admin.router, tags=["admin"])
 api_router.include_router(documents.router, tags=["documents"])
 api_router.include_router(graph.router, tags=["graph"])
+api_router.include_router(brain.router, tags=["brain"])

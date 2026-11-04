@@ -58,9 +58,7 @@ export default function ScopePicker({
       trigger.current?.focus()
       return
     }
-    if (!value.includes(id)) return onChange([...value, id])
-    // Keep at least one selected.
-    if (value.length > 1) onChange(value.filter((s) => s !== id))
+    onChange(value.includes(id) ? value.filter((s) => s !== id) : [...value, id])
   }
 
   const names = value
@@ -70,6 +68,7 @@ export default function ScopePicker({
     allLabel && options.length > 1 && value.length === options.length
       ? allLabel
       : names.join(' + ')
+  const allPicked = options.every((o) => value.includes(o.id))
 
   return (
     <div className="scope-dropdown" ref={root}>
@@ -80,13 +79,13 @@ export default function ScopePicker({
         ref={trigger}
         type="button"
         className="scope-trigger"
-        aria-label={`${label}: ${summary || 'nothing'}`}
+        aria-label={`${label}: ${summary || 'none'}`}
         aria-haspopup="true"
         aria-expanded={open}
         aria-controls={menuId}
         onClick={() => setOpen((o) => !o)}
       >
-        <span>{summary || 'Choose…'}</span>
+        <span>{summary || (multiple ? 'None' : 'Choose…')}</span>
         <span aria-hidden="true" className="scope-caret">
           <svg
             width="14"
@@ -105,6 +104,24 @@ export default function ScopePicker({
       {open && (
         <fieldset id={menuId} className="scope-menu">
           <legend className="visually-hidden">{label}</legend>
+          {multiple && options.length > 1 && (
+            <div className="scope-bulk">
+              <button
+                type="button"
+                disabled={allPicked}
+                onClick={() => onChange(options.map((o) => o.id))}
+              >
+                Select all
+              </button>
+              <button
+                type="button"
+                disabled={value.length === 0}
+                onClick={() => onChange([])}
+              >
+                Deselect all
+              </button>
+            </div>
+          )}
           {options.map((option) => {
             const checked = value.includes(option.id)
             return (

@@ -59,7 +59,8 @@ export default function AskPage({ me, api = askApi }: Props) {
 
   const ask = (q: string) => {
     const text = q.trim()
-    if (!text) return
+    // No scopes would mean "read everything" to the backend, so never send that.
+    if (!text || !areas.length) return
     // A new question replaces the old one; its answer would be stale.
     inFlight.current?.abort()
     const controller = new AbortController()
@@ -122,7 +123,7 @@ export default function AskPage({ me, api = askApi }: Props) {
           </HeaderSlot>
         )}
         <p className="mono ask-muted ask-reads">
-          Reads {areas.length ? areas.join(' → ') : 'nothing'}
+          Reads {areas.length ? areas.join(' → ') : 'nothing: tick at least one space'}
         </p>
       </section>
 

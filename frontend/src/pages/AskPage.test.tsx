@@ -228,16 +228,23 @@ describe('AskPage', () => {
     expect(screen.getByRole('checkbox', { name: /My space/ })).toBeChecked()
   })
 
-  it('keeps at least one space ticked', async () => {
-    await renderPage()
+  it('can deselect every space, which leaves nothing to ask, then select all again', async () => {
+    const api: AskApi = { ask: vi.fn<AskApi['ask']>(async () => answerWith([])) }
+    await renderPage(api)
 
     fireEvent.click(screen.getByRole('button', { name: /^Search in:/ }))
-    fireEvent.click(screen.getByRole('checkbox', { name: /^Org/ }))
-    fireEvent.click(screen.getByRole('checkbox', { name: /Team ops/ }))
-    const mine = screen.getByRole('checkbox', { name: /My space/ })
-    fireEvent.click(mine)
+    fireEvent.click(screen.getByRole('button', { name: 'Deselect all' }))
 
-    expect(mine).toBeChecked()
-    expect(screen.getByText(/^Reads org\/user\/u-0001$/)).toBeInTheDocument()
+    expect(screen.getByRole('checkbox', { name: /My space/ })).not.toBeChecked()
+    expect(screen.getByRole('button', { name: 'Search in: none' })).toBeInTheDocument()
+    expect(screen.getByText(/^Reads nothing/)).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Is dock 3 open?' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Deselect all' })).toBeDisabled()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Select all' }))
+    expect(
+      screen.getByRole('button', { name: 'Search in: All spaces' }),
+    ).toBeInTheDocument()
+    expect(api.ask).not.toHaveBeenCalled()
   })
 })

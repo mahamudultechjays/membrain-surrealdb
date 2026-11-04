@@ -11,6 +11,7 @@ from fastapi import Depends, HTTPException, Request, status
 from app.composition import (
     get_access_service,
     get_document_store,
+    get_memory_brain,
     get_memory_capture,
     get_memory_graph,
     get_memory_probe,
@@ -21,6 +22,7 @@ from app.composition import (
 )
 from app.core.config import settings
 from app.domain.ports.document_store import DocumentStore
+from app.domain.ports.memory_brain import MemoryBrain
 from app.domain.ports.memory_capture import MemoryCapture
 from app.domain.ports.memory_graph import MemoryGraph
 from app.domain.ports.memory_probe import MemoryProbe
@@ -35,6 +37,7 @@ MemoryProbeDep = Annotated[MemoryProbe, Depends(get_memory_probe)]
 MemoryCaptureDep = Annotated[MemoryCapture, Depends(get_memory_capture)]
 DocumentStoreDep = Annotated[DocumentStore, Depends(get_document_store)]
 TextReaderDep = Annotated[DocumentTextReader, Depends(get_text_reader)]
+MemoryBrainDep = Annotated[MemoryBrain, Depends(get_memory_brain)]
 MemoryGraphDep = Annotated[MemoryGraph, Depends(get_memory_graph)]
 PreviewCacheDep = Annotated[PreviewCache, Depends(get_preview_cache)]
 MemoryRecallDep = Annotated[MemoryRecall, Depends(get_memory_recall)]

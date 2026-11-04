@@ -9,12 +9,14 @@ import { useHashRoute } from '@/hooks/useHashRoute'
 import { useTheme } from '@/hooks/useTheme'
 import AdminPage from '@/pages/AdminPage'
 import AskPage from '@/pages/AskPage'
+import BrainPage from '@/pages/BrainPage'
 import CapturePage from '@/pages/CapturePage'
 
 const PAGES = [
   { route: 'capture', label: 'Capture' },
   { route: 'ask', label: 'Ask' },
   { route: 'admin', label: 'Admin' },
+  { route: 'brain', label: 'Brain' },
 ] as const
 
 type Route = (typeof PAGES)[number]['route']
@@ -142,6 +144,7 @@ function Shell({ me, onMe, onSignedOut, onSignOut }: ShellProps) {
         {route === 'capture' && <CapturePage key={me.email} me={me} />}
         {route === 'ask' && <AskPage key={me.email} me={me} />}
         {route === 'admin' && <AdminPage key={me.email} me={me} />}
+        {route === 'brain' && <BrainPage key={me.email} me={me} />}
       </div>
     </HeaderSlotContext.Provider>
   )
