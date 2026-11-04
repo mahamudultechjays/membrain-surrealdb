@@ -19,6 +19,7 @@ from app.composition import (
     get_memory_lab,
     get_memory_probe,
     get_memory_recall,
+    get_memory_reflect,
     get_preview_cache,
     get_scope_registry,
     get_text_reader,
@@ -27,7 +28,7 @@ from app.core.config import settings
 from app.domain.ports.document_store import DocumentStore
 from app.domain.ports.memory_brain import MemoryBrain
 from app.domain.ports.memory_capture import MemoryCapture
-from app.domain.ports.memory_chat import MemoryChat
+from app.domain.ports.memory_chat import MemoryChat, MemoryReflect
 from app.domain.ports.memory_graph import MemoryGraph
 from app.domain.ports.memory_lab import MemoryLab
 from app.domain.ports.memory_probe import MemoryProbe
@@ -50,6 +51,7 @@ MemoryRecallDep = Annotated[MemoryRecall, Depends(get_memory_recall)]
 ScopeRegistryDep = Annotated[ScopeRegistry, Depends(get_scope_registry)]
 AccessServiceDep = Annotated[AccessService, Depends(get_access_service)]
 MemoryChatDep = Annotated[MemoryChat, Depends(get_memory_chat)]
+MemoryReflectDep = Annotated[MemoryReflect, Depends(get_memory_reflect)]
 ChatSessionsDep = Annotated[ChatSessions, Depends(get_chat_sessions)]
 MemoryLabDep = Annotated[MemoryLab, Depends(get_memory_lab)]
 

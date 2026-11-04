@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { getMe, logout, type Me } from '@/api/auth'
 import { clearLabResults } from '@/components/admin/labResults'
 import { clearChats } from '@/components/ask/chatStore'
+import { clearReflections } from '@/components/ask/reflectStore'
 import { ApiError } from '@/api/client'
 import { USE_MOCK_API } from '@/api/config'
 import Account from '@/components/Account'
@@ -63,6 +64,7 @@ export default function App() {
   // Chats and memory job results are kept until sign-out, so the next person on this browser starts clean.
   const signedOut = () => {
     clearChats()
+    clearReflections()
     clearLabResults()
     setSession({ status: 'signed-out' })
   }

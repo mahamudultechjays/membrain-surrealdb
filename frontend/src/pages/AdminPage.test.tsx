@@ -281,3 +281,37 @@ describe('AdminPage', () => {
     expect(api.registerScope).not.toHaveBeenCalled()
   })
 })
+
+describe('AdminPage sections', () => {
+  afterEach(() => {
+    window.location.hash = ''
+  })
+
+  it('opens on Access, with tabs linking to #/admin/access and #/admin/lab', async () => {
+    await renderPage(fakeApi())
+
+    const tabs = screen.getByRole('navigation', { name: 'Admin section' })
+    const access = within(tabs).getByRole('link', { name: 'Access' })
+    expect(access).toHaveAttribute('aria-current', 'page')
+    expect(access).toHaveAttribute('href', '#/admin/access')
+    expect(within(tabs).getByRole('link', { name: 'Lab' })).toHaveAttribute(
+      'href',
+      '#/admin/lab',
+    )
+    expect(screen.getByRole('button', { name: 'New scope' })).toBeVisible()
+    expect(screen.queryByRole('heading', { name: 'Memory jobs' })).not.toBeInTheDocument()
+  })
+
+  it('#/admin/lab shows the memory jobs and not the access tools', async () => {
+    window.location.hash = '#/admin/lab'
+
+    render(<AdminPage me={ME} api={fakeApi()} />)
+
+    expect(await screen.findByRole('heading', { name: 'Memory jobs' })).toBeVisible()
+    expect(screen.queryByRole('button', { name: 'New scope' })).not.toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Lab' })).toHaveAttribute(
+      'aria-current',
+      'page',
+    )
+  })
+})

@@ -7,6 +7,7 @@ from app.api.v1.endpoints import (
     admin_lab,
     ask,
     ask_chat,
+    ask_reflect,
     auth,
     brain,
     capture,
@@ -22,6 +23,7 @@ api_router.include_router(auth.router, tags=["auth"])
 api_router.include_router(capture.router, tags=["capture"])
 api_router.include_router(ask.router, tags=["ask"])
 api_router.include_router(ask_chat.router, tags=["ask"])
+api_router.include_router(ask_reflect.router, tags=["ask"])
 api_router.include_router(findings.router, tags=["findings"])
 api_router.include_router(admin.router, tags=["admin"])
 api_router.include_router(admin_lab.router, tags=["admin"])

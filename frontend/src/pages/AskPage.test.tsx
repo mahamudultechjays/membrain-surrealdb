@@ -270,6 +270,18 @@ describe('AskPage modes', () => {
     expect(screen.getByLabelText('Question')).toBeInTheDocument()
   })
 
+  it('#/ask/reflect shows reflection, the third mode', () => {
+    window.location.hash = '#/ask/reflect'
+
+    render(<AskPage me={PRIYA} api={mockAskApi} />)
+
+    const reflect = screen.getByRole('link', { name: 'Reflect' })
+    expect(reflect).toHaveAttribute('href', '#/ask/reflect')
+    expect(reflect).toHaveAttribute('aria-current', 'page')
+    expect(screen.getByRole('button', { name: 'Reflect' })).toBeInTheDocument()
+    expect(screen.queryByLabelText('Message')).not.toBeInTheDocument()
+  })
+
   it('#/ask/chat shows the chat instead of search', () => {
     window.location.hash = '#/ask/chat'
 

@@ -2,9 +2,11 @@ import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { askApi, type AskApi, type AskResponse } from '@/api/ask'
 import type { Me } from '@/api/auth'
 import type { ChatApi } from '@/api/chat'
+import type { ReflectApi } from '@/api/reflect'
 import { ApiError } from '@/api/client'
 import AskAnswer from '@/components/ask/AskAnswer'
 import AskChat from '@/components/ask/AskChat'
+import AskReflect from '@/components/ask/AskReflect'
 import AskLoading from '@/components/ask/AskLoading'
 import { readAreas, spaceName } from '@/components/ask/layers'
 import HeaderSlot from '@/components/HeaderSlot'
@@ -36,21 +38,28 @@ interface Props {
   api?: AskApi
 }
 
-const MODES = ['search', 'chat'] as const
+const MODES = ['search', 'chat', 'reflect'] as const
 type Mode = (typeof MODES)[number]
-const MODE_LABELS: Record<Mode, string> = { search: 'Search', chat: 'Chat' }
+const MODE_LABELS: Record<Mode, string> = {
+  search: 'Search',
+  chat: 'Chat',
+  reflect: 'Reflect',
+}
 const MODE_INTROS: Record<Mode, string> = {
   search:
     'Answers come from every scope you can read: org first, then team, then personal. Asking never writes.',
   chat: 'A written answer from every scope you can read, citing its sources. Follow-ups keep the context.',
+  reflect:
+    'A synthesis across every scope you can read, with the evidence it drew on. Each question stands alone.',
 }
 
-/** Ask has two modes, each with its own URL: #/ask/search and #/ask/chat. */
+/** Ask has three modes, each with its own URL: #/ask/search, #/ask/chat and #/ask/reflect. */
 export default function AskPage({
   me,
   api = askApi,
   chatApi,
-}: Props & { chatApi?: ChatApi }) {
+  reflectApi,
+}: Props & { chatApi?: ChatApi; reflectApi?: ReflectApi }) {
   const mode = useHashSubRoute(MODES, 'search')
   const visited = useVisited(mode)
   return (
@@ -71,6 +80,8 @@ export default function AskPage({
         <KeepAlive key={m} active={m === mode}>
           {m === 'chat' ? (
             <AskChat me={me} api={chatApi} />
+          ) : m === 'reflect' ? (
+            <AskReflect me={me} api={reflectApi} />
           ) : (
             <AskSearch me={me} api={api} />
           )}

@@ -19,7 +19,7 @@ from surrealdb_memory import AsyncMemory
 
 from app.adapters.agent_memory.scoped_keys import Grants, ScopedKeys
 from app.domain.errors import MemoryNotConfiguredError, MemoryUnavailableError
-from app.domain.ports.memory_chat import ChatAccess, ChatCitation, ChatReply
+from app.domain.ports.memory_chat import ChatAccess, ChatCitation, ChatReply, Reflection
 
 logger = logging.getLogger(__name__)
 
@@ -70,6 +70,28 @@ class AgentMemoryChat:
             raise MemoryUnavailableError(str(exc)) from exc
         return _reply(raw)
 
+    async def reflect(self, question: str, *, access: ChatAccess) -> Reflection:
+        """`POST /reflect` with the same per-user key as chat.
+
+        Reflection draws on "the key's whole read region" (Reflection docs), so
+        the key's grants keep it inside the user's scopes. `persist` is always
+        false: saved reflections are the model's own conclusions, and in tests
+        on 2026-11-04 they reframed and added claims.
+        """
+        client = await self._keys.client_for(access.owner, _grants(access))
+        try:
+            raw = await client._transport.request(
+                "POST", f"{client._base}/reflect", json={"query": question, "persist": False}
+            )
+        except Exception as exc:
+            logger.warning("Agent Memory reflect for %s failed", access.owner, exc_info=True)
+            raise MemoryUnavailableError(str(exc)) from exc
+        return Reflection(
+            text=str(raw.get("reflection") or ""),
+            evidence=[str(e) for e in raw.get("evidence") or []],
+            trace_id=raw.get("traceId"),
+        )
+
     async def close(self) -> None:
         await self._keys.close()
 
@@ -78,6 +100,9 @@ class NotConfiguredChat:
     """Stands in when AGENT_MEMORY_* settings are missing."""
 
     async def chat(self, message: str, *, access: ChatAccess, session_id: str | None) -> ChatReply:
+        raise MemoryNotConfiguredError
+
+    async def reflect(self, question: str, *, access: ChatAccess) -> Reflection:
         raise MemoryNotConfiguredError
 
     async def close(self) -> None:

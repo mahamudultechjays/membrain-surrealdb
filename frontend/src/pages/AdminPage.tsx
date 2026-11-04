@@ -6,7 +6,10 @@ import { cleanPath, unregisteredScopes } from '@/api/scopePaths'
 import MemoryLab from '@/components/admin/MemoryLab'
 import { LAYER_LABELS } from '@/components/ask/layers'
 import { isAbort, messageOf } from '@/components/capture/format'
+import KeepAlive from '@/components/KeepAlive'
 import Modal from '@/components/Modal'
+import { useHashSubRoute } from '@/hooks/useHashRoute'
+import { useVisited } from '@/hooks/useVisited'
 import '@/pages/admin.css'
 
 interface Props {
@@ -61,7 +64,7 @@ const USER_OPTIONS = 'admin-user-options'
  * Memory with one admin key, so these grants are the only thing keeping
  * people's memories apart.
  */
-export default function AdminPage({ me, api = adminApi, labApi }: Props) {
+function AdminAccess({ me, api = adminApi }: Omit<Props, 'labApi'>) {
   const [users, setUsers] = useState<UsersState>({ status: 'loading' })
   const [registry, setRegistry] = useState<RegistryState>({ status: 'loading' })
   const [dialog, setDialog] = useState<Dialog>(null)
@@ -198,10 +201,9 @@ export default function AdminPage({ me, api = adminApi, labApi }: Props) {
   )
 
   return (
-    <main className="page admin-page">
-      <div className="page-head admin-head">
+    <section className="admin-access" aria-label="Access">
+      <div className="admin-head">
         <div>
-          <h1>Admin</h1>
           <p>
             Who may read or write which Agent Memory scope. Everyone reads through these
             grants, so a change applies on their next Capture or Ask.
@@ -591,8 +593,43 @@ export default function AdminPage({ me, api = adminApi, labApi }: Props) {
           </form>
         </Modal>
       )}
+    </section>
+  )
+}
 
-      <MemoryLab api={labApi} />
+const SECTIONS = ['access', 'lab'] as const
+type Section = (typeof SECTIONS)[number]
+const SECTION_LABELS: Record<Section, string> = { access: 'Access', lab: 'Lab' }
+
+/**
+ * Admin has two sections, each with its own URL: #/admin/access (who may read
+ * or write which scope) and #/admin/lab (memory jobs: consolidate, elaborate,
+ * reflect). Both stay mounted once opened, so a running job keeps going.
+ */
+export default function AdminPage({ me, api = adminApi, labApi }: Props) {
+  const section = useHashSubRoute(SECTIONS, 'access')
+  const visited = useVisited(section)
+  return (
+    <main className="page admin-page">
+      <div className="page-head">
+        <h1>Admin</h1>
+        <nav className="ask-modes admin-tabs" aria-label="Admin section">
+          {SECTIONS.map((s) => (
+            <a
+              key={s}
+              href={`#/admin/${s}`}
+              aria-current={s === section ? 'page' : undefined}
+            >
+              {SECTION_LABELS[s]}
+            </a>
+          ))}
+        </nav>
+      </div>
+      {visited.map((s) => (
+        <KeepAlive key={s} active={s === section}>
+          {s === 'lab' ? <MemoryLab api={labApi} /> : <AdminAccess me={me} api={api} />}
+        </KeepAlive>
+      ))}
     </main>
   )
 }

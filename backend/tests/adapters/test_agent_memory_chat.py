@@ -5,7 +5,7 @@ from surrealdb_memory import MemoryAuthError
 
 from app.adapters.agent_memory import AgentMemoryChat, NotConfiguredChat
 from app.domain.errors import MemoryNotConfiguredError, MemoryUnavailableError
-from app.domain.ports.memory_chat import ChatAccess, ChatCitation
+from app.domain.ports.memory_chat import ChatAccess, ChatCitation, Reflection
 
 BASE = "/api/v1/ctx"
 ORG, ME = "org/spreetail", "org/spreetail/user/vidyul_narayanan"
@@ -38,6 +38,14 @@ REPLY = {
     ],
 }
 
+# As Agent Memory returned it live on 2026-11-04.
+REFLECTION = {
+    "reflection": "One carrier, Acme Logistics, serves Reno.",
+    "evidence": ["Acme Logistics ships to Reno warehouse", "Reno lead time is 18 days"],
+    "persistedAttributes": [],
+    "traceId": "tr-r",
+}
+
 
 class FakeTransport:
     """Records (method, path, json) and answers by path."""
@@ -60,6 +68,10 @@ class FakeTransport:
             if self.chat_error:
                 raise self.chat_error
             return REPLY
+        if path.endswith("/reflect"):
+            if self.chat_error:
+                raise self.chat_error
+            return REFLECTION
         return {}
 
 
@@ -195,3 +207,37 @@ async def test_chat_failure_is_unavailable(setup: Setup) -> None:
 async def test_not_configured() -> None:
     with pytest.raises(MemoryNotConfiguredError):
         await NotConfiguredChat().chat("q", access=ACCESS, session_id=None)
+
+
+async def test_reflect_uses_the_users_key_and_never_saves(setup: Setup) -> None:
+    result = await setup.chat.reflect("What do we know about carriers?", access=ACCESS)
+
+    assert setup.calls("admin", "POST /reflect") == []
+    assert setup.calls("secret-1", "POST /reflect") == [
+        {"query": "What do we know about carriers?", "persist": False}
+    ]
+    assert result == Reflection(
+        text="One carrier, Acme Logistics, serves Reno.",
+        evidence=["Acme Logistics ships to Reno warehouse", "Reno lead time is 18 days"],
+        trace_id="tr-r",
+    )
+
+
+async def test_reflect_shares_the_chat_key(setup: Setup) -> None:
+    await setup.chat.chat("one", access=ACCESS, session_id=None)
+    await setup.chat.reflect("two", access=ACCESS)
+
+    assert len(setup.calls("admin", "POST /keys")) == 1
+
+
+async def test_reflect_failure_is_unavailable(setup: Setup) -> None:
+    await setup.chat.chat("warm up", access=ACCESS, session_id=None)
+    setup.users["secret-1"]._transport.chat_error = MemoryAuthError(500, "model down")
+
+    with pytest.raises(MemoryUnavailableError):
+        await setup.chat.reflect("q", access=ACCESS)
+
+
+async def test_reflect_not_configured() -> None:
+    with pytest.raises(MemoryNotConfiguredError):
+        await NotConfiguredChat().reflect("q", access=ACCESS)
