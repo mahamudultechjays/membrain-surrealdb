@@ -1,7 +1,7 @@
 import { useRef, useState, type FormEvent } from 'react'
 import type { Me } from '@/api/auth'
 import { reflectApi, type ReflectApi } from '@/api/reflect'
-import { readAreas, spaceName } from '@/components/ask/layers'
+import { readAreas, spaceName, startExcluded } from '@/components/ask/layers'
 import {
   updateReflections,
   useReflections,
@@ -25,7 +25,8 @@ interface Props {
  * the answer is the model's own conclusion, so the page says to check it.
  */
 export default function AskReflect({ me, api = reflectApi }: Props) {
-  const [excluded, setExcluded] = useState<string[]>([])
+  // Starts on the user's own space; the picker widens it.
+  const [excluded, setExcluded] = useState<string[]>(() => startExcluded(me.grants))
   const [question, setQuestion] = useState('')
   const owner = me.email
   const reflections = useReflections(owner)

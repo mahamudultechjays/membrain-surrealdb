@@ -6,9 +6,17 @@ entity is shown when at least one of its facts or relations is in scope; its
 type and display name come from the entity listing.
 """
 
-from dataclasses import dataclass, field
+from collections.abc import Iterable
+from dataclasses import dataclass, field, replace
 
-from app.domain.ports.memory_brain import BrainFact, BrainRelation, BrainSnapshot
+from app.domain.ports.memory_brain import (
+    BrainAction,
+    BrainFact,
+    BrainRelation,
+    BrainSnapshot,
+    BrainTurn,
+    BrainUnknown,
+)
 
 
 @dataclass(slots=True)
@@ -111,6 +119,133 @@ def view(snapshot: BrainSnapshot, scope: ScopeFilter) -> BrainView:
         scopes=sorted(every),
         names=names,
     )
+
+
+@dataclass(slots=True)
+class ChunkView:
+    """A memory chunk: the text of one captured turn, as memory stored it."""
+
+    id: str
+    session_id: str
+    role: str
+    text: str
+    created_at: str
+    # Inferred: turns carry no scope, so these are the scopes of the facts and
+    # relations taken from the turn (else from its session).
+    scopes: list[str]
+    # Ids of the facts and relations Agent Memory extracted from this turn.
+    derived: list[str]
+
+
+def sessions(snapshot: BrainSnapshot, scope: ScopeFilter) -> list[str]:
+    """The sessions that facts and relations in scope came from, once each."""
+    found: dict[str, None] = {}
+    for record in _records(snapshot):
+        if record.source.session_id and scope.matches(record.scopes):
+            found[record.source.session_id] = None
+    return list(found)
+
+
+def chunks(
+    snapshot: BrainSnapshot, turns: Iterable[BrainTurn], scope: ScopeFilter
+) -> list[ChunkView]:
+    """Turns in scope, newest first, each with the records extracted from it."""
+    by_turn: dict[str, list[BrainFact | BrainRelation]] = {}
+    by_session: dict[str, list[BrainFact | BrainRelation]] = {}
+    for record in _records(snapshot):
+        ref = record.source.ref or ""
+        if ref.startswith("turn:"):
+            by_turn.setdefault(ref.removeprefix("turn:"), []).append(record)
+        if record.source.session_id:
+            by_session.setdefault(record.source.session_id, []).append(record)
+
+    shown: list[ChunkView] = []
+    for turn in turns:
+        derived = by_turn.get(turn.id, [])
+        written = derived or by_session.get(turn.session_id, [])
+        paths = tuple(dict.fromkeys(path for r in written for path in r.scopes))
+        if not turn.content.strip() or not scope.matches(paths):
+            continue
+        shown.append(
+            ChunkView(
+                id=turn.id,
+                session_id=turn.session_id,
+                role=turn.role,
+                text=turn.content,
+                created_at=turn.created_at,
+                scopes=sorted(p for p in paths if scope.visible(p)),
+                derived=[r.id for r in derived],
+            )
+        )
+    return sorted(shown, key=lambda c: c.created_at, reverse=True)
+
+
+def _records(snapshot: BrainSnapshot) -> list[BrainFact | BrainRelation]:
+    return [*snapshot.facts, *snapshot.relations]
+
+
+@dataclass(slots=True)
+class ActionView:
+    action: BrainAction
+    actor_name: str
+    # The object entity's name, or the action's free-text object.
+    object_name: str | None
+    # Inferred: actions carry no scope, so these come from the facts and
+    # relations taken from the same turn (else the same session).
+    scopes: list[str]
+
+
+def actions(snapshot: BrainSnapshot, scope: ScopeFilter, names: dict[str, str]) -> list[ActionView]:
+    """Actions in scope, newest first, with their scope inferred from their capture."""
+    by_turn: dict[str, set[str]] = {}
+    by_session: dict[str, set[str]] = {}
+    for record in _records(snapshot):
+        if (record.source.ref or "").startswith("turn:"):
+            by_turn.setdefault(record.source.ref or "", set()).update(record.scopes)
+        if record.source.session_id:
+            by_session.setdefault(record.source.session_id, set()).update(record.scopes)
+
+    def name(ref: str) -> str:
+        return names.get(ref) or _readable(ref.partition("/")[2])
+
+    shown: list[ActionView] = []
+    for action in snapshot.actions:
+        paths = by_turn.get(action.source.ref or "") or by_session.get(
+            action.source.session_id or "", set()
+        )
+        if not scope.matches(tuple(paths)):
+            continue
+        shown.append(
+            ActionView(
+                action=action,
+                actor_name=name(action.actor_ref),
+                object_name=name(action.object_ref) if action.object_ref else action.object_text,
+                scopes=sorted(p for p in paths if scope.visible(p)),
+            )
+        )
+    return sorted(shown, key=lambda a: a.action.created_at, reverse=True)
+
+
+def unknowns(snapshot: BrainSnapshot, scope: ScopeFilter) -> list[BrainUnknown]:
+    """Open questions and contradictions in scope, newest first."""
+    found = [u for u in snapshot.unknowns if scope.matches(u.scopes)]
+    return sorted(found, key=lambda u: u.created_at, reverse=True)
+
+
+def entities_in(snapshot: BrainSnapshot, scope: ScopeFilter) -> list[str]:
+    """The entities with a fact in scope: the ones whose history may hold replaced values."""
+    found: dict[str, None] = {}
+    for fact in snapshot.facts:
+        if fact.entity_ref and scope.matches(fact.scopes):
+            found[fact.entity_ref] = None
+    return list(found)
+
+
+def with_replaced(snapshot: BrainSnapshot, replaced: Iterable[BrainFact]) -> BrainSnapshot:
+    """The snapshot with replaced facts (from entity histories) added, once each."""
+    known = {fact.id for fact in snapshot.facts}
+    extra = [fact for fact in replaced if fact.id not in known]
+    return replace(snapshot, facts=[*snapshot.facts, *extra]) if extra else snapshot
 
 
 def _readable(key: str) -> str:

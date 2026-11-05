@@ -11,6 +11,7 @@ from app.adapters.agent_memory import (
     AgentMemoryDocuments,
     AgentMemoryGraph,
     AgentMemoryLab,
+    AgentMemoryPeople,
     AgentMemoryProbe,
     AgentMemoryRecall,
     AgentMemoryScopeRegistry,
@@ -20,6 +21,7 @@ from app.adapters.agent_memory import (
     NotConfiguredDocuments,
     NotConfiguredGraph,
     NotConfiguredLab,
+    NotConfiguredPeople,
     NotConfiguredProbe,
     NotConfiguredRecall,
     NotConfiguredScopeRegistry,
@@ -31,6 +33,7 @@ from app.domain.ports.document_store import DocumentStore
 from app.domain.ports.memory_brain import MemoryBrain
 from app.domain.ports.memory_capture import MemoryCapture
 from app.domain.ports.memory_graph import MemoryGraph
+from app.domain.ports.memory_people import MemoryPeople
 from app.domain.ports.memory_probe import MemoryProbe
 from app.domain.ports.memory_recall import MemoryRecall
 from app.domain.ports.scope_registry import ScopeRegistry
@@ -105,6 +108,7 @@ def get_document_store() -> DocumentStore:
     return AgentMemoryDocuments(client) if client else NotConfiguredDocuments()
 
 
+@lru_cache  # one instance, so its cache of session turns lasts between requests
 def get_memory_brain() -> MemoryBrain:
     client = get_agent_memory_client()
     return AgentMemoryBrain(client) if client else NotConfiguredBrain()
@@ -162,6 +166,11 @@ def get_user_scope_repository() -> UserScopeRepository:
 def get_scope_registry() -> ScopeRegistry:
     client = get_agent_memory_client()
     return AgentMemoryScopeRegistry(client) if client else NotConfiguredScopeRegistry()
+
+
+def get_memory_people() -> MemoryPeople:
+    client = get_agent_memory_client()
+    return AgentMemoryPeople(client) if client else NotConfiguredPeople()
 
 
 def get_access_service() -> AccessService:

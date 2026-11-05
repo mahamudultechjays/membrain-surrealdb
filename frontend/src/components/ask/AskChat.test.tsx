@@ -4,6 +4,7 @@ import { ApiError } from '@/api/client'
 import { meOf } from '@/api/mock/auth'
 import { userByEmail } from '@/api/mock/backend'
 import AskChat from '@/components/ask/AskChat'
+import { ownScope } from '@/components/ask/layers'
 import { clearChats } from '@/components/ask/chatStore'
 
 /** Priya, as the mock signs her in: org, her team (ops) and her own space. */
@@ -77,7 +78,7 @@ describe('AskChat', () => {
     expect(screen.getByText(/saved to your own space/i)).toBeInTheDocument()
   })
 
-  it('starts a new conversation and shows the reply with linked sources', async () => {
+  it('starts a new conversation on Priya’s own space, and shows the reply with linked sources', async () => {
     const { api, requests } = fakeApi()
     render(<AskChat me={PRIYA} api={api} />)
 
@@ -85,7 +86,11 @@ describe('AskChat', () => {
     const answer = await lastAnswer()
 
     expect(requests).toEqual([
-      { message: 'Where does Acme ship?', session_id: null, scopes: [] },
+      {
+        message: 'Where does Acme ship?',
+        session_id: null,
+        scopes: [ownScope(PRIYA.grants)],
+      },
     ])
     expect(screen.getByText('Where does Acme ship?')).toBeInTheDocument()
     const marker = within(answer).getByRole('link', { name: 'Source S1' })

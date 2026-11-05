@@ -10,18 +10,34 @@ export interface UserGrants {
   name: string
   is_admin: boolean
   grants: Grant[]
+  /**
+   * Their own grants in Agent Memory, read only: permission (e.g. "memory:read")
+   * → scope patterns (e.g. ["/*"]). They apply when the person reaches Agent
+   * Memory directly (Claude Code, MCP), not through this app. Null when Agent
+   * Memory has no principal with this email, or wasn't read.
+   */
+  memory_grants?: Record<string, string[]> | null
+}
+
+export interface UsersList {
+  /** Everyone holding a grant here, then the people only Agent Memory knows (no grants). */
+  users: UserGrants[]
+  /** Why Agent Memory's people could not be listed; null when they were. */
+  people_error: string | null
+  /** True when each person's memory_grants came from Agent Memory. */
+  memory_loaded?: boolean
 }
 
 export interface GrantInput {
   scope_path: string
   access: Access
   layer: GrantLayer
-  /** Only used for someone who has never signed in. */
+  /** Only used for someone who holds no grants yet. */
   name?: string | null
 }
 
 export interface AdminApi {
-  users(signal?: AbortSignal): Promise<UserGrants[]>
+  users(signal?: AbortSignal): Promise<UsersList>
   /** Registers the scope in Agent Memory first if it is new. Returns the user. */
   grant(email: string, grant: GrantInput): Promise<UserGrants>
   revoke(email: string, scopePath: string): Promise<void>
@@ -33,8 +49,7 @@ export interface AdminApi {
 const userPath = (email: string) => `/api/v1/admin/users/${encodeURIComponent(email)}`
 
 export const httpAdminApi: AdminApi = {
-  users: async (signal) =>
-    (await apiGet<{ users: UserGrants[] }>('/api/v1/admin/users', { signal })).users,
+  users: (signal) => apiGet<UsersList>('/api/v1/admin/users', { signal }),
   grant: (email, grant) => apiPost<UserGrants>(`${userPath(email)}/grants`, grant),
   revoke: (email, scopePath) =>
     apiDelete(`${userPath(email)}/grants?scope_path=${encodeURIComponent(scopePath)}`),

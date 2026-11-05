@@ -1,6 +1,7 @@
 from typing import Any
 
 import pytest
+from surrealdb_memory import MemoryNotFoundError
 
 from app.adapters.agent_memory.brain import AgentMemoryBrain
 from app.domain.errors import MemoryUnavailableError
@@ -137,6 +138,163 @@ async def test_reads_every_page_and_normalises_refs_and_scopes() -> None:
     assert ("attributes", "1") in transport.calls
 
 
+class TurnTransport:
+    """Serves session turns two at a time; session "gone" 404s, "bad" fails."""
+
+    def __init__(self) -> None:
+        self.calls: list[tuple[str, int]] = []
+
+    async def request(self, method: str, path: str, **kwargs: Any) -> Any:
+        session = path.split("/sessions/", 1)[1].removesuffix("/turns")
+        offset = kwargs["params"]["offset"]
+        self.calls.append((session, offset))
+        if session == "gone":
+            raise MemoryNotFoundError(404, "no such session")
+        if session == "bad":
+            raise RuntimeError("boom")
+        turns = [
+            {
+                "id": f"turn:{session}-{i}",
+                "session": f"session:{session}",
+                "role": "user" if i % 2 == 0 else "assistant",
+                "content": f"text {i}",
+                "seq": i,
+                "createdAt": f"2026-11-0{i + 1}T10:00:00",
+            }
+            for i in range(3)
+        ]
+        page = turns[offset : offset + 2]
+        return {"turns": page, "page": {"hasMore": offset + 2 < len(turns)}}
+
+
+async def test_reads_the_turns_of_each_session_once_and_counts_failures() -> None:
+    transport = TurnTransport()
+    brain = AgentMemoryBrain(Client(transport))  # type: ignore[arg-type]
+
+    found = await brain.turns(["s1", "gone", "bad", "s1", ""])
+
+    assert [(t.id, t.session_id, t.role, t.seq) for t in found.turns] == [
+        ("s1-0", "s1", "user", 0),
+        ("s1-1", "s1", "assistant", 1),
+        ("s1-2", "s1", "user", 2),
+    ]
+    assert found.missing == 1  # "bad"; a 404 session simply has no turns
+    assert sorted(transport.calls) == [("bad", 0), ("gone", 0), ("s1", 0), ("s1", 2)]
+
+    # Read again: s1 and gone come from the cache, bad is tried again.
+    transport.calls.clear()
+    again = await brain.turns(["s1", "gone", "bad"])
+    assert transport.calls == [("bad", 0)]
+    assert (len(again.turns), again.missing) == (3, 1)
+
+
 async def test_a_failed_listing_is_memory_unavailable() -> None:
     with pytest.raises(MemoryUnavailableError):
         await AgentMemoryBrain(Client(Transport(PAGES, fail=True))).snapshot()  # type: ignore[arg-type]
+
+
+class RouteTransport:
+    """Answers by path suffix; anything unrouted fails like an Agent Memory 404."""
+
+    def __init__(self, routes: dict[str, Any]) -> None:
+        self.routes = routes
+        self.paths: list[str] = []
+
+    async def request(self, method: str, path: str, **kwargs: Any) -> Any:
+        self.paths.append(path)
+        for suffix, body in self.routes.items():
+            if path.endswith(suffix):
+                return body
+        raise MemoryNotFoundError(404, "no route")
+
+
+async def test_reads_actions_and_unknowns_and_survives_their_absence() -> None:
+    routes = {
+        "/entities": {"entities": [], "page": {}},
+        "/attributes": {"attributes": [], "page": {}},
+        "/relations": {"relations": [], "page": {}},
+        "/actions": {
+            "actions": [
+                {
+                    "id": "a1",
+                    "actor": "entity:person/principal:abc",
+                    "verb": "reflect",
+                    "object": None,
+                    "objectText": "Cobalt Ridge grill question",
+                    "summary": "Ran it again",
+                    "memoryCategory": "context",
+                    "confidence": 1.0,
+                    "source": {"kind": "turn", "ref": "turn:t1", "sessionId": "s1"},
+                    "createdAt": "2026-11-05T08:03:46",
+                }
+            ],
+            "page": {},
+        },
+        "/uncertainty": {
+            "unknowns": [
+                {
+                    "id": "u1",
+                    "about": "It is late again.",
+                    "reason": "ambiguous",
+                    "resolved": False,
+                    "resolvable": True,
+                    "entity": "entity:organisation/acme",
+                    "key": "lead_time",
+                    "scope": [["org/spreetail/user/arun/"]],
+                    "createdAt": "2026-11-04T06:49:06",
+                }
+            ],
+            "page": {},
+        },
+    }
+    snapshot = await AgentMemoryBrain(Client(RouteTransport(routes))).snapshot()  # type: ignore[arg-type]
+
+    action = snapshot.actions[0]
+    assert (action.actor_ref, action.verb, action.object_ref, action.object_text) == (
+        "person/principal:abc",
+        "reflect",
+        None,
+        "Cobalt Ridge grill question",
+    )
+    assert action.source.ref == "turn:t1"
+    unknown = snapshot.unknowns[0]
+    assert (unknown.entity_ref, unknown.key, unknown.scopes, unknown.resolvable) == (
+        "organisation/acme",
+        "lead_time",
+        ("org/spreetail/user/arun",),
+        True,
+    )
+
+    # Without those listings the page still loads, just without them.
+    del routes["/actions"], routes["/uncertainty"]
+    bare = await AgentMemoryBrain(Client(RouteTransport(routes))).snapshot()  # type: ignore[arg-type]
+    assert (bare.actions, bare.unknowns) == ([], [])
+
+
+async def test_replaced_facts_come_from_entity_history_and_are_cached() -> None:
+    history = {
+        "history": [
+            {"id": "now", "entity": "entity:organisation/acme", "key": "lead_time", "value": "18"},
+            {
+                "id": "old",
+                "entity": "entity:organisation/acme",
+                "key": "lead_time",
+                "value": "10",
+                "supersededBy": "now",
+                "scope": [["org/spreetail/"]],
+            },
+        ]
+    }
+    transport = RouteTransport({"/entities/organisation/acme/history": history})
+    brain = AgentMemoryBrain(Client(transport))  # type: ignore[arg-type]
+
+    found = await brain.replaced(["organisation/acme", "organisation/gone", "not-a-ref"])
+
+    assert [(f.id, f.superseded_by, f.scopes) for f in found.facts] == [
+        ("old", "now", ("org/spreetail",))
+    ]
+    # A missing entity simply has no history; a ref without "/" isn't asked about.
+    assert found.missing == 0
+    calls = len(transport.paths)
+    await brain.replaced(["organisation/acme"])
+    assert len(transport.paths) == calls

@@ -9,7 +9,13 @@ from collections import defaultdict
 
 from fastapi import APIRouter, HTTPException, Request, status
 
-from app.api.deps import AccessServiceDep, AdminUserDep, ScopeRegistryDep, is_admin
+from app.api.deps import (
+    AccessServiceDep,
+    AdminUserDep,
+    MemoryPeopleDep,
+    ScopeRegistryDep,
+    is_admin,
+)
 from app.core.config import settings
 from app.domain.errors import MemoryNotConfiguredError, MemoryUnavailableError
 from app.domain.ports.user_scopes import ScopeGrant
@@ -27,23 +33,54 @@ router = APIRouter(prefix="/admin")
 
 
 @router.get("/users", response_model=UsersResponse)
-async def list_users(admin: AdminUserDep, access: AccessServiceDep) -> UsersResponse:
-    """Every user who has signed in (or been granted a scope), with their grants."""
+async def list_users(
+    admin: AdminUserDep, access: AccessServiceDep, people: MemoryPeopleDep
+) -> UsersResponse:
+    """Everyone who holds a grant here, then every other person Agent Memory knows.
+
+    The second group has no scopes in this app yet: they get them through
+    "Add scope", and their personal scope when they first sign in. Each person
+    also carries their own grants in Agent Memory, read only: those apply when
+    they reach Agent Memory directly (Claude Code, MCP), not through this app.
+    """
     by_user: dict[str, list[ScopeGrant]] = defaultdict(list)
     for grant in await access.all_grants():
         by_user[grant.email].append(grant)
     owners = await access.owners()
-    return UsersResponse(
-        users=[
-            UserGrants(
-                email=email,
-                name=grants[0].name,
-                is_admin=is_admin(email),
-                grants=_grants_out(grants, owners),
-            )
-            for email, grants in by_user.items()
-        ]
-    )
+    error: str | None = None
+    try:
+        known = {p.email: p for p in await people.list()}
+    except MemoryNotConfiguredError:
+        known, error = {}, "Agent Memory is not configured."
+    except MemoryUnavailableError as exc:
+        known, error = {}, f"Agent Memory call failed: {exc}"
+
+    def memory_grants(email: str) -> dict[str, list[str]] | None:
+        person = known.get(email.strip().lower())
+        return person.grants if person else None
+
+    users = [
+        UserGrants(
+            email=email,
+            name=grants[0].name,
+            is_admin=is_admin(email),
+            grants=_grants_out(grants, owners),
+            memory_grants=memory_grants(email),
+        )
+        for email, grants in by_user.items()
+    ]
+    others = [p for p in known.values() if p.email not in by_user]
+    users += [
+        UserGrants(
+            email=p.email,
+            name=p.name,
+            is_admin=is_admin(p.email),
+            grants=[],
+            memory_grants=p.grants,
+        )
+        for p in sorted(others, key=lambda p: p.name.lower())
+    ]
+    return UsersResponse(users=users, people_error=error, memory_loaded=error is None)
 
 
 @router.post(

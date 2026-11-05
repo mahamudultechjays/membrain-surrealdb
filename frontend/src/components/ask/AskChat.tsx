@@ -11,7 +11,7 @@ import type { Me } from '@/api/auth'
 import { chatApi, type ChatApi, type ChatCitation, type ChatResponse } from '@/api/chat'
 import { ApiError } from '@/api/client'
 import { updateChat, useChat, type Turn } from '@/components/ask/chatStore'
-import { formatScore, readAreas, spaceName } from '@/components/ask/layers'
+import { formatScore, readAreas, spaceName, startExcluded } from '@/components/ask/layers'
 import ReplyText from '@/components/ask/ReplyText'
 import HeaderSlot from '@/components/HeaderSlot'
 import ScopePicker from '@/components/ScopePicker'
@@ -30,7 +30,8 @@ interface Props {
  * Agent Memory stores each question in the user's own space, so the page says so.
  */
 export default function AskChat({ me, api = chatApi }: Props) {
-  const [excluded, setExcluded] = useState<string[]>([])
+  // Starts on the user's own space; the picker widens it.
+  const [excluded, setExcluded] = useState<string[]>(() => startExcluded(me.grants))
   const [draft, setDraft] = useState('')
   // The conversation lives in the store, so it survives leaving this page; a
   // reply still on its way when the user leaves lands there too.

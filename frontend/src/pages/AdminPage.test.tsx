@@ -34,6 +34,7 @@ const USERS: UserGrants[] = [
     email: 'arun@spreetail.com',
     name: 'Arun Das',
     is_admin: false,
+    memory_grants: { 'memory:read': ['/org/spreetail/*'], 'scope:read': ['/*'] },
     grants: [
       { scope_path: ROOT, access: 'read', layer: 'org' },
       { scope_path: `${ROOT}/team/gone`, access: 'read', layer: 'team' },
@@ -50,6 +51,22 @@ const USERS: UserGrants[] = [
       { scope_path: `${ROOT}/team/qa`, access: 'read', layer: 'team' },
     ],
   },
+  // Known to Agent Memory only: no scopes in this app yet.
+  {
+    email: 'stephen.howard@spreetail.com',
+    name: 'Stephen Howard',
+    is_admin: false,
+    grants: [],
+    memory_grants: {
+      'memory:read': ['/*'],
+      'memory:write': ['/*'],
+      'memory:forget': ['/*'],
+      'scope:read': ['/*'],
+      'scope:create': ['/*'],
+      'scope:delete': ['/*'],
+      'grant:manage': ['/*'],
+    },
+  },
 ]
 
 const REGISTERED = [
@@ -64,7 +81,7 @@ const REGISTERED = [
 
 function fakeApi(overrides: Partial<AdminApi> = {}): AdminApi {
   return {
-    users: vi.fn<AdminApi['users']>(async () => USERS),
+    users: vi.fn<AdminApi['users']>(async () => ({ users: USERS, people_error: null })),
     grant: vi.fn<AdminApi['grant']>(async () => USERS[1]!),
     revoke: vi.fn<AdminApi['revoke']>(async () => undefined),
     scopes: vi.fn<AdminApi['scopes']>(async () => REGISTERED),
@@ -117,11 +134,11 @@ describe('AdminPage', () => {
     // The hidden team/qa scope isn't registered; its warning stays in sight.
     expect(within(ravi).getByText('1 not in Agent Memory')).toBeInTheDocument()
     const arrow = within(ravi).getByRole('button', {
-      name: 'Show all 4 scopes for Ravi Menon',
+      name: 'Show all 5 scopes for Ravi Menon',
     })
     expect(arrow).toHaveAttribute('aria-expanded', 'false')
 
-    fireEvent.click(within(ravi).getByRole('button', { name: 'Show 2 more scopes' }))
+    fireEvent.click(within(ravi).getByRole('button', { name: 'Show 3 more scopes' }))
     expect(scopes()).toHaveLength(4)
     expect(arrow).toHaveAttribute('aria-expanded', 'true')
     expect(within(ravi).getByText('not in Agent Memory')).toBeInTheDocument()
@@ -129,11 +146,11 @@ describe('AdminPage', () => {
     fireEvent.click(arrow)
     expect(scopes()).toHaveLength(2)
     expect(
-      within(ravi).getByRole('button', { name: 'Show 2 more scopes' }),
+      within(ravi).getByRole('button', { name: 'Show 3 more scopes' }),
     ).toHaveAttribute('aria-expanded', 'false')
-    // Two scopes or fewer: nothing to open.
+    // Two lines or fewer (Stephen: none here, one in Agent Memory): nothing to open.
     expect(
-      within(row('Arun Das')).queryByRole('button', { name: /^Show/ }),
+      within(row('Stephen Howard')).queryByRole('button', { name: /^Show/ }),
     ).not.toBeInTheDocument()
   })
 
@@ -158,6 +175,27 @@ describe('AdminPage', () => {
       layer: 'team',
       name: null,
     })
+  })
+
+  it('types a scope path in lower case with "_" for spaces, and fixes other symbols', async () => {
+    const api = fakeApi()
+    await renderPage(api)
+
+    const dialog = addScopeFor('Arun Das')
+    const scope = dialog.getByLabelText('Scope')
+    fireEvent.change(scope, { target: { value: 'Org/Spreetail/Team Ops' } })
+    expect(scope).toHaveValue('org/spreetail/team_ops')
+    expect(scope).not.toHaveAttribute('aria-invalid')
+
+    fireEvent.change(scope, { target: { value: 'org/spreetail/team&ops' } })
+    expect(scope).toHaveAttribute('aria-invalid', 'true')
+    expect(scope).toHaveAccessibleDescription(expect.stringContaining('Remove “&”'))
+    expect(dialog.getByRole('button', { name: 'Grant' })).toBeDisabled()
+
+    fireEvent.click(dialog.getByRole('button', { name: 'Use org/spreetail/team_ops' }))
+    expect(scope).toHaveValue('org/spreetail/team_ops')
+    expect(dialog.getByRole('button', { name: 'Grant' })).toBeEnabled()
+    expect(api.grant).not.toHaveBeenCalled()
   })
 
   it('says when the person already holds the scope', async () => {
@@ -195,64 +233,114 @@ describe('AdminPage', () => {
     await waitFor(() => expect(api.grant).toHaveBeenCalledTimes(1))
   })
 
-  it('adds a person who has not signed in yet, asking for their name', async () => {
+  it('lists people only Agent Memory knows, with no scopes yet, and no "Add person"', async () => {
+    await renderPage(fakeApi())
+
+    const stephen = row('Stephen Howard')
+    expect(within(stephen).getByText('No scopes in this app yet')).toBeInTheDocument()
+    expect(within(stephen).getByText('stephen.howard@spreetail.com')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /Add person/ })).not.toBeInTheDocument()
+  })
+
+  it('gives someone with no scopes their first, sending their name along', async () => {
     const api = fakeApi()
     await renderPage(api)
 
-    fireEvent.click(screen.getByRole('button', { name: 'Add person or grant access' }))
-    const dialog = within(
-      screen.getByRole('dialog', { name: 'Add person or grant access' }),
-    )
-    fireEvent.change(dialog.getByLabelText('Email'), {
-      target: { value: 'vidyul@spreetail.com' },
-    })
-    fireEvent.change(dialog.getByLabelText(/^Name/), {
-      target: { value: 'Vidyul Narayanan' },
-    })
+    const dialog = addScopeFor('Stephen Howard')
     fireEvent.change(dialog.getByLabelText('Scope'), {
       target: { value: `${ROOT}/team/ops` },
     })
     fireEvent.click(dialog.getByRole('button', { name: 'Grant' }))
 
-    await screen.findByText(`Granted read on ${ROOT}/team/ops to Vidyul Narayanan.`)
+    await screen.findByText(`Granted read on ${ROOT}/team/ops to Stephen Howard.`)
     expect(api.grant).toHaveBeenCalledWith(
-      'vidyul@spreetail.com',
-      expect.objectContaining({ name: 'Vidyul Narayanan' }),
+      'stephen.howard@spreetail.com',
+      expect.objectContaining({ name: 'Stephen Howard' }),
     )
   })
 
-  it('treats an email already in the list as adding a scope to that person', async () => {
-    await renderPage(fakeApi())
+  it('asks no layer: the org root is granted as Org, every other scope as Team', async () => {
+    const api = fakeApi()
+    await renderPage(api)
 
-    fireEvent.click(screen.getByRole('button', { name: 'Add person or grant access' }))
-    const dialog = within(
-      screen.getByRole('dialog', { name: 'Add person or grant access' }),
+    let dialog = addScopeFor('Stephen Howard')
+    expect(dialog.queryByLabelText('Layer')).not.toBeInTheDocument()
+    fireEvent.change(dialog.getByLabelText('Scope'), { target: { value: ROOT } })
+    fireEvent.click(dialog.getByRole('button', { name: 'Grant' }))
+    await screen.findByText(`Granted read on ${ROOT} to Stephen Howard.`)
+    expect(api.grant).toHaveBeenLastCalledWith(
+      'stephen.howard@spreetail.com',
+      expect.objectContaining({ scope_path: ROOT, layer: 'org' }),
     )
-    fireEvent.change(dialog.getByLabelText('Email'), {
-      target: { value: 'Arun@Spreetail.com' },
-    })
 
-    expect(dialog.getByText(/Arun Das is already in the list/)).toBeInTheDocument()
-    expect(dialog.queryByLabelText(/^Name/)).not.toBeInTheDocument()
-    // Arun already has a personal scope, so picking Personal needs no warning.
-    fireEvent.change(dialog.getByLabelText('Layer'), { target: { value: 'personal' } })
-    expect(dialog.queryByText(/won't get their own/)).not.toBeInTheDocument()
+    dialog = addScopeFor('Stephen Howard')
+    fireEvent.change(dialog.getByLabelText('Scope'), {
+      target: { value: `${ROOT}/user/priya_nair` },
+    })
+    fireEvent.click(dialog.getByRole('button', { name: 'Grant' }))
+    await waitFor(() =>
+      expect(api.grant).toHaveBeenLastCalledWith(
+        'stephen.howard@spreetail.com',
+        expect.objectContaining({ scope_path: `${ROOT}/user/priya_nair`, layer: 'team' }),
+      ),
+    )
   })
 
-  it('warns that a Personal grant replaces the personal scope a new person would get', async () => {
+  it("shows each person's own Agent Memory access as scopes this app can't change", async () => {
     await renderPage(fakeApi())
 
-    fireEvent.click(screen.getByRole('button', { name: 'Add person or grant access' }))
-    const dialog = within(
-      screen.getByRole('dialog', { name: 'Add person or grant access' }),
+    // In the Scope column after this app's grants: one row per pattern, not per scope.
+    const stephen = within(row('Stephen Howard'))
+    const everything = stephen.getByText('every scope').closest('tr')!
+    expect(within(everything).getByText('/')).toHaveAttribute('title', '/*')
+    expect(within(everything).getByText('Agent Memory')).toBeInTheDocument()
+    // Worded like this app's grants; every permission is in the tooltip.
+    expect(within(everything).getByText('read & write')).toHaveAttribute(
+      'title',
+      expect.stringContaining('Manage access'),
     )
-    fireEvent.change(dialog.getByLabelText('Email'), {
-      target: { value: 'vidyul@spreetail.com' },
-    })
-    expect(dialog.queryByText(/won't get their own/)).not.toBeInTheDocument()
-    fireEvent.change(dialog.getByLabelText('Layer'), { target: { value: 'personal' } })
+    // Where Revoke would be: why it can't be, and no button.
+    expect(within(everything).getByText("Can't change here")).toBeInTheDocument()
+    expect(within(everything).queryByRole('button')).not.toBeInTheDocument()
 
-    expect(dialog.getByText(/won't get their own/)).toBeInTheDocument()
+    // Arun's two grants come first; his Agent Memory rows are behind "Show more".
+    const arun = within(row('Arun Das'))
+    expect(arun.queryByText('and every scope inside')).not.toBeInTheDocument()
+    fireEvent.click(arun.getByRole('button', { name: 'Show 2 more scopes' }))
+    const narrow = arun.getByText('and every scope inside').closest('tr')!
+    expect(within(narrow).getByText('org/spreetail')).toHaveAttribute(
+      'title',
+      '/org/spreetail/*',
+    )
+    expect(within(narrow).getByText('read')).toBeInTheDocument()
+
+    // Priya signs in here, but Agent Memory has no account with her email.
+    fireEvent.click(
+      within(row('Priya Nair')).getByRole('button', { name: 'Show 1 more scope' }),
+    )
+    expect(
+      within(row('Priya Nair')).getByText('No Agent Memory account with this email'),
+    ).toBeInTheDocument()
+  })
+
+  it("says when Agent Memory's people could not be loaded", async () => {
+    await renderPage(
+      fakeApi({
+        users: vi.fn<AdminApi['users']>(async () => ({
+          users: USERS.slice(0, 3),
+          people_error: 'Agent Memory call failed: 403',
+        })),
+      }),
+    )
+
+    expect(
+      screen.getByText(
+        /Agent Memory's people could not be loaded \(Agent Memory call failed: 403\)/,
+      ),
+    ).toBeInTheDocument()
+    // Unknown is not the same as "no account": nothing is claimed per person.
+    expect(screen.queryByText(/No Agent Memory account/)).not.toBeInTheDocument()
+    expect(screen.queryByText("Can't change here")).not.toBeInTheDocument()
   })
 
   it('closes a dialog on Escape and gives focus back to its button', async () => {
@@ -328,35 +416,38 @@ describe('AdminPage', () => {
     fireEvent.click(team.getByRole('button', { name: 'Add a team scope' }))
     const name = team.getByLabelText('Team name')
     expect(name).toHaveFocus()
+    // Capitals go lower case and spaces become "_" in the field itself.
     fireEvent.change(name, { target: { value: 'Customer Support' } })
+    expect(name).toHaveValue('customer_support')
     expect(name).toHaveAccessibleDescription(
-      expect.stringContaining(`Creates ${ROOT}/team/customer-support`),
+      expect.stringContaining(`Creates ${ROOT}/team/customer_support`),
     )
     fireEvent.click(team.getByRole('button', { name: 'Create' }))
 
     // The dialog stays open, with the new scope in its column.
     expect(await dialog.findByRole('status')).toHaveTextContent(
-      `Created ${ROOT}/team/customer-support.`,
+      `Created ${ROOT}/team/customer_support.`,
     )
-    expect(api.registerScope).toHaveBeenCalledWith(`${ROOT}/team/customer-support`)
-    const item = (await team.findByText('customer-support')).closest('li')!
+    expect(api.registerScope).toHaveBeenCalledWith(`${ROOT}/team/customer_support`)
+    const item = (await team.findByText('customer_support')).closest('li')!
     expect(within(item).getByText('new')).toBeInTheDocument()
     expect(team.queryByLabelText('Team name')).not.toBeInTheDocument()
     expect(team.getByRole('button', { name: 'Add a team scope' })).toHaveFocus()
   })
 
-  it('names an individual scope as sign-in would, and refuses one that exists', async () => {
+  it('names an individual scope in lower case with "_", and refuses one that exists', async () => {
     const api = growingApi()
     const dialog = await openNewScope(api)
     const person = within(dialog.getByRole('region', { name: 'Individual' }))
 
     fireEvent.click(person.getByRole('button', { name: 'Add an individual scope' }))
     const name = person.getByLabelText("Person's name")
-    fireEvent.change(name, { target: { value: 'Priya Nair' } })
+    fireEvent.change(name, { target: { value: 'PRIYA NAIR' } })
+    expect(name).toHaveValue('priya_nair')
     expect(person.getByText('That scope already exists.')).toBeInTheDocument()
     expect(person.getByRole('button', { name: 'Create' })).toBeDisabled()
 
-    fireEvent.change(name, { target: { value: 'Ravi Kumar Menon' } })
+    fireEvent.change(name, { target: { value: 'Ravi Menon' } })
     expect(name).toHaveAccessibleDescription(
       expect.stringContaining(`Creates ${ROOT}/user/ravi_menon`),
     )
@@ -366,6 +457,27 @@ describe('AdminPage', () => {
     expect(person.queryByLabelText("Person's name")).not.toBeInTheDocument()
     expect(screen.getByRole('dialog', { name: 'New scope' })).toBeInTheDocument()
     expect(api.registerScope).not.toHaveBeenCalled()
+  })
+
+  it('refuses symbols other than "_" in a scope name, with a one-click fix', async () => {
+    const api = growingApi()
+    const dialog = await openNewScope(api)
+    const team = within(dialog.getByRole('region', { name: 'Team' }))
+    fireEvent.click(team.getByRole('button', { name: 'Add a team scope' }))
+    const name = team.getByLabelText('Team name')
+
+    fireEvent.change(name, { target: { value: 'Ops-Finance' } })
+    expect(name).toHaveValue('ops-finance')
+    expect(name).toHaveAttribute('aria-invalid', 'true')
+    expect(
+      team.getByText(/Only lower-case letters, numbers and _ are allowed\. Remove “-”\./),
+    ).toBeInTheDocument()
+    expect(team.getByRole('button', { name: 'Create' })).toBeDisabled()
+
+    fireEvent.click(team.getByRole('button', { name: 'Use ops_finance' }))
+    expect(name).toHaveValue('ops_finance')
+    expect(name).not.toHaveAttribute('aria-invalid')
+    expect(team.getByRole('button', { name: 'Create' })).toBeEnabled()
   })
 
   it('adds a sub-scope inside a picked team, asking only for the rest of the path', async () => {
@@ -383,14 +495,14 @@ describe('AdminPage', () => {
 
     fireEvent.change(name, { target: { value: 'Supplier Calls' } })
     expect(name).toHaveAccessibleDescription(
-      expect.stringContaining(`Creates ${ROOT}/team/ops/supplier-calls`),
+      expect.stringContaining(`Creates ${ROOT}/team/ops/supplier_calls`),
     )
     fireEvent.click(team.getByRole('button', { name: 'Create' }))
 
     expect(await dialog.findByRole('status')).toHaveTextContent(
-      `Created ${ROOT}/team/ops/supplier-calls.`,
+      `Created ${ROOT}/team/ops/supplier_calls.`,
     )
-    expect(api.registerScope).toHaveBeenCalledWith(`${ROOT}/team/ops/supplier-calls`)
+    expect(api.registerScope).toHaveBeenCalledWith(`${ROOT}/team/ops/supplier_calls`)
     // ops now shows what is inside it, the new scope marked, and focus is back on ops.
     const opsRow = team.getByRole('button', { name: 'ops: add a sub-scope inside' })
     expect(opsRow).toHaveFocus()
@@ -400,13 +512,13 @@ describe('AdminPage', () => {
       'true',
     )
     const added = team.getByRole('button', {
-      name: 'supplier-calls: add a sub-scope inside',
+      name: 'supplier_calls: add a sub-scope inside',
     })
     expect(within(added).getByText('new')).toBeInTheDocument()
 
     // The new sub-scope can itself be opened, to go a level deeper.
     fireEvent.click(added)
-    expect(team.getByLabelText('Sub-scope in ops/supplier-calls')).toHaveFocus()
+    expect(team.getByLabelText('Sub-scope in ops/supplier_calls')).toHaveFocus()
 
     // "+" goes back to a new team at the top level.
     fireEvent.click(team.getByRole('button', { name: 'Add a team scope' }))
@@ -422,12 +534,19 @@ describe('AdminPage', () => {
     fireEvent.click(team.getByRole('button', { name: 'Create' }))
     fireEvent.click(await dialog.findByRole('button', { name: 'Grant access…' }))
 
-    const grant = within(
-      screen.getByRole('dialog', { name: 'Add person or grant access' }),
-    )
+    const grant = within(screen.getByRole('dialog', { name: 'Grant access' }))
     expect(grant.getByLabelText('Scope')).toHaveValue(`${ROOT}/team/eng`)
-    expect(grant.getByLabelText('Layer')).toHaveValue('team')
-    expect(grant.getByLabelText('Email')).toHaveFocus()
+    // A person is picked from everyone listed; none typed in.
+    const person = grant.getByLabelText('Person')
+    expect(person).toHaveFocus()
+    expect(grant.getByRole('button', { name: 'Grant' })).toBeDisabled()
+    expect(
+      within(person)
+        .getAllByRole('option')
+        .map((o) => o.textContent),
+    ).toContain('Stephen Howard (stephen.howard@spreetail.com)')
+    fireEvent.change(person, { target: { value: 'stephen.howard@spreetail.com' } })
+    expect(grant.getByRole('button', { name: 'Grant' })).toBeEnabled()
   })
 })
 

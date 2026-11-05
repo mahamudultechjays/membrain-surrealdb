@@ -3,19 +3,44 @@ from collections.abc import Iterator
 import pytest
 from fastapi.testclient import TestClient
 
-from app.composition import get_scope_registry
+from app.composition import get_memory_people, get_scope_registry
 from app.domain.errors import MemoryUnavailableError
+from app.domain.ports.memory_people import MemoryPerson
 from app.main import app
 from app.services.access import AccessService
 from tests.conftest import FakeRegistry, sign_in
 
 OPS = "org/spreetail/team/ops"
 PRIYA_EMAIL = "priya.shah@x.com"
+FULL = {"memory:read": ["/*"], "memory:write": ["/*"]}
+
+
+class FakePeople:
+    """Agent Memory's principals: Priya (who signed in here) and one who has not."""
+
+    def __init__(self) -> None:
+        self.error: Exception | None = None
+
+    async def list(self) -> list[MemoryPerson]:
+        if self.error:
+            raise self.error
+        return [
+            MemoryPerson(email=PRIYA_EMAIL, name="Priya", grants={"memory:read": ["/org/*"]}),
+            MemoryPerson(email="stephen.howard@x.com", name="Stephen Howard", grants=FULL),
+        ]
 
 
 @pytest.fixture
-def client(access: AccessService, registry: FakeRegistry) -> Iterator[TestClient]:
+def people() -> FakePeople:
+    return FakePeople()
+
+
+@pytest.fixture
+def client(
+    access: AccessService, registry: FakeRegistry, people: FakePeople
+) -> Iterator[TestClient]:
     app.dependency_overrides[get_scope_registry] = lambda: registry
+    app.dependency_overrides[get_memory_people] = lambda: people
     with TestClient(app) as test_client:
         sign_in(test_client, PRIYA_EMAIL, "Priya Shah")
         sign_in(test_client, "admin@x.com", "Ada Admin")
@@ -26,12 +51,53 @@ def client(access: AccessService, registry: FakeRegistry) -> Iterator[TestClient
 def test_lists_users_with_their_grants(client: TestClient) -> None:
     users = {u["email"]: u for u in client.get("/api/v1/admin/users").json()["users"]}
 
-    assert set(users) == {"admin@x.com", PRIYA_EMAIL}
+    assert set(users) == {"admin@x.com", PRIYA_EMAIL, "stephen.howard@x.com"}
     assert users["admin@x.com"]["is_admin"] is True
     assert [g["scope_path"] for g in users[PRIYA_EMAIL]["grants"]] == [
         "org/spreetail",
         "org/spreetail/user/priya_shah",
     ]
+
+
+def test_lists_agent_memory_people_who_hold_no_scopes_here_last(client: TestClient) -> None:
+    body = client.get("/api/v1/admin/users").json()
+
+    # Priya is listed once, with her grants; Stephen only Agent Memory knows.
+    assert [u["email"] for u in body["users"]][-1] == "stephen.howard@x.com"
+    assert body["users"][-1] == {
+        "email": "stephen.howard@x.com",
+        "name": "Stephen Howard",
+        "is_admin": False,
+        "grants": [],
+        "memory_grants": FULL,
+    }
+    assert body["people_error"] is None
+    assert body["memory_loaded"] is True
+
+
+def test_each_person_carries_their_agent_memory_grants_matched_by_email(
+    client: TestClient,
+) -> None:
+    users = {u["email"]: u for u in client.get("/api/v1/admin/users").json()["users"]}
+
+    # Priya keeps the name she signed in with; her Agent Memory grants come along.
+    assert users[PRIYA_EMAIL]["name"] == "Priya Shah"
+    assert users[PRIYA_EMAIL]["memory_grants"] == {"memory:read": ["/org/*"]}
+    # The admin has no principal in Agent Memory.
+    assert users["admin@x.com"]["memory_grants"] is None
+
+
+def test_lists_this_apps_users_when_agent_memory_people_fail(
+    client: TestClient, people: FakePeople
+) -> None:
+    people.error = MemoryUnavailableError("down")
+
+    response = client.get("/api/v1/admin/users")
+
+    assert response.status_code == 200
+    assert {u["email"] for u in response.json()["users"]} == {"admin@x.com", PRIYA_EMAIL}
+    assert response.json()["people_error"] == "Agent Memory call failed: down"
+    assert response.json()["memory_loaded"] is False
 
 
 def test_grants_name_whose_space_each_scope_is(client: TestClient) -> None:

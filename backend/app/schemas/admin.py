@@ -15,10 +15,17 @@ class UserGrants(BaseModel):
     name: str
     is_admin: bool
     grants: list[GrantOut]
+    # Their own grants in Agent Memory (permission → scope patterns), read only;
+    # None when Agent Memory has no principal with this email, or wasn't read.
+    memory_grants: dict[str, list[str]] | None = None
 
 
 class UsersResponse(BaseModel):
     users: list[UserGrants]
+    # Why Agent Memory's people could not be listed; None when they were.
+    people_error: str | None = None
+    # True when each person's memory_grants came from Agent Memory.
+    memory_loaded: bool = False
 
 
 class GrantRequest(BaseModel):

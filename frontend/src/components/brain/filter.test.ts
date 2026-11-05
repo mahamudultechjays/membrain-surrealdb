@@ -1,7 +1,18 @@
-import type { BrainEntity } from '@/api/brain'
-import { NO_FILTERS, applyFilters, parseDate, toRows } from '@/components/brain/filter'
+import type { BrainChunk, BrainEntity } from '@/api/brain'
+import {
+  NO_FILTERS,
+  isRecord,
+  applyFilters,
+  countKinds,
+  facets,
+  parseDate,
+  toRows,
+  type BrainRow,
+  type Origin,
+} from '@/components/brain/filter'
 
 const NOW = Date.parse('2026-11-03T12:00:00Z')
+const SOURCE = { kind: 'turn', ref: null, session_id: 's1', trust: 0.5 }
 
 const fact = (
   id: string,
@@ -62,7 +73,46 @@ const ENTITIES: BrainEntity[] = [
 ]
 
 const ROWS = toRows(ENTITIES)
-const keys = (rows: ReturnType<typeof toRows>) => rows.map((r) => r.key)
+/** A record's key, or a chunk's text: one label per row. */
+const keys = (rows: readonly BrainRow[]) =>
+  rows.map((r) => (isRecord(r) ? r.key : r.kind === 'chunk' ? r.text : r.id))
+const records = (rows: readonly BrainRow[]) => rows.filter(isRecord)
+
+const CHUNKS: BrainChunk[] = [
+  {
+    id: 't1',
+    session_id: 's1',
+    role: 'user',
+    text: 'Acme ships to Reno; lead time is 6 days.',
+    created_at: '2026-10-20T08:59:00+00:00',
+    scopes: ['org/spreetail'],
+    derived: ['f3', 'r1', 'gone'],
+  },
+  {
+    id: 't2',
+    session_id: 's1',
+    role: 'assistant',
+    text: 'Noted.',
+    created_at: '2026-11-03T11:00:00+00:00',
+    scopes: ['org/spreetail'],
+    derived: [],
+  },
+]
+
+/** The same entities, with f3 and r1 taken from chunk t1. */
+const WITH_CHUNKS = toRows(
+  ENTITIES.map((entity) => ({
+    ...entity,
+    facts: entity.facts.map((f) =>
+      f.id === 'f3' ? { ...f, source: { ...SOURCE, ref: 'turn:t1' } } : f,
+    ),
+    relations: entity.relations.map((r) => ({
+      ...r,
+      source: { ...SOURCE, ref: 'turn:t1' },
+    })),
+  })),
+  CHUNKS,
+)
 
 describe('brain filters', () => {
   it('reads Agent Memory nanosecond timestamps', () => {
@@ -73,7 +123,7 @@ describe('brain filters', () => {
   })
 
   it('turns every fact and relation into its own row', () => {
-    expect(ROWS.map((r) => [r.kind, r.entity, r.key, r.value])).toEqual([
+    expect(records(ROWS).map((r) => [r.kind, r.entity, r.key, r.value])).toEqual([
       ['fact', 'Tier A products', 'pre_build_weeks', 'pre_build_weeks value'],
       ['fact', 'Tier A products', 'old_pre_build_weeks', 'old_pre_build_weeks value'],
       ['fact', 'Acme Logistics', 'lead_time', 'lead_time value'],
@@ -126,12 +176,147 @@ describe('brain filters', () => {
       'pre_build_weeks',
     ])
     expect(
-      applyFilters(ROWS, { ...NO_FILTERS, sort: 'entity' }, NOW).map((r) => r.entity),
+      records(applyFilters(ROWS, { ...NO_FILTERS, sort: 'entity' }, NOW)).map(
+        (r) => r.entity,
+      ),
     ).toEqual(['Acme Logistics', 'Acme Logistics', 'Tier A products'])
     expect(keys(applyFilters(ROWS, { ...NO_FILTERS, sort: 'fact' }, NOW))).toEqual([
       'lead_time',
       'pre_build_weeks',
       'ships_to',
     ])
+  })
+})
+
+describe('memory chunks', () => {
+  it('become rows linked both ways to what was extracted from them', () => {
+    const chunk = WITH_CHUNKS.find((r) => r.id === 'chunk:t1')
+    expect(chunk).toMatchObject({
+      kind: 'chunk',
+      role: 'user',
+      // An id memory no longer lists ("gone") is left out.
+      derived: ['fact:f3', 'relation:r1'],
+      entity_types: ['organisation'],
+      categories: ['context', 'knowledge'],
+    })
+    const lead = records(WITH_CHUNKS).find((r) => r.id === 'fact:f3')
+    expect(lead?.chunk).toBe('chunk:t1')
+    // A fact whose chunk wasn't loaded links nowhere.
+    expect(records(WITH_CHUNKS).find((r) => r.id === 'fact:f1')?.chunk).toBeNull()
+  })
+
+  it('are searched by their text and filtered by kind', () => {
+    expect(keys(applyFilters(WITH_CHUNKS, { ...NO_FILTERS, query: 'six' }, NOW))).toEqual(
+      [],
+    )
+    expect(
+      keys(applyFilters(WITH_CHUNKS, { ...NO_FILTERS, query: '6 days' }, NOW)),
+    ).toEqual(['Acme ships to Reno; lead time is 6 days.'])
+    expect(
+      keys(applyFilters(WITH_CHUNKS, { ...NO_FILTERS, kind: 'chunk' }, NOW)),
+    ).toEqual(['Noted.', 'Acme ships to Reno; lead time is 6 days.'])
+  })
+
+  it('match a type or category through what was taken from them', () => {
+    const filters = { ...NO_FILTERS, kind: 'chunk' as const, type: 'organisation' }
+    expect(keys(applyFilters(WITH_CHUNKS, filters, NOW))).toEqual([
+      'Acme ships to Reno; lead time is 6 days.',
+    ])
+    expect(facets(WITH_CHUNKS)).toEqual({
+      types: ['concept', 'organisation'],
+      categories: ['context', 'knowledge'],
+    })
+  })
+
+  it('counts each kind under every other filter', () => {
+    expect(countKinds(WITH_CHUNKS, NO_FILTERS, NOW)).toEqual({
+      all: 5,
+      fact: 2,
+      relation: 1,
+      chunk: 2,
+      action: 0,
+      unknown: 0,
+    })
+    // The kind itself never narrows the counts.
+    expect(
+      countKinds(WITH_CHUNKS, { ...NO_FILTERS, kind: 'fact', query: 'acme' }, NOW),
+    ).toEqual({ all: 3, fact: 1, relation: 1, chunk: 1, action: 0, unknown: 0 })
+  })
+})
+
+describe('actions, unknowns and sources', () => {
+  const ROWS_ALL = toRows(
+    ENTITIES.map((entity) => ({
+      ...entity,
+      facts: entity.facts.map((f) =>
+        f.id === 'f3' ? { ...f, source: { ...SOURCE, kind: 'upsert' } } : f,
+      ),
+      relations: entity.relations.map((r) => ({
+        ...r,
+        source: { ...SOURCE, kind: 'elaboration' },
+      })),
+    })),
+    [],
+    [
+      {
+        id: 'a1',
+        actor_ref: 'organisation/acme',
+        actor_name: 'Acme Logistics',
+        verb: 'delayed',
+        object_ref: null,
+        object_name: 'Reno shipment',
+        summary: 'Acme delayed the Reno shipment',
+        category: 'context',
+        created_at: '2026-11-03T11:00:00+00:00',
+        occurred_at: null,
+        confidence: 1,
+        scopes: ['org/spreetail'],
+        source: { ...SOURCE, kind: 'turn' },
+      },
+    ],
+    [
+      {
+        id: 'u1',
+        about: 'It is late again.',
+        reason: "'It' is ambiguous",
+        resolved: false,
+        resolvable: false,
+        entity_ref: 'organisation/acme',
+        entity_name: 'Acme Logistics',
+        key: null,
+        scopes: ['org/spreetail'],
+        labels: [],
+        created_at: '2026-11-03T11:30:00+00:00',
+      },
+    ],
+  )
+
+  it('become rows of their own kinds, searched by what they say', () => {
+    expect(keys(applyFilters(ROWS_ALL, { ...NO_FILTERS, kind: 'action' }, NOW))).toEqual([
+      'action:a1',
+    ])
+    expect(
+      keys(applyFilters(ROWS_ALL, { ...NO_FILTERS, query: 'ambiguous' }, NOW)),
+    ).toEqual(['unknown:u1'])
+    // The type filter reaches an action by its actor, an unknown by its entity.
+    expect(
+      keys(
+        applyFilters(
+          ROWS_ALL,
+          { ...NO_FILTERS, type: 'organisation', kind: 'action' },
+          NOW,
+        ),
+      ),
+    ).toEqual(['action:a1'])
+    expect(countKinds(ROWS_ALL, NO_FILTERS, NOW)).toMatchObject({ action: 1, unknown: 1 })
+  })
+
+  it('filter by where they came from', () => {
+    const from = (origin: Origin) =>
+      keys(applyFilters(ROWS_ALL, { ...NO_FILTERS, origin }, NOW))
+    expect(from('inferred')).toEqual(['ships_to'])
+    expect(from('stored')).toEqual(['lead_time'])
+    // f1 has no source, so no origin; the action was captured; unknowns have none.
+    expect(from('captured')).toEqual(['action:a1'])
   })
 })

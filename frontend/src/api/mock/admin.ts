@@ -49,7 +49,7 @@ export const mockAdminApi: AdminApi = {
   async users(signal) {
     await delay(150, signal)
     requireAdmin()
-    return MOCK_USERS.map(out)
+    return { users: MOCK_USERS.map(out), people_error: null }
   },
 
   async grant(email, { scope_path, access, layer, name }) {

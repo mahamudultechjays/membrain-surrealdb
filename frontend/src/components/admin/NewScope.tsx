@@ -8,7 +8,14 @@ import {
   type ReactNode,
 } from 'react'
 import type { GrantLayer } from '@/api/auth'
-import { childScopes, personSlug, teamSlug, type ChildScope } from '@/api/scopePaths'
+import {
+  childScopes,
+  fixScopeName,
+  scopeName,
+  scopeNameProblem,
+  typedScopeName,
+  type ChildScope,
+} from '@/api/scopePaths'
 
 /** Where a new scope can go. The org scope itself is fixed, so it has no "+". */
 type AreaKey = 'team' | 'user'
@@ -23,7 +30,6 @@ interface Area {
   label: string
   placeholder: string
   hint: string
-  slug: (text: string) => string
   /** What a grant of a top-level scope here usually is. */
   layer: GrantLayer
 }
@@ -35,9 +41,8 @@ const AREAS: readonly Area[] = [
     segment: 'team',
     addLabel: 'Add a team scope',
     label: 'Team name',
-    placeholder: 'e.g. Customer Support',
+    placeholder: 'e.g. customer_support',
     hint: 'One space the whole team shares.',
-    slug: teamSlug,
     layer: 'team',
   },
   {
@@ -46,9 +51,8 @@ const AREAS: readonly Area[] = [
     segment: 'user',
     addLabel: 'Add an individual scope',
     label: "Person's name",
-    placeholder: 'e.g. Priya Nair',
-    hint: 'Their own space, named the way sign-in names it.',
-    slug: personSlug,
+    placeholder: 'e.g. priya_nair',
+    hint: 'Their own space. Sign-in names it first_last.',
     layer: 'personal',
   },
 ]
@@ -164,19 +168,15 @@ export default function NewScope({
   const field = (area: Area, top: string) => {
     const parent = target?.parent ?? null
     const base = parent ?? top
-    // A new person is named like sign-in names them; anything else is a plain slug.
-    const slug = parent ? teamSlug(text) : area.slug(text)
-    const path = `${base}/${slug}`
+    // Lower case, words joined by "_": the field already shows it that way.
+    const name = scopeName(text)
+    const path = `${base}/${name}`
     const inside = parent?.slice(top.length + 1)
-    const exists = slug !== '' && known.has(path)
-    const problem =
-      text.trim() === ''
-        ? null
-        : slug === ''
-          ? 'Use letters or numbers.'
-          : exists
-            ? 'That scope already exists.'
-            : null
+    const exists = name !== '' && known.has(path)
+    const invalid = scopeNameProblem(text)
+    const problem = invalid ?? (exists ? 'That scope already exists.' : null)
+    const fixed = invalid ? fixScopeName(text) : ''
+    const slug = problem ? '' : name
     const inputId = `${ids}-name`
     const previewId = `${ids}-preview`
 
@@ -219,7 +219,17 @@ export default function NewScope({
             aria-describedby={previewId}
             aria-invalid={problem ? true : undefined}
             onChange={(e) => {
-              setText(e.target.value)
+              // Capitals go lower case and spaces become "_" as they are typed.
+              // One character for one, so put the caret back where it was
+              // rather than letting React jump it to the end.
+              const input = e.target
+              const shown = typedScopeName(input.value)
+              if (shown !== input.value) {
+                const { selectionStart, selectionEnd } = input
+                input.value = shown
+                input.setSelectionRange(selectionStart, selectionEnd)
+              }
+              setText(shown)
               onEdit()
             }}
             onKeyDown={(e) => {
@@ -242,6 +252,22 @@ export default function NewScope({
                 : `${area.hint} `}
               Creates{' '}
               <span className="mono">{breakAtSlashes(slug ? path : `${base}/…`)}</span>
+            </>
+          )}
+          {fixed && (
+            <>
+              {' '}
+              <button
+                type="button"
+                className="scope-text-btn scope-fix"
+                onClick={() => {
+                  setText(fixed)
+                  onEdit()
+                  nameInput.current?.focus()
+                }}
+              >
+                Use <span className="mono">{fixed}</span>
+              </button>
             </>
           )}
         </p>

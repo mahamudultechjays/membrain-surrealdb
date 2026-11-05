@@ -1,4 +1,4 @@
-import type { BrainApi, BrainEntity } from '@/api/brain'
+import type { BrainApi, BrainChunk, BrainEntity } from '@/api/brain'
 import { ApiError } from '@/api/client'
 import { MOCK_ADMINS, currentUser, delay, records } from '@/api/mock/backend'
 
@@ -25,6 +25,7 @@ export const mockBrainApi: BrainApi = {
       scopes.some((s) => path === s || (subscopes && path.startsWith(s + '/')))
 
     const byName = new Map<string, BrainEntity>()
+    const chunks: BrainChunk[] = []
     const every = new Set<string>()
     records.forEach((record, index) => {
       const match = record.kind === 'attribute' ? FACT.exec(record.text) : null
@@ -47,6 +48,8 @@ export const mockBrainApi: BrainApi = {
         }
         byName.set(name, entity)
       }
+      // Each seed fact stands for one captured sentence: its memory chunk.
+      const turn = `t-${record.id}`
       entity.facts.unshift({
         id: record.id,
         key,
@@ -58,6 +61,21 @@ export const mockBrainApi: BrainApi = {
         // The seed has no summaries or labels, like many real facts.
         summary: null,
         labels: [],
+        source: {
+          kind: 'turn',
+          ref: `turn:${turn}`,
+          session_id: `s-${turn}`,
+          trust: 0.5,
+        },
+      })
+      chunks.unshift({
+        id: turn,
+        session_id: `s-${turn}`,
+        role: 'user',
+        text: `${name}: ${key.replace(/_/g, ' ')} is ${value}.`,
+        created_at,
+        scopes: [record.area],
+        derived: [record.id],
       })
       if (!entity.scopes.includes(record.area)) entity.scopes.push(record.area)
       if (created_at > entity.updated_at) entity.updated_at = created_at
@@ -71,6 +89,13 @@ export const mockBrainApi: BrainApi = {
       scopes: [...every].sort(),
       total_facts: entities.reduce((n, e) => n + e.facts.length, 0),
       total_relations: 0,
+      chunks,
+      total_chunks: chunks.length,
+      chunks_missing: 0,
+      actions: [],
+      unknowns: [],
+      replaced_loaded: true,
+      replaced_missing: 0,
     }
   },
 }

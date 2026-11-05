@@ -6,6 +6,7 @@ import { mockAskApi } from '@/api/mock/ask'
 import { meOf } from '@/api/mock/auth'
 import { setMockLatencyScale, userByEmail } from '@/api/mock/backend'
 import { clearChats } from '@/components/ask/chatStore'
+import { ownScope } from '@/components/ask/layers'
 import AskPage from '@/pages/AskPage'
 
 beforeAll(() => setMockLatencyScale(0))
@@ -14,11 +15,34 @@ afterAll(() => setMockLatencyScale(1))
 /** Priya, as the mock signs her in: org, her team (ops) and her own space. */
 const PRIYA = meOf(userByEmail('priya@example.com')!)
 
-/** Renders the page; every space is searched until something is unticked. */
+/**
+ * Renders the page, which opens on Priya's own space, then ticks every space:
+ * most tests here are about answers drawn from all three layers.
+ */
 async function renderPage(api: AskApi = mockAskApi) {
   render(<AskPage me={PRIYA} api={api} />)
+  const picker = await screen.findByRole('button', { name: 'Search in: My space' })
+  fireEvent.click(picker)
+  fireEvent.click(screen.getByRole('button', { name: 'Select all' }))
+  fireEvent.click(picker)
   await screen.findByRole('button', { name: 'Search in: All spaces' })
 }
+
+it('opens on the user’s own space, and searches only that until they widen it', async () => {
+  const api: AskApi = { ask: vi.fn<AskApi['ask']>(mockAskApi.ask) }
+  render(<AskPage me={PRIYA} api={api} />)
+
+  await screen.findByRole('button', { name: 'Search in: My space' })
+  fireEvent.change(screen.getByLabelText('Question'), {
+    target: { value: 'Is dock 3 open?' },
+  })
+  fireEvent.submit(screen.getByLabelText('Question').closest('form')!)
+
+  await vi.waitFor(() => expect(api.ask).toHaveBeenCalled())
+  expect(vi.mocked(api.ask).mock.calls[0]?.[0]).toMatchObject({
+    scopes: [ownScope(PRIYA.grants)],
+  })
+})
 
 async function findAnswer(question: string) {
   return screen.findByRole('region', { name: question }, { timeout: 2000 })
@@ -223,9 +247,9 @@ describe('AskPage', () => {
     }
     render(<AskPage me={me} api={mockAskApi} />)
 
-    fireEvent.click(screen.getByRole('button', { name: 'Search in: All spaces' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Search in: My space' }))
 
-    expect(screen.getByRole('checkbox', { name: /Deena/ })).toBeChecked()
+    expect(screen.getByRole('checkbox', { name: /Deena/ })).not.toBeChecked()
     expect(screen.getByRole('checkbox', { name: /My space/ })).toBeChecked()
   })
 

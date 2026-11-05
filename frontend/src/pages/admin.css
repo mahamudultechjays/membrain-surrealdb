@@ -160,6 +160,34 @@
   margin-top: 4px;
 }
 
+/*
+ * A person's own Agent Memory access, in the Scope column after this app's
+ * grants. Read like any other scope; only the Layer tag and the Revoke column
+ * say it is set elsewhere.
+ */
+/* "and every scope inside", after the path it qualifies. */
+.admin-inside {
+  margin-left: 8px;
+  font-size: 12px;
+  color: var(--mb-muted);
+}
+
+.admin-memory-tag {
+  border: 1px dashed var(--mb-line-2);
+  background: transparent;
+}
+
+/* Where Revoke would be: a lock and why, not a button. */
+.admin-locked {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--mb-muted);
+  white-space: nowrap;
+  cursor: help;
+}
+
 /* The "not in Agent Memory" warning, after the path it is about. */
 .admin-scope .tag {
   margin-left: 8px;
@@ -841,6 +869,16 @@ button.scope-pick:hover {
 .scope-text-btn:hover {
   background: var(--mb-soft);
   color: var(--mb-ink);
+}
+
+/* "Use ops_finance": the one-click fix after a naming error, inline with it. */
+.scope-text-btn.scope-fix {
+  min-height: 24px;
+  padding: 0 6px;
+  font-size: 12px;
+  color: var(--mb-accent);
+  text-decoration: underline;
+  text-underline-offset: 2px;
 }
 
 .scope-created {

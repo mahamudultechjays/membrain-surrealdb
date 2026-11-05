@@ -2,7 +2,14 @@ import { useEffect, useState, type FormEvent } from 'react'
 import { adminApi, type AdminApi, type GrantInput, type UserGrants } from '@/api/admin'
 import type { Access, Grant, GrantLayer, Me } from '@/api/auth'
 import type { LabApi } from '@/api/lab'
-import { cleanPath, unregisteredScopes } from '@/api/scopePaths'
+import {
+  cleanPath,
+  fixScopePath,
+  scopePathProblem,
+  typedScopeName,
+  unregisteredScopes,
+} from '@/api/scopePaths'
+import { describe, memoryRows, type MemoryRow } from '@/components/admin/memoryAccess'
 import MemoryLab from '@/components/admin/MemoryLab'
 import NewScope from '@/components/admin/NewScope'
 import { LAYER_LABELS } from '@/components/ask/layers'
@@ -23,7 +30,7 @@ interface Props {
 type UsersState =
   | { status: 'loading' }
   | { status: 'error'; message: string }
-  | { status: 'ready'; users: UserGrants[] }
+  | { status: 'ready'; users: UserGrants[]; peopleError: string | null }
 
 /** The scopes that exist in Agent Memory under the org scope. */
 type RegistryState =
@@ -32,9 +39,8 @@ type RegistryState =
   | { status: 'ready'; paths: ReadonlySet<string> }
 
 /**
- * The open dialog. A grant is either for someone already in the table (their
- * row's "Add scope") or, with `user` null, for a person typed in by email:
- * usually someone who has not signed in yet, so they are not in the table.
+ * The open dialog. A grant is for someone in the table: from their row's "Add
+ * scope", or, with `user` null, picked in the dialog (after New scope).
  */
 type Dialog =
   | { kind: 'scope' }
@@ -45,7 +51,6 @@ type Dialog =
 
 interface GrantForm {
   email: string
-  name: string
   scope_path: string
   access: Access
   layer: GrantLayer
@@ -53,15 +58,46 @@ interface GrantForm {
 
 const EMPTY_GRANT: GrantForm = {
   email: '',
-  name: '',
   scope_path: '',
   access: 'read',
   layer: 'team',
 }
 const SCOPE_OPTIONS = 'admin-scope-options'
-const USER_OPTIONS = 'admin-user-options'
+const PATH_PROBLEM = 'admin-scope-problem'
 /** Scopes shown per person before "Show more". */
 const VISIBLE_SCOPES = 2
+
+/**
+ * One line of a person's Scope column: a grant in this app, their own access
+ * in Agent Memory (read only), "no account there", or "no scopes here yet".
+ */
+type ScopeLine =
+  | { kind: 'app'; grant: Grant }
+  | ({ kind: 'memory' } & MemoryRow)
+  | { kind: 'no-account' }
+  | { kind: 'none' }
+
+const lineKey = (line: ScopeLine) =>
+  line.kind === 'app'
+    ? `app:${line.grant.scope_path}`
+    : line.kind === 'memory'
+      ? `memory:${line.pattern}`
+      : line.kind
+
+/**
+ * This app's grants first, then the person's Agent Memory access. With
+ * `memoryKnown` false (Agent Memory couldn't be read), nothing is claimed.
+ */
+function scopeLines(user: UserGrants, memoryKnown: boolean): ScopeLine[] {
+  const lines: ScopeLine[] = user.grants.map((grant) => ({ kind: 'app', grant }))
+  if (lines.length === 0) lines.push({ kind: 'none' })
+  if (!memoryKnown) return lines
+  if (!user.memory_grants) return [...lines, { kind: 'no-account' }]
+  return [
+    ...lines,
+    ...memoryRows(user.memory_grants).map((row) => ({ kind: 'memory' as const, ...row })),
+  ]
+}
 
 /**
  * Who may read or write which Agent Memory scope. The backend reaches Agent
@@ -93,7 +129,13 @@ function AdminAccess({ me, api = adminApi }: Omit<Props, 'labApi'>) {
     const controller = new AbortController()
     api
       .users(controller.signal)
-      .then((list) => setUsers({ status: 'ready', users: list }))
+      .then((fresh) =>
+        setUsers({
+          status: 'ready',
+          users: fresh.users,
+          peopleError: fresh.people_error,
+        }),
+      )
       .catch((err: unknown) => {
         if (!isAbort(err)) setUsers({ status: 'error', message: messageOf(err) })
       })
@@ -118,6 +160,10 @@ function AdminAccess({ me, api = adminApi }: Omit<Props, 'labApi'>) {
   const alreadyHeld = grantee?.grants.find(
     (g) => g.scope_path === cleanPath(form.scope_path),
   )
+  // Symbols the naming rule doesn't allow: shown with a one-click fix, and
+  // Grant waits, rather than the backend refusing it.
+  const pathProblem = scopePathProblem(form.scope_path)
+  const pathFix = pathProblem ? fixScopePath(form.scope_path) : ''
 
   /** Run one change, then reload the users (and scopes, which a grant may add). */
   const run = async (call: () => Promise<unknown>, message: string) => {
@@ -127,7 +173,7 @@ function AdminAccess({ me, api = adminApi }: Omit<Props, 'labApi'>) {
     try {
       await call()
       const [fresh, paths] = await Promise.all([api.users(), api.scopes()])
-      setUsers({ status: 'ready', users: fresh })
+      setUsers({ status: 'ready', users: fresh.users, peopleError: fresh.people_error })
       setRegistry({ status: 'ready', paths: new Set(paths) })
       setDone(message)
       return true
@@ -160,17 +206,21 @@ function AdminAccess({ me, api = adminApi }: Omit<Props, 'labApi'>) {
   }
 
   const sendGrant = async () => {
-    const email = form.email.trim().toLowerCase()
-    const name = form.name.trim()
+    if (!grantee) return
+    const email = grantee.email
+    const scope_path = cleanPath(form.scope_path)
     const grant: GrantInput = {
-      scope_path: cleanPath(form.scope_path),
+      scope_path,
       access: form.access,
-      layer: form.layer,
-      name: grantee ? null : name || null,
+      // The Layer field is hidden for now: the org root is Org, every other
+      // scope Team. Personal scopes come only from sign-in.
+      layer: scope_path === root ? 'org' : 'team',
+      // Someone with no grants yet is not stored here: their name comes along.
+      name: grantee.grants.length ? null : grantee.name,
     }
     const ok = await run(
       () => api.grant(email, grant),
-      `Granted ${grant.access === 'write' ? 'read and write' : 'read'} on ${grant.scope_path} to ${grantee?.name ?? (name || email)}.`,
+      `Granted ${grant.access === 'write' ? 'read and write' : 'read'} on ${grant.scope_path} to ${grantee.name}.`,
     )
     if (ok) {
       // Open their scopes, so the new one is on screen even past the first few.
@@ -221,18 +271,11 @@ function AdminAccess({ me, api = adminApi }: Omit<Props, 'labApi'>) {
       <div className="admin-head">
         <div>
           <p>
-            Who may read or write which Agent Memory scope. Everyone reads through these
-            grants, so a change applies on their next Capture or Ask.
+            Who may read or write which Agent Memory scope. Everyone Agent Memory knows is
+            listed, and a change applies on their next Capture or Ask.
           </p>
         </div>
         <div className="admin-head-actions">
-          <button
-            type="button"
-            className="btn-secondary"
-            onClick={() => open({ kind: 'grant', user: null })}
-          >
-            <span aria-hidden="true">+</span> Add person or grant access
-          </button>
           <button type="button" className="btn" onClick={() => open({ kind: 'scope' })}>
             <span aria-hidden="true">+</span> New scope
           </button>
@@ -252,11 +295,12 @@ function AdminAccess({ me, api = adminApi }: Omit<Props, 'labApi'>) {
           ))}
         </datalist>
       )}
-      <datalist id={USER_OPTIONS}>
-        {list.map((user) => (
-          <option key={user.email} value={user.email} aria-label={user.name} />
-        ))}
-      </datalist>
+      {users.status === 'ready' && users.peopleError && (
+        <p className="note admin-callout">
+          Only people with access here are listed: Agent Memory&apos;s people could not be
+          loaded ({users.peopleError}).
+        </p>
+      )}
 
       {error && !dialog && (
         <p className="error admin-callout" role="alert">
@@ -294,21 +338,21 @@ function AdminAccess({ me, api = adminApi }: Omit<Props, 'labApi'>) {
             {/* One tbody per person: their scopes are rows, and their name spans them. */}
             {list.map((user) => {
               const groupId = `admin-scopes-${user.email.replace(/[^a-z0-9]/gi, '-')}`
-              const extra = user.grants.length - VISIBLE_SCOPES
+              const lines = scopeLines(user, !users.peopleError)
+              const extra = lines.length - VISIBLE_SCOPES
               const collapsible = extra > 0
               const isOpen = expanded.has(user.email)
               const shown =
-                collapsible && !isOpen
-                  ? user.grants.slice(0, VISIBLE_SCOPES)
-                  : user.grants
+                collapsible && !isOpen ? lines.slice(0, VISIBLE_SCOPES) : lines
               // A warning on a hidden scope must not vanish with it.
               const hiddenMissing = known
-                ? user.grants
+                ? lines
                     .slice(VISIBLE_SCOPES)
-                    .filter((g) => !known.has(g.scope_path)).length
+                    .filter((l) => l.kind === 'app' && !known.has(l.grant.scope_path))
+                    .length
                 : 0
               const toggle = () => toggleExpanded(user.email)
-              const span = Math.max(shown.length, 1) + (collapsible ? 1 : 0)
+              const span = shown.length + (collapsible ? 1 : 0)
               const person = (
                 <td rowSpan={span} data-label="Person" className="admin-person">
                   <span className="admin-person-head">
@@ -322,7 +366,7 @@ function AdminAccess({ me, api = adminApi }: Omit<Props, 'labApi'>) {
                         aria-label={
                           isOpen
                             ? `Show fewer scopes for ${user.name}`
-                            : `Show all ${user.grants.length} scopes for ${user.name}`
+                            : `Show all ${lines.length} scopes for ${user.name}`
                         }
                         onClick={toggle}
                       >
@@ -364,61 +408,20 @@ function AdminAccess({ me, api = adminApi }: Omit<Props, 'labApi'>) {
                   <span className="mono admin-muted admin-email">{user.email}</span>
                 </td>
               )
-              if (user.grants.length === 0) {
-                return (
-                  <tbody key={user.email} className="admin-person-group">
-                    <tr>
-                      {person}
-                      <td colSpan={4} className="admin-muted">
-                        No scopes
-                      </td>
-                    </tr>
-                  </tbody>
-                )
-              }
               return (
                 <tbody key={user.email} id={groupId} className="admin-person-group">
-                  {shown.map((grant, index) => {
-                    return (
-                      <tr key={grant.scope_path}>
-                        {index === 0 && person}
-                        <td data-label="Scope" className="admin-scope">
-                          <span className="mono admin-path">{grant.scope_path}</span>
-                          {known && !known.has(grant.scope_path) && (
-                            <span
-                              className="tag"
-                              data-tone="warn"
-                              title="Writes here fail and reads come back empty until this scope exists"
-                            >
-                              not in Agent Memory
-                            </span>
-                          )}
-                        </td>
-                        <td data-label="Layer" className="admin-col-fit">
-                          <span className="tag">{LAYER_LABELS[grant.layer]}</span>
-                        </td>
-                        <td data-label="Access" className="admin-col-fit">
-                          <span
-                            className="tag"
-                            data-tone={grant.access === 'write' ? 'good' : undefined}
-                          >
-                            {grant.access === 'write' ? 'read & write' : 'read'}
-                          </span>
-                        </td>
-                        <td className="admin-col-fit admin-grant-actions">
-                          <button
-                            type="button"
-                            className="btn-secondary"
-                            disabled={busy}
-                            onClick={() => open({ kind: 'revoke', user, grant })}
-                            aria-label={`Revoke ${grant.scope_path} from ${user.name}…`}
-                          >
-                            Revoke
-                          </button>
-                        </td>
-                      </tr>
-                    )
-                  })}
+                  {shown.map((line, index) => (
+                    <tr key={lineKey(line)}>
+                      {index === 0 && person}
+                      <ScopeCells
+                        line={line}
+                        known={known}
+                        busy={busy}
+                        onRevoke={(grant) => open({ kind: 'revoke', user, grant })}
+                        userName={user.name}
+                      />
+                    </tr>
+                  ))}
                   {collapsible && (
                     <tr className="admin-more-row">
                       <td colSpan={4}>
@@ -450,16 +453,12 @@ function AdminAccess({ me, api = adminApi }: Omit<Props, 'labApi'>) {
 
       {dialog?.kind === 'grant' && (
         <Modal
-          title={
-            dialog.user
-              ? `Add a scope for ${dialog.user.name}`
-              : 'Add person or grant access'
-          }
+          title={dialog.user ? `Add a scope for ${dialog.user.name}` : 'Grant access'}
           description={
             dialog.user ? (
               <span className="mono">{dialog.user.email}</span>
             ) : (
-              "Enter anyone's email, whether or not they're in the list. Someone who hasn't signed in yet is added now. When they first sign in, they also get their own personal scope and read access to the org."
+              'Pick who gets this scope. Everyone Agent Memory knows is in the list.'
             )
           }
           onClose={closeDialog}
@@ -468,33 +467,21 @@ function AdminAccess({ me, api = adminApi }: Omit<Props, 'labApi'>) {
             <div className="admin-fields">
               {!dialog.user && (
                 <label className="admin-wide">
-                  <span>Email</span>
-                  <input
-                    type="email"
-                    list={USER_OPTIONS}
+                  <span>Person</span>
+                  <select
                     value={form.email}
                     required
-                    placeholder="name@spreetail.com"
                     onChange={(e) => editForm({ ...form, email: e.target.value })}
-                  />
-                </label>
-              )}
-              {!dialog.user && grantee && (
-                <p className="admin-wide admin-muted admin-note">
-                  {grantee.name} is already in the list, so this adds a scope to them.
-                </p>
-              )}
-              {!dialog.user && !grantee && form.email.trim() !== '' && (
-                <label className="admin-wide">
-                  <span>
-                    Name <span className="admin-muted">(not signed in yet)</span>
-                  </span>
-                  <input
-                    value={form.name}
-                    maxLength={120}
-                    placeholder="Vidyul Narayanan"
-                    onChange={(e) => editForm({ ...form, name: e.target.value })}
-                  />
+                  >
+                    <option value="" disabled>
+                      Choose a person
+                    </option>
+                    {list.map((user) => (
+                      <option key={user.email} value={user.email}>
+                        {user.name} ({user.email})
+                      </option>
+                    ))}
+                  </select>
                 </label>
               )}
               <label className="admin-wide">
@@ -504,15 +491,44 @@ function AdminAccess({ me, api = adminApi }: Omit<Props, 'labApi'>) {
                   list={SCOPE_OPTIONS}
                   value={form.scope_path}
                   required
+                  autoComplete="off"
+                  spellCheck={false}
                   placeholder={root ? `${root}/team/ops` : 'org/spreetail/team/ops'}
-                  onChange={(e) => editForm({ ...form, scope_path: e.target.value })}
+                  aria-invalid={pathProblem ? true : undefined}
+                  aria-describedby={pathProblem ? PATH_PROBLEM : undefined}
+                  onChange={(e) => {
+                    // As in New scope: capitals go lower case and spaces become
+                    // "_" as they are typed, keeping the caret where it was.
+                    const input = e.target
+                    const shown = typedScopeName(input.value)
+                    if (shown !== input.value) {
+                      const { selectionStart, selectionEnd } = input
+                      input.value = shown
+                      input.setSelectionRange(selectionStart, selectionEnd)
+                    }
+                    editForm({ ...form, scope_path: shown })
+                  }}
                 />
               </label>
+              {pathProblem && (
+                <p id={PATH_PROBLEM} className="admin-wide admin-note admin-warn-note">
+                  {pathProblem}{' '}
+                  {pathFix && (
+                    <button
+                      type="button"
+                      className="scope-text-btn scope-fix"
+                      onClick={() => editForm({ ...form, scope_path: pathFix })}
+                    >
+                      Use {pathFix}
+                    </button>
+                  )}
+                </p>
+              )}
               {alreadyHeld && (
                 <p className="admin-wide admin-muted admin-note">
                   {grantee?.name} already holds this scope (
                   {alreadyHeld.access === 'write' ? 'read & write' : 'read'}). Granting
-                  replaces its access and layer.
+                  replaces its access.
                 </p>
               )}
               <label>
@@ -527,6 +543,11 @@ function AdminAccess({ me, api = adminApi }: Omit<Props, 'labApi'>) {
                   <option value="write">Read &amp; write</option>
                 </select>
               </label>
+              {/*
+                Layer is hidden for now: sendGrant makes the org root Org and every
+                other scope Team. To bring it back, restore this field and use
+                form.layer in sendGrant.
+
               <label>
                 <span>Layer</span>
                 <select
@@ -540,13 +561,13 @@ function AdminAccess({ me, api = adminApi }: Omit<Props, 'labApi'>) {
                   <option value="personal">Personal</option>
                 </select>
               </label>
-              {/* Sign-in creates a personal scope only when none is held, so this replaces it. */}
-              {!grantee && form.layer === 'personal' && (
+              {grantee?.grants.length === 0 && form.layer === 'personal' && (
                 <p className="admin-wide admin-note admin-warn-note">
-                  Someone who hasn&apos;t signed in yet treats this as their personal
-                  scope, so they won&apos;t get their own when they sign in.
+                  {grantee.name} has no scopes yet, so this becomes their personal scope
+                  and they won&apos;t get their own when they first sign in.
                 </p>
               )}
+              */}
             </div>
             {missing && (
               <section
@@ -593,7 +614,11 @@ function AdminAccess({ me, api = adminApi }: Omit<Props, 'labApi'>) {
               <button type="button" className="btn-secondary" onClick={closeDialog}>
                 Cancel
               </button>
-              <button type="submit" className="btn" disabled={busy || missing !== null}>
+              <button
+                type="submit"
+                className="btn"
+                disabled={busy || missing !== null || !grantee || pathProblem !== null}
+              >
                 Grant
               </button>
             </div>
@@ -671,6 +696,117 @@ function AdminAccess({ me, api = adminApi }: Omit<Props, 'labApi'>) {
         </Modal>
       )}
     </section>
+  )
+}
+
+/** The Scope, Layer, Access and Revoke cells of one line in a person's group. */
+function ScopeCells({
+  line,
+  known,
+  busy,
+  onRevoke,
+  userName,
+}: {
+  line: ScopeLine
+  known: ReadonlySet<string> | null
+  busy: boolean
+  onRevoke: (grant: Grant) => void
+  userName: string
+}) {
+  if (line.kind === 'none') {
+    return (
+      <td colSpan={4} className="admin-muted">
+        No scopes in this app yet
+      </td>
+    )
+  }
+  if (line.kind === 'no-account') {
+    return (
+      <td colSpan={4} className="admin-muted">
+        No Agent Memory account with this email
+      </td>
+    )
+  }
+  if (line.kind === 'memory') {
+    return (
+      <>
+        <td data-label="Scope" className="admin-scope">
+          <span className="mono admin-path" title={line.pattern}>
+            {line.path}
+          </span>
+          {line.inside && (
+            <span className="admin-inside">
+              {line.path === '/' ? 'every scope' : 'and every scope inside'}
+            </span>
+          )}
+        </td>
+        <td data-label="Layer" className="admin-col-fit">
+          <span className="tag admin-memory-tag">Agent Memory</span>
+        </td>
+        <td data-label="Access" className="admin-col-fit">
+          <span
+            className="tag"
+            data-tone={line.writes ? 'good' : undefined}
+            title={`In Agent Memory: ${describe(line.permissions)}`}
+          >
+            {line.access}
+          </span>
+        </td>
+        <td className="admin-col-fit admin-grant-actions">
+          <span
+            className="admin-locked"
+            title="Set in Agent Memory, for Claude Code and MCP. This app can't edit or revoke it."
+          >
+            <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true">
+              <rect x="3.5" y="7" width="9" height="6.5" rx="1.5" fill="currentColor" />
+              <path
+                d="M5.5 7V5a2.5 2.5 0 0 1 5 0v2"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.6"
+              />
+            </svg>
+            Can&apos;t change here
+          </span>
+        </td>
+      </>
+    )
+  }
+  const { grant } = line
+  return (
+    <>
+      <td data-label="Scope" className="admin-scope">
+        <span className="mono admin-path">{grant.scope_path}</span>
+        {known && !known.has(grant.scope_path) && (
+          <span
+            className="tag"
+            data-tone="warn"
+            title="Writes here fail and reads come back empty until this scope exists"
+          >
+            not in Agent Memory
+          </span>
+        )}
+      </td>
+      <td data-label="Layer" className="admin-col-fit">
+        <span className="tag">{LAYER_LABELS[grant.layer]}</span>
+      </td>
+      <td data-label="Access" className="admin-col-fit">
+        <span className="tag" data-tone={grant.access === 'write' ? 'good' : undefined}>
+          {grant.access === 'write' ? 'read & write' : 'read'}
+        </span>
+      </td>
+      <td className="admin-col-fit admin-grant-actions">
+        <button
+          type="button"
+          className="btn-secondary"
+          disabled={busy}
+          onClick={() => onRevoke(grant)}
+          aria-label={`Revoke ${grant.scope_path} from ${userName}…`}
+        >
+          Revoke
+        </button>
+      </td>
+    </>
   )
 }
 

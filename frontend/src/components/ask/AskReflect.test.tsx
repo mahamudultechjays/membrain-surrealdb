@@ -4,6 +4,7 @@ import { meOf } from '@/api/mock/auth'
 import { userByEmail } from '@/api/mock/backend'
 import type { ReflectApi, ReflectRequest, ReflectResponse } from '@/api/reflect'
 import AskReflect from '@/components/ask/AskReflect'
+import { ownScope } from '@/components/ask/layers'
 import { clearReflections } from '@/components/ask/reflectStore'
 
 /** Priya, as the mock signs her in: org, her team (ops) and her own space. */
@@ -45,7 +46,7 @@ describe('AskReflect', () => {
     expect(screen.getByText(/check it against the evidence/i)).toBeInTheDocument()
   })
 
-  it('reflects across every space and shows the answer with its evidence', async () => {
+  it('reflects on Priya’s own space by default, and shows the answer with its evidence', async () => {
     const { api, requests } = fakeApi()
     render(<AskReflect me={PRIYA} api={api} />)
 
@@ -53,7 +54,7 @@ describe('AskReflect', () => {
 
     await waitFor(() => expect(answers()).toHaveLength(1))
     expect(requests).toEqual([
-      { question: 'What do we know about carriers?', scopes: [] },
+      { question: 'What do we know about carriers?', scopes: [ownScope(PRIYA.grants)] },
     ])
     const answer = answers()[0]!
     expect(answer).toHaveTextContent('Acme Logistics is the only carrier')

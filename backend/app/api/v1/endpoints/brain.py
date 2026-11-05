@@ -12,13 +12,16 @@ from fastapi import APIRouter, HTTPException, Query, Request, status
 
 from app.api.deps import AccessServiceDep, CurrentUserDep, MemoryBrainDep, is_admin
 from app.domain.errors import MemoryNotConfiguredError, MemoryUnavailableError
-from app.domain.ports.memory_brain import BrainSource
+from app.domain.ports.memory_brain import BrainReplaced, BrainSource, BrainTurns
 from app.schemas.brain import (
+    BrainActionOut,
+    BrainChunkOut,
     BrainEntityOut,
     BrainFactOut,
     BrainRelationOut,
     BrainResponse,
     BrainSourceOut,
+    BrainUnknownOut,
 )
 from app.services import brain, logger
 
@@ -37,12 +40,18 @@ async def list_brain(
     memory: MemoryBrainDep,
     scope: Annotated[list[str] | None, Query()] = None,
     subscopes: bool = False,
+    chunks: bool = True,
+    replaced: bool = False,
 ) -> BrainResponse:
-    """Entities, newest activity first, with the facts and relations in scope.
+    """Entities, newest activity first, with the facts and relations in scope,
+    the memory chunks (captured turns) they were extracted from, the actions
+    memory recorded and what it could not settle.
 
     `scope` (repeatable or comma-separated) narrows to some scopes; with
     `subscopes`, the paths below each one count too. Without `scope`, everything
-    the caller may read is listed.
+    the caller may read is listed. `chunks=false` skips reading the turns.
+    `replaced=true` also reads each entity's history for the facts newer values
+    replaced, which Agent Memory's fact listing leaves out.
     """
     allowed = (
         None if is_admin(user.email) else {g.scope_path for g in await access.readable(user.email)}
@@ -52,8 +61,18 @@ async def list_brain(
         raise HTTPException(
             status.HTTP_403_FORBIDDEN, f"Not readable: {', '.join(sorted(missing))}"
         )
+    scope_filter = brain.ScopeFilter(allowed, wanted, subscopes=subscopes)
     try:
         snapshot = await memory.snapshot()
+        turns = (
+            await memory.turns(brain.sessions(snapshot, scope_filter)) if chunks else BrainTurns()
+        )
+        old = (
+            await memory.replaced(brain.entities_in(snapshot, scope_filter))
+            if replaced
+            else BrainReplaced()
+        )
+        snapshot = brain.with_replaced(snapshot, old.facts)
     except MemoryNotConfiguredError as exc:
         raise HTTPException(
             status.HTTP_503_SERVICE_UNAVAILABLE,
@@ -64,13 +83,64 @@ async def list_brain(
             status.HTTP_503_SERVICE_UNAVAILABLE, f"Agent Memory call failed: {exc}"
         ) from exc
 
-    found = brain.view(snapshot, brain.ScopeFilter(allowed, wanted, subscopes=subscopes))
+    found = brain.view(snapshot, scope_filter)
     entities = [_entity_out(e, found.names) for e in found.entities]
+    chunk_views = brain.chunks(snapshot, turns.turns, scope_filter)
     response = BrainResponse(
         entities=entities,
         scopes=found.scopes,
         total_facts=sum(len(e.facts) for e in entities),
         total_relations=sum(len(e.relations) for e in entities),
+        chunks=[
+            BrainChunkOut(
+                id=c.id,
+                session_id=c.session_id,
+                role=c.role,
+                text=c.text,
+                created_at=c.created_at,
+                scopes=c.scopes,
+                derived=c.derived,
+            )
+            for c in chunk_views
+        ],
+        total_chunks=len(chunk_views),
+        chunks_missing=turns.missing,
+        actions=[
+            BrainActionOut(
+                id=a.action.id,
+                actor_ref=a.action.actor_ref,
+                actor_name=a.actor_name,
+                verb=a.action.verb,
+                object_ref=a.action.object_ref,
+                object_name=a.object_name,
+                summary=a.action.summary,
+                category=a.action.category,
+                created_at=a.action.created_at,
+                occurred_at=a.action.occurred_at,
+                confidence=a.action.confidence,
+                scopes=a.scopes,
+                source=_source_out(a.action.source),
+            )
+            for a in brain.actions(snapshot, scope_filter, found.names)
+        ],
+        unknowns=[
+            BrainUnknownOut(
+                id=u.id,
+                about=u.about,
+                reason=u.reason,
+                resolved=u.resolved,
+                resolvable=u.resolvable,
+                entity_ref=u.entity_ref,
+                entity_name=found.names.get(u.entity_ref) if u.entity_ref else None,
+                key=u.key,
+                scopes=[p for p in u.scopes if scope_filter.visible(p)],
+                labels=list(u.labels),
+                created_at=u.created_at,
+            )
+            for u in brain.unknowns(snapshot, scope_filter)
+        ],
+        replaced_loaded=replaced,
+        replaced_missing=old.missing,
     )
     logger.log(
         "[BRAIN]",
@@ -79,6 +149,7 @@ async def list_brain(
         scopes=",".join(sorted(wanted)) if wanted else "all",
         entities=len(entities),
         facts=response.total_facts,
+        chunks=response.total_chunks,
     )
     return response
 

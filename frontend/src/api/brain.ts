@@ -66,12 +66,74 @@ export interface BrainEntity {
   relations: BrainRelation[]
 }
 
+/**
+ * A memory chunk: the text of one captured turn, as memory stored it and
+ * embeds for search. Facts name it in source.ref as "turn:<id>".
+ */
+export interface BrainChunk {
+  id: string
+  session_id: string
+  /** "user" for captured input; chat sessions also hold "assistant" turns. */
+  role: string
+  text: string
+  created_at: string
+  /** Inferred from the facts taken from it: Agent Memory keeps no scope on turns. */
+  scopes: string[]
+  /** Ids of the facts and relations extracted from this text. */
+  derived: string[]
+}
+
 export interface BrainResponse {
   entities: BrainEntity[]
   /** Every scope the caller may filter by that holds something. */
   scopes: string[]
   total_facts: number
   total_relations: number
+  chunks: BrainChunk[]
+  total_chunks: number
+  /** Sessions whose chunks could not be read this time; 0 when all loaded. */
+  chunks_missing: number
+  actions: BrainAction[]
+  unknowns: BrainUnknown[]
+  /** True when replaced facts (read from each entity's history) are included. */
+  replaced_loaded: boolean
+  /** Entities whose history could not be read this time; 0 when all loaded. */
+  replaced_missing: number
+}
+
+/** A dated event memory recorded: actor → verb → object. */
+export interface BrainAction {
+  id: string
+  actor_ref: string
+  actor_name: string
+  verb: string
+  object_ref: string | null
+  /** The object entity's name, or the action's free-text object. */
+  object_name: string | null
+  summary: string | null
+  category: string
+  created_at: string
+  occurred_at: string | null
+  confidence: number | null
+  /** Inferred from the facts taken from the same capture: actions carry no scope. */
+  scopes: string[]
+  source: BrainSource
+}
+
+/** Something memory could not settle: an unclear reference, or a contradiction. */
+export interface BrainUnknown {
+  id: string
+  about: string
+  reason: string
+  resolved: boolean
+  /** Whether memory thinks more input could settle it. */
+  resolvable: boolean
+  entity_ref: string | null
+  entity_name: string | null
+  key: string | null
+  scopes: string[]
+  labels: string[]
+  created_at: string
 }
 
 export interface BrainRequest {
@@ -79,6 +141,8 @@ export interface BrainRequest {
   scopes?: string[]
   /** Count the paths below each chosen scope too. */
   subscopes?: boolean
+  /** Also read the facts newer values replaced (slower: one read per entity). */
+  replaced?: boolean
 }
 
 export interface BrainApi {
@@ -86,8 +150,11 @@ export interface BrainApi {
 }
 
 export const httpBrainApi: BrainApi = {
-  list: ({ scopes = [], subscopes = false }, signal) => {
-    const params = new URLSearchParams({ subscopes: String(subscopes) })
+  list: ({ scopes = [], subscopes = false, replaced = false }, signal) => {
+    const params = new URLSearchParams({
+      subscopes: String(subscopes),
+      replaced: String(replaced),
+    })
     for (const scope of scopes) params.append('scope', scope)
     return apiGet<BrainResponse>(`/api/v1/brain?${params.toString()}`, { signal })
   },

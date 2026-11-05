@@ -8,7 +8,7 @@ import AskAnswer from '@/components/ask/AskAnswer'
 import AskChat from '@/components/ask/AskChat'
 import AskReflect from '@/components/ask/AskReflect'
 import AskLoading from '@/components/ask/AskLoading'
-import { readAreas, spaceName } from '@/components/ask/layers'
+import { readAreas, spaceName, startExcluded } from '@/components/ask/layers'
 import HeaderSlot from '@/components/HeaderSlot'
 import KeepAlive from '@/components/KeepAlive'
 import { useHashSubRoute } from '@/hooks/useHashRoute'
@@ -92,9 +92,9 @@ export default function AskPage({
 }
 
 function AskSearch({ me, api = askApi }: Props) {
-  // Spaces left out of the search. Everything is searched until the user
-  // unticks something, so a newly granted space is included straight away.
-  const [excluded, setExcluded] = useState<string[]>([])
+  // Spaces left out of the search. It starts on the user's own space; once
+  // they pick "all", a newly granted space is included straight away.
+  const [excluded, setExcluded] = useState<string[]>(() => startExcluded(me.grants))
   const [question, setQuestion] = useState('')
   const [run, setRun] = useState<Run>({ status: 'idle' })
   const inFlight = useRef<AbortController | null>(null)

@@ -4,6 +4,7 @@ Facts and relations carry the scope they were written to; entities do not, so
 an entity belongs to the scopes its facts and relations were written in.
 """
 
+from collections.abc import Collection
 from dataclasses import dataclass, field
 from typing import Protocol
 
@@ -71,10 +72,82 @@ class BrainRelation:
 
 
 @dataclass(frozen=True, slots=True)
+class BrainAction:
+    """A dated event memory recorded: actor -> verb -> object.
+
+    Agent Memory keeps no scope on actions; callers infer it from the facts
+    taken from the same turn, as for memory chunks.
+    """
+
+    id: str
+    actor_ref: str
+    verb: str
+    # The object entity, or free text when it isn't one.
+    object_ref: str | None
+    object_text: str | None
+    summary: str | None
+    category: str
+    created_at: str
+    occurred_at: str | None = None
+    confidence: float | None = None
+    source: BrainSource = BrainSource()
+
+
+@dataclass(frozen=True, slots=True)
+class BrainUnknown:
+    """Something memory could not settle: an unclear reference, or two
+    sources disagreeing about one fact."""
+
+    id: str
+    about: str
+    reason: str
+    resolved: bool
+    # Whether memory thinks more input could settle it.
+    resolvable: bool
+    scopes: tuple[str, ...]
+    created_at: str
+    entity_ref: str | None = None
+    key: str | None = None
+    labels: tuple[str, ...] = ()
+
+
+@dataclass(frozen=True, slots=True)
 class BrainSnapshot:
     entities: list[BrainEntity] = field(default_factory=list)
     facts: list[BrainFact] = field(default_factory=list)
     relations: list[BrainRelation] = field(default_factory=list)
+    actions: list[BrainAction] = field(default_factory=list)
+    unknowns: list[BrainUnknown] = field(default_factory=list)
+
+
+@dataclass(frozen=True, slots=True)
+class BrainTurn:
+    """One captured input or chat message, as Agent Memory keeps it.
+
+    This is the raw text memory chunks and embeds for search (recall hits with
+    source "memory_chunk" point back to a session turn). Turns carry no scope.
+    """
+
+    id: str
+    session_id: str
+    role: str
+    content: str
+    created_at: str
+    seq: int = 0
+
+
+@dataclass(frozen=True, slots=True)
+class BrainTurns:
+    turns: list[BrainTurn] = field(default_factory=list)
+    # Sessions whose turns could not be read this time.
+    missing: int = 0
+
+
+@dataclass(frozen=True, slots=True)
+class BrainReplaced:
+    facts: list[BrainFact] = field(default_factory=list)
+    # Entities whose history could not be read this time.
+    missing: int = 0
 
 
 class MemoryBrain(Protocol):
@@ -82,5 +155,21 @@ class MemoryBrain(Protocol):
         """Every entity, fact and relation in the context.
 
         Raises MemoryNotConfiguredError or MemoryUnavailableError.
+        """
+        ...
+
+    async def turns(self, session_ids: Collection[str]) -> BrainTurns:
+        """The turns of these sessions. Agent Memory can't list sessions, so
+        callers pass the ones facts and relations name as their source.
+
+        A session that fails to load counts in `missing` rather than raising.
+        """
+        ...
+
+    async def replaced(self, entity_refs: Collection[str]) -> BrainReplaced:
+        """The facts newer values replaced, for these entities ("type/key").
+
+        Agent Memory's fact listing leaves them out; they live only in each
+        entity's history. An entity that fails to load counts in `missing`.
         """
         ...

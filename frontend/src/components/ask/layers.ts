@@ -27,6 +27,22 @@ export function readAreas(grants: readonly Grant[]): string[] {
     .map((grant) => grant.scope_path)
 }
 
+/** The user's own space: their personal scope, or null when they have none. */
+export function ownScope(grants: readonly Grant[]): string | null {
+  return grants.find((g) => g.layer === 'personal')?.scope_path ?? null
+}
+
+/**
+ * The spaces to leave out when a page opens, so it starts on the user's own
+ * space alone; nothing (so everything is in) when they have no own space.
+ * Pages keep "left out" rather than "picked" so a newly granted space shows up
+ * ticked once the user has chosen "all".
+ */
+export function startExcluded(grants: readonly Grant[]): string[] {
+  const own = ownScope(grants)
+  return own ? readAreas(grants).filter((path) => path !== own) : []
+}
+
 /**
  * A space as people think of it: "Org", "My space", the owner's name for
  * someone else's space, or "Team ops" for a shared one.
