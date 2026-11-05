@@ -58,6 +58,8 @@ const REGISTERED = [
   `${ROOT}/team/ops`,
   `${ROOT}/user`,
   `${ROOT}/user/priya_nair`,
+  `${ROOT}/lab`,
+  `${ROOT}/lab/probe`,
 ]
 
 function fakeApi(overrides: Partial<AdminApi> = {}): AdminApi {
@@ -294,35 +296,138 @@ describe('AdminPage', () => {
     expect(api.revoke).toHaveBeenCalledWith('arun@spreetail.com', `${ROOT}/team/gone`)
   })
 
-  it('registers a new scope from the header button', async () => {
-    const api = fakeApi()
-    await renderPage(api)
-
-    fireEvent.click(screen.getByRole('button', { name: 'New scope' }))
-    const dialog = within(screen.getByRole('dialog', { name: 'New scope' }))
-    fireEvent.change(dialog.getByLabelText('Scope path'), {
-      target: { value: `${ROOT}/team/eng` },
+  /** An api whose registry grows as scopes are registered. */
+  function growingApi() {
+    const paths = [...REGISTERED]
+    return fakeApi({
+      scopes: vi.fn<AdminApi['scopes']>(async () => [...paths]),
+      registerScope: vi.fn<AdminApi['registerScope']>(async (path) => {
+        paths.push(path)
+      }),
     })
-    fireEvent.click(dialog.getByRole('button', { name: 'Register scope' }))
+  }
 
-    await screen.findByText(`Registered ${ROOT}/team/eng.`)
-    expect(api.registerScope).toHaveBeenCalledWith(`${ROOT}/team/eng`)
-    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+  async function openNewScope(api: AdminApi) {
+    await renderPage(api)
+    fireEvent.click(screen.getByRole('button', { name: 'New scope' }))
+    return within(screen.getByRole('dialog', { name: 'New scope' }))
+  }
+
+  it('creates a team scope from just a name, under the fixed team prefix', async () => {
+    const api = growingApi()
+    const dialog = await openNewScope(api)
+
+    // Org has no "+"; other areas under it are listed, read-only.
+    const org = within(dialog.getByRole('region', { name: 'Org' }))
+    expect(org.queryByRole('button', { name: /^Add/ })).not.toBeInTheDocument()
+    expect(org.getByText('lab')).toBeInTheDocument()
+    expect(org.getByText('lab').closest('li')).toHaveTextContent(/^lab1 sub-scope$/)
+
+    const team = within(dialog.getByRole('region', { name: 'Team' }))
+    expect(team.getByText('ops')).toBeInTheDocument()
+    fireEvent.click(team.getByRole('button', { name: 'Add a team scope' }))
+    const name = team.getByLabelText('Team name')
+    expect(name).toHaveFocus()
+    fireEvent.change(name, { target: { value: 'Customer Support' } })
+    expect(name).toHaveAccessibleDescription(
+      expect.stringContaining(`Creates ${ROOT}/team/customer-support`),
+    )
+    fireEvent.click(team.getByRole('button', { name: 'Create' }))
+
+    // The dialog stays open, with the new scope in its column.
+    expect(await dialog.findByRole('status')).toHaveTextContent(
+      `Created ${ROOT}/team/customer-support.`,
+    )
+    expect(api.registerScope).toHaveBeenCalledWith(`${ROOT}/team/customer-support`)
+    const item = (await team.findByText('customer-support')).closest('li')!
+    expect(within(item).getByText('new')).toBeInTheDocument()
+    expect(team.queryByLabelText('Team name')).not.toBeInTheDocument()
+    expect(team.getByRole('button', { name: 'Add a team scope' })).toHaveFocus()
   })
 
-  it('does not register a scope that already exists', async () => {
-    const api = fakeApi()
-    await renderPage(api)
+  it('names an individual scope as sign-in would, and refuses one that exists', async () => {
+    const api = growingApi()
+    const dialog = await openNewScope(api)
+    const person = within(dialog.getByRole('region', { name: 'Individual' }))
 
-    fireEvent.click(screen.getByRole('button', { name: 'New scope' }))
-    const dialog = within(screen.getByRole('dialog', { name: 'New scope' }))
-    fireEvent.change(dialog.getByLabelText('Scope path'), {
-      target: { value: `${ROOT}/team/ops` },
-    })
-    fireEvent.click(dialog.getByRole('button', { name: 'Register scope' }))
+    fireEvent.click(person.getByRole('button', { name: 'Add an individual scope' }))
+    const name = person.getByLabelText("Person's name")
+    fireEvent.change(name, { target: { value: 'Priya Nair' } })
+    expect(person.getByText('That scope already exists.')).toBeInTheDocument()
+    expect(person.getByRole('button', { name: 'Create' })).toBeDisabled()
 
-    expect(await dialog.findByRole('alert')).toHaveTextContent('already registered')
+    fireEvent.change(name, { target: { value: 'Ravi Kumar Menon' } })
+    expect(name).toHaveAccessibleDescription(
+      expect.stringContaining(`Creates ${ROOT}/user/ravi_menon`),
+    )
+
+    // Escape closes the field, not the dialog.
+    fireEvent.keyDown(name, { key: 'Escape' })
+    expect(person.queryByLabelText("Person's name")).not.toBeInTheDocument()
+    expect(screen.getByRole('dialog', { name: 'New scope' })).toBeInTheDocument()
     expect(api.registerScope).not.toHaveBeenCalled()
+  })
+
+  it('adds a sub-scope inside a picked team, asking only for the rest of the path', async () => {
+    const api = growingApi()
+    const dialog = await openNewScope(api)
+    const team = within(dialog.getByRole('region', { name: 'Team' }))
+    const ops = team.getByRole('button', { name: 'ops: add a sub-scope inside' })
+
+    fireEvent.click(ops)
+    expect(ops).toHaveAttribute('aria-pressed', 'true')
+    const name = team.getByLabelText('Sub-scope in ops')
+    expect(name).toHaveFocus()
+    // Picking alone creates nothing: a name is still needed.
+    expect(team.getByRole('button', { name: 'Create' })).toBeDisabled()
+
+    fireEvent.change(name, { target: { value: 'Supplier Calls' } })
+    expect(name).toHaveAccessibleDescription(
+      expect.stringContaining(`Creates ${ROOT}/team/ops/supplier-calls`),
+    )
+    fireEvent.click(team.getByRole('button', { name: 'Create' }))
+
+    expect(await dialog.findByRole('status')).toHaveTextContent(
+      `Created ${ROOT}/team/ops/supplier-calls.`,
+    )
+    expect(api.registerScope).toHaveBeenCalledWith(`${ROOT}/team/ops/supplier-calls`)
+    // ops now shows what is inside it, the new scope marked, and focus is back on ops.
+    const opsRow = team.getByRole('button', { name: 'ops: add a sub-scope inside' })
+    expect(opsRow).toHaveFocus()
+    expect(opsRow).toHaveTextContent(/^ops1 sub-scope$/)
+    expect(team.getByRole('button', { name: "Hide what's inside ops" })).toHaveAttribute(
+      'aria-expanded',
+      'true',
+    )
+    const added = team.getByRole('button', {
+      name: 'supplier-calls: add a sub-scope inside',
+    })
+    expect(within(added).getByText('new')).toBeInTheDocument()
+
+    // The new sub-scope can itself be opened, to go a level deeper.
+    fireEvent.click(added)
+    expect(team.getByLabelText('Sub-scope in ops/supplier-calls')).toHaveFocus()
+
+    // "+" goes back to a new team at the top level.
+    fireEvent.click(team.getByRole('button', { name: 'Add a team scope' }))
+    expect(team.getByLabelText('Team name')).toBeInTheDocument()
+    expect(added).toHaveAttribute('aria-pressed', 'false')
+  })
+
+  it('offers to grant the scope it just made, filled in', async () => {
+    const dialog = await openNewScope(growingApi())
+    const team = within(dialog.getByRole('region', { name: 'Team' }))
+    fireEvent.click(team.getByRole('button', { name: 'Add a team scope' }))
+    fireEvent.change(team.getByLabelText('Team name'), { target: { value: 'eng' } })
+    fireEvent.click(team.getByRole('button', { name: 'Create' }))
+    fireEvent.click(await dialog.findByRole('button', { name: 'Grant access…' }))
+
+    const grant = within(
+      screen.getByRole('dialog', { name: 'Add person or grant access' }),
+    )
+    expect(grant.getByLabelText('Scope')).toHaveValue(`${ROOT}/team/eng`)
+    expect(grant.getByLabelText('Layer')).toHaveValue('team')
+    expect(grant.getByLabelText('Email')).toHaveFocus()
   })
 })
 

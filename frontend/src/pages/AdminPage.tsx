@@ -4,6 +4,7 @@ import type { Access, Grant, GrantLayer, Me } from '@/api/auth'
 import type { LabApi } from '@/api/lab'
 import { cleanPath, unregisteredScopes } from '@/api/scopePaths'
 import MemoryLab from '@/components/admin/MemoryLab'
+import NewScope from '@/components/admin/NewScope'
 import { LAYER_LABELS } from '@/components/ask/layers'
 import { isAbort, messageOf } from '@/components/capture/format'
 import KeepAlive from '@/components/KeepAlive'
@@ -37,7 +38,8 @@ type RegistryState =
  */
 type Dialog =
   | { kind: 'scope' }
-  | { kind: 'grant'; user: UserGrants | null }
+  /** `prefill`: e.g. the scope just made in New scope. */
+  | { kind: 'grant'; user: UserGrants | null; prefill?: Partial<GrantForm> }
   | { kind: 'revoke'; user: UserGrants; grant: Grant }
   | null
 
@@ -73,7 +75,6 @@ function AdminAccess({ me, api = adminApi }: Omit<Props, 'labApi'>) {
   const [form, setForm] = useState<GrantForm>(EMPTY_GRANT)
   // Scopes the grant would create; set until the admin confirms or goes back.
   const [missing, setMissing] = useState<string[] | null>(null)
-  const [newScope, setNewScope] = useState('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [done, setDone] = useState<string | null>(null)
@@ -142,8 +143,8 @@ function AdminAccess({ me, api = adminApi }: Omit<Props, 'labApi'>) {
     setError(null)
     setDone(null)
     setMissing(null)
-    if (next.kind === 'grant') setForm({ ...EMPTY_GRANT, email: next.user?.email ?? '' })
-    if (next.kind === 'scope') setNewScope('')
+    if (next.kind === 'grant')
+      setForm({ ...EMPTY_GRANT, email: next.user?.email ?? '', ...next.prefill })
     setDialog(next)
   }
 
@@ -199,14 +200,13 @@ function AdminAccess({ me, api = adminApi }: Omit<Props, 'labApi'>) {
     if (ok) closeDialog()
   }
 
-  const register = async (event: FormEvent) => {
-    event.preventDefault()
-    const path = cleanPath(newScope)
+  // The dialog stays open after this, showing the new scope in its column.
+  const createScope = async (path: string) => {
     if (known?.has(path)) {
       setError(`${path} is already registered.`)
-      return
+      return false
     }
-    if (await run(() => api.registerScope(path), `Registered ${path}.`)) closeDialog()
+    return run(() => api.registerScope(path), `Registered ${path}.`)
   }
 
   // While a dialog is open its own errors show inside it, not behind the backdrop.
@@ -642,33 +642,32 @@ function AdminAccess({ me, api = adminApi }: Omit<Props, 'labApi'>) {
       {dialog?.kind === 'scope' && (
         <Modal
           title="New scope"
-          description="Creates an empty scope in Agent Memory, for example a new team, before anyone is granted it."
+          description="Use + to add a team or a person, or pick any scope to add a sub-scope inside it. You only type the name: the path in front is fixed."
           onClose={closeDialog}
+          wide
         >
-          <form className="admin-form" onSubmit={register} aria-label="Register a scope">
-            <label className="admin-field">
-              <span>Scope path</span>
-              <input
-                className="mono"
-                value={newScope}
-                required
-                placeholder={root ? `${root}/team/eng` : 'org/spreetail/team/eng'}
-                onChange={(e) => {
-                  setNewScope(e.target.value)
-                  setError(null)
-                }}
-              />
-            </label>
-            {dialogError}
-            <div className="admin-dialog-actions">
-              <button type="button" className="btn-secondary" onClick={closeDialog}>
-                Cancel
-              </button>
-              <button type="submit" className="btn" disabled={busy}>
-                Register scope
-              </button>
-            </div>
-          </form>
+          <NewScope
+            root={root}
+            known={known}
+            loadError={registry.status === 'error' ? registry.message : null}
+            busy={busy}
+            onCreate={createScope}
+            onGrant={(path, layer) =>
+              open({
+                kind: 'grant',
+                user: null,
+                prefill: {
+                  scope_path: path,
+                  layer,
+                  // A personal scope is its owner's to write, as at sign-in.
+                  access: layer === 'personal' ? 'write' : 'read',
+                },
+              })
+            }
+            onEdit={() => setError(null)}
+            onClose={closeDialog}
+            error={dialogError}
+          />
         </Modal>
       )}
     </section>

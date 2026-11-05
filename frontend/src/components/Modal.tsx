@@ -6,6 +6,8 @@ interface Props {
   /** A line under the title, e.g. whose scopes are being changed. */
   description?: ReactNode
   onClose: () => void
+  /** Room for side-by-side columns; otherwise sized for a single form. */
+  wide?: boolean
   children: ReactNode
 }
 
@@ -16,7 +18,7 @@ const FOCUSABLE =
  * A centred dialog over a dimmed page. Escape or a click on the backdrop
  * closes it, Tab stays inside it, and focus goes back to whatever opened it.
  */
-export default function Modal({ title, description, onClose, children }: Props) {
+export default function Modal({ title, description, onClose, wide, children }: Props) {
   const titleId = useId()
   const descriptionId = useId()
   const panel = useRef<HTMLDialogElement>(null)
@@ -84,7 +86,7 @@ export default function Modal({ title, description, onClose, children }: Props) 
       <dialog
         ref={panel}
         open
-        className="modal panel"
+        className={wide ? 'modal modal-wide panel' : 'modal panel'}
         aria-modal="true"
         aria-labelledby={titleId}
         aria-describedby={description ? descriptionId : undefined}
