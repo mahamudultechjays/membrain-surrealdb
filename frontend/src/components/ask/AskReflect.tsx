@@ -1,7 +1,7 @@
 import { useRef, useState, type FormEvent } from 'react'
 import type { Me } from '@/api/auth'
-import { reflectApi, type ReflectApi } from '@/api/reflect'
-import { readAreas, spaceName } from '@/components/ask/layers'
+import { reflectApi, type ReflectApi, type ReflectLayer } from '@/api/reflect'
+import { LAYER_LABELS, readAreas, spaceName } from '@/components/ask/layers'
 import {
   updateReflections,
   useReflections,
@@ -176,32 +176,50 @@ export default function AskReflect({ me, api = reflectApi }: Props) {
             )}
             {r.status === 'done' && (
               <article
-                className="panel chat-answer"
+                className="panel chat-answer reflect-answer"
                 aria-label={`Reflection on ${r.question}`}
               >
-                <div className="chat-reply">
-                  <ReplyText text={r.response.answer} marker={(label) => `[${label}]`} />
-                </div>
-                {r.response.evidence.length ? (
-                  <>
-                    <p className="ask-label reflect-evidence-label">Evidence</p>
-                    <ol className="chat-sources" aria-label="Evidence">
-                      {r.response.evidence.map((item, i) => (
-                        <li key={i}>
-                          <span className="chat-source-marker mono">{i + 1}</span>
-                          <span className="chat-source-body">{item}</span>
-                        </li>
-                      ))}
-                    </ol>
-                  </>
-                ) : (
-                  <p className="ask-muted">No evidence returned.</p>
-                )}
+                {r.response.layers.map((layer) => (
+                  <LayerReflectionCard key={layer.scope} layer={layer} />
+                ))}
               </article>
             )}
           </div>
         ))}
       </div>
     </div>
+  )
+}
+
+/** One layer's own reflection: what this scope alone says, and its evidence. */
+function LayerReflectionCard({ layer }: { layer: ReflectLayer }) {
+  const name = LAYER_LABELS[layer.layer]
+  return (
+    <section className="reflect-layer" aria-label={`${name} reflection`}>
+      <p className="reflect-layer-head">
+        <strong>{name}</strong> <span className="mono ask-muted">{layer.scope}</span>
+      </p>
+      {layer.status === 'failed' ? (
+        <p className="ask-muted">{layer.error}</p>
+      ) : (
+        <>
+          {layer.answer && (
+            <div className="chat-reply">
+              <ReplyText text={layer.answer} marker={(label) => `[${label}]`} />
+            </div>
+          )}
+          {layer.evidence.length > 0 && (
+            <ol className="chat-sources" aria-label="Evidence">
+              {layer.evidence.map((item, i) => (
+                <li key={i}>
+                  <span className="chat-source-marker mono">{i + 1}</span>
+                  <span className="chat-source-body">{item}</span>
+                </li>
+              ))}
+            </ol>
+          )}
+        </>
+      )}
+    </section>
   )
 }

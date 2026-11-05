@@ -26,10 +26,15 @@ function load(owner: string): Reflection[] {
     const raw = sessionStorage.getItem(PREFIX + owner)
     if (!raw) return EMPTY
     // A request in flight when the page went away will never answer.
-    return (JSON.parse(raw) as Reflection[]).map((r): Reflection =>
-      r.status === 'loading'
-        ? { id: r.id, question: r.question, status: 'cancelled' }
-        : r,
+    return (
+      (JSON.parse(raw) as Reflection[])
+        // Reflections saved before the per-layer answers have no layers.
+        .filter((r) => r.status !== 'done' || Array.isArray(r.response.layers))
+        .map((r): Reflection =>
+          r.status === 'loading'
+            ? { id: r.id, question: r.question, status: 'cancelled' }
+            : r,
+        )
     )
   } catch {
     return EMPTY

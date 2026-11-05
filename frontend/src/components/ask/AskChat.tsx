@@ -1,5 +1,7 @@
 import {
   Fragment,
+  useContext,
+  useEffect,
   useId,
   useRef,
   useState,
@@ -11,9 +13,10 @@ import type { Me } from '@/api/auth'
 import { chatApi, type ChatApi, type ChatCitation, type ChatResponse } from '@/api/chat'
 import { ApiError } from '@/api/client'
 import { updateChat, useChat, type Turn } from '@/components/ask/chatStore'
-import { formatScore, readAreas, spaceName } from '@/components/ask/layers'
+import { formatScore, LAYER_LABELS, readAreas, spaceName } from '@/components/ask/layers'
 import ReplyText from '@/components/ask/ReplyText'
 import HeaderSlot from '@/components/HeaderSlot'
+import { PageActiveContext } from '@/components/pageActiveContext'
 import ScopePicker from '@/components/ScopePicker'
 
 /** Unique across visits to the page, since turns outlive the component. */
@@ -38,6 +41,15 @@ export default function AskChat({ me, api = chatApi }: Props) {
   const { turns, sessionId } = useChat(owner)
   const inFlight = useRef<AbortController | null>(null)
   const prefix = useId().replace(/[^a-zA-Z0-9_-]/g, '')
+  const messageBox = useRef<HTMLTextAreaElement>(null)
+  const active = useContext(PageActiveContext)
+
+  // Opening the Chat tab lands on the message box, below the conversation.
+  useEffect(() => {
+    if (!active) return
+    messageBox.current?.scrollIntoView?.({ block: 'end' })
+    messageBox.current?.focus({ preventScroll: true })
+  }, [active])
 
   const readable = readAreas(me.grants).map((path) =>
     me.grants.find((g) => g.scope_path === path)!,
@@ -87,18 +99,18 @@ export default function AskChat({ me, api = chatApi }: Props) {
       .catch((error: unknown) => {
         if (controller.signal.aborted) return
         const status = error instanceof ApiError ? error.status : null
-        settle(
+        // The session has gone: start over with a new, clean chat.
+        if (status === 404) {
+          updateChat(owner, () => ({ turns: [], sessionId: null }))
+          return
+        }
+        settle(id, {
           id,
-          {
-            id,
-            question: message,
-            status: 'error',
-            message: error instanceof Error ? error.message : String(error),
-            hint: hintFor(status),
-          },
-          // The server forgets sessions on restart; the next message starts afresh.
-          status === 404 ? null : undefined,
-        )
+          question: message,
+          status: 'error',
+          message: error instanceof Error ? error.message : String(error),
+          hint: hintFor(status),
+        })
       })
   }
 
@@ -200,6 +212,7 @@ export default function AskChat({ me, api = chatApi }: Props) {
           Message
         </label>
         <textarea
+          ref={messageBox}
           id={`${prefix}-message`}
           rows={2}
           value={draft}
@@ -234,8 +247,6 @@ export default function AskChat({ me, api = chatApi }: Props) {
 }
 
 function hintFor(status: number | null): string | null {
-  if (status === 404)
-    return 'This chat has ended, for example after a server restart. Your next message will start a new chat.'
   if (status === 403) return 'One of the chosen spaces is not one you can read.'
   if (status === 503) return 'Agent Memory did not answer. Try again shortly.'
   return null
@@ -261,19 +272,23 @@ function ChatAnswer({
     target?.focus()
   }
 
-  const marker = (label: string) =>
-    cited.has(label) ? (
+  // Each inline marker shows the layer its source came from.
+  const marker = (label: string) => {
+    const c = cited.get(label)
+    if (!c) return `[${label}]`
+    return (
       <a
         className="chat-marker"
         href={`#${anchor(label)}`}
         aria-label={`Source ${label}`}
+        title={c.scope ?? undefined}
         onClick={(event) => jump(event, label)}
       >
         {label}
+        {c.layer && ` · ${LAYER_LABELS[c.layer]}`}
       </a>
-    ) : (
-      `[${label}]`
     )
+  }
 
   return (
     <article className="panel chat-answer" aria-label={`Answer to ${question}`}>
@@ -286,7 +301,17 @@ function ChatAnswer({
             <li key={c.marker} id={anchor(c.marker)} tabIndex={-1}>
               <span className="chat-source-marker mono">{c.marker}</span>
               <span className="chat-source-body">
-                <span>{c.snippet}</span>
+                <span>
+                  {c.layer && (
+                    <span
+                      className={`chat-layer chat-layer-${c.layer}`}
+                      title={c.scope ?? ''}
+                    >
+                      {LAYER_LABELS[c.layer]}
+                    </span>
+                  )}
+                  {c.snippet}
+                </span>
                 <span className="ask-muted chat-source-meta">{describe(c)}</span>
                 <span className="ask-muted mono chat-source-meta">
                   match {formatScore(c.score)}

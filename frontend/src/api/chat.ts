@@ -1,3 +1,4 @@
+import type { LayerName } from '@/api/ask'
 import { apiPost } from '@/api/client'
 import { USE_MOCK_API } from '@/api/config'
 import { mockChatApi } from '@/api/mock/chat'
@@ -18,6 +19,10 @@ export interface ChatCitation {
   /** "assistant" when the source is an earlier stored reply, not a fact. */
   role: string | null
   occurred_at: string | null
+  /** The layer the cited record was found in, or null when it was not found. */
+  layer: LayerName | null
+  /** The scope it was found in, e.g. org/spreetail/team/ops. */
+  scope: string | null
 }
 
 export interface ChatResponse {

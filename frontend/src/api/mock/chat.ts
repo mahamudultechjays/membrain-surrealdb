@@ -18,7 +18,7 @@ export const mockChatApi: ChatApi = {
     }
     const answer = await mockAskApi.ask({ q: message, scopes }, signal)
     const hits = answer.layers
-      .flatMap((layer) => layer.facts)
+      .flatMap((layer) => layer.facts.map((fact) => ({ ...fact, layer })))
       .sort((a, b) => b.source.score - a.source.score)
       .slice(0, 3)
     const citations: ChatCitation[] = hits.map((hit, i) => ({
@@ -31,6 +31,8 @@ export const mockChatApi: ChatApi = {
       position_percent: null,
       role: null,
       occurred_at: null,
+      layer: hit.layer.layer,
+      scope: hit.layer.area,
     }))
     const reply = citations.length
       ? `From what memory holds: ${citations.map((c) => `${c.snippet} [${c.marker}]`).join('; ')}.`

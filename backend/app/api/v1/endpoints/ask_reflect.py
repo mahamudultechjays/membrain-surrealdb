@@ -1,17 +1,23 @@
-"""Ask in reflect mode: a synthesis across every scope the signed-in user may read.
+"""Ask in reflect mode: one synthesis per layer, with org > team > personal applied.
 
-Each question stands alone (no session), and nothing is saved: the answer is the
-model's own conclusion, which in tests on 2026-11-04 reframed and added claims.
+Each scope the user reads is reflected on separately, in parallel, with a key
+that reads only that scope, so each layer's view stays its own. The highest
+layer whose reflection drew on evidence applies; the others are overridden.
+Each question stands alone and nothing is saved: a reflection is the model's
+own conclusion, which in tests on 2026-11-04 reframed and added claims.
 """
 
+import asyncio
 import time
 
 from fastapi import APIRouter, HTTPException, Request, status
 
 from app.api.deps import AccessServiceDep, CurrentUserDep, MemoryReflectDep
-from app.domain.errors import MemoryNotConfiguredError, MemoryUnavailableError, ScopeNotGrantedError
-from app.schemas.reflect import ReflectRequest, ReflectResponse
-from app.services import chat_flow, logger
+from app.domain.errors import MemoryNotConfiguredError, ScopeNotGrantedError
+from app.domain.ports.memory_chat import ChatAccess, Reflection
+from app.domain.ports.user_scopes import LayerName
+from app.schemas.reflect import ReflectLayerOut, ReflectRequest, ReflectResponse
+from app.services import chat_flow, layers_flow, logger
 
 router = APIRouter(prefix="/ask")
 
@@ -31,43 +37,72 @@ async def reflect(
     access: AccessServiceDep,
     memory: MemoryReflectDep,
 ) -> ReflectResponse:
-    """Answer a synthesis question from the user's readable scopes, with its evidence."""
+    """Reflect on each readable scope separately and mark which layer applies."""
+    readable = await access.readable(user.email)
     try:
-        plan = chat_flow.plan_access(
-            user.email, await access.readable(user.email), wanted=body.scopes
-        )
+        plan = chat_flow.plan_access(user.email, readable, wanted=body.scopes)
     except ScopeNotGrantedError as exc:
         raise HTTPException(status.HTTP_403_FORBIDDEN, f"Not readable: {exc}") from exc
 
+    layer_of = {g.scope_path: g.layer for g in readable}
+    layers: list[tuple[LayerName, str]] = [(layer_of[scope], scope) for scope in plan.read]
     started = time.perf_counter()
-    try:
-        result = await memory.reflect(body.question, access=plan)
-    except MemoryNotConfiguredError as exc:
-        raise HTTPException(
-            status.HTTP_503_SERVICE_UNAVAILABLE,
-            "Agent Memory is not configured. Set AGENT_MEMORY_* in .env.",
-        ) from exc
-    except MemoryUnavailableError as exc:
-        raise HTTPException(
-            status.HTTP_503_SERVICE_UNAVAILABLE, f"Agent Memory call failed: {exc}"
-        ) from exc
-
-    trace_id = getattr(request.state, "trace_id", None)
-    # Reflection traces keep no answer text, so the log holds the start of it.
-    logger.log(
-        "[REFLECT]",
-        trace_id=trace_id,
-        user=user.email,
-        scopes=",".join(plan.read),
-        q=repr(body.question[:80]),
-        evidence=len(result.evidence),
-        latency_ms=round((time.perf_counter() - started) * 1000),
-        memory_trace=result.trace_id,
-        answer=repr(result.text[:300]),
+    # One key holder per (user, scope), so each key reads only its own scope.
+    results: list[Reflection | BaseException] = await asyncio.gather(
+        *(
+            memory.reflect(
+                body.question,
+                access=ChatAccess(owner=f"{user.email}|{scope}", read=(scope,), write=plan.write),
+            )
+            for _, scope in layers
+        ),
+        return_exceptions=True,
     )
+    failures = [r for r in results if isinstance(r, BaseException)]
+    if failures and len(failures) == len(results):
+        first = failures[0]
+        if isinstance(first, MemoryNotConfiguredError):
+            raise HTTPException(
+                status.HTTP_503_SERVICE_UNAVAILABLE,
+                "Agent Memory is not configured. Set AGENT_MEMORY_* in .env.",
+            ) from first
+        raise HTTPException(
+            status.HTTP_503_SERVICE_UNAVAILABLE, f"Agent Memory call failed: {first}"
+        ) from first
+
+    resolved = layers_flow.resolve(layers, results)
+    applies = next((r.scope for r in resolved if r.status == "applies"), None)
+    latency_ms = round((time.perf_counter() - started) * 1000)
+    trace_id = getattr(request.state, "trace_id", None)
+    for r in resolved:
+        # Reflection traces keep no answer text, so the log holds the start of it.
+        logger.log(
+            "[REFLECT]",
+            trace_id=trace_id,
+            user=user.email,
+            layer=r.layer,
+            scope=r.scope,
+            status=r.status,
+            q=repr(body.question[:80]),
+            evidence=len(r.reflection.evidence) if r.reflection else None,
+            latency_ms=latency_ms,
+            memory_trace=r.reflection.trace_id if r.reflection else None,
+            error=r.error,
+            answer=repr(r.reflection.text[:300]) if r.reflection else None,
+        )
     return ReflectResponse(
-        answer=result.text,
-        evidence=result.evidence,
+        layers=[
+            ReflectLayerOut(
+                layer=r.layer,
+                scope=r.scope,
+                status=r.status,
+                answer=r.reflection.text if r.reflection else None,
+                evidence=r.reflection.evidence if r.reflection else [],
+                error=r.error,
+                trace_id=r.reflection.trace_id if r.reflection else None,
+            )
+            for r in resolved
+        ],
+        applies=applies,
         scopes=list(plan.read),
-        trace_id=result.trace_id,
     )

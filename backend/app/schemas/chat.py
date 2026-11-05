@@ -23,6 +23,10 @@ class ChatCitationOut(BaseModel):
     # "assistant" when the source is an earlier stored reply rather than a fact.
     role: str | None
     occurred_at: str | None
+    # The layer and scope the cited record was found in (by the per-layer search
+    # run alongside the chat), or null when it was not among those results.
+    layer: str | None = None
+    scope: str | None = None
 
 
 class ChatResponse(BaseModel):

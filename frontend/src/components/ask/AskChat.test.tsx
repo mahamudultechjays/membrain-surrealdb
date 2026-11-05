@@ -5,6 +5,7 @@ import { meOf } from '@/api/mock/auth'
 import { userByEmail } from '@/api/mock/backend'
 import AskChat from '@/components/ask/AskChat'
 import { clearChats } from '@/components/ask/chatStore'
+import { PageActiveContext } from '@/components/pageActiveContext'
 
 /** Priya, as the mock signs her in: org, her team (ops) and her own space. */
 const PRIYA = meOf(userByEmail('priya@example.com')!)
@@ -28,6 +29,8 @@ function reply(over: Partial<ChatResponse> = {}): ChatResponse {
         position_percent: null,
         role: null,
         occurred_at: null,
+        layer: 'org',
+        scope: 'org',
       },
       {
         marker: 'S2',
@@ -39,6 +42,8 @@ function reply(over: Partial<ChatResponse> = {}): ChatResponse {
         position_percent: 40,
         role: null,
         occurred_at: null,
+        layer: 'personal',
+        scope: 'org/user/u-0001',
       },
     ],
     facts_saved: 0,
@@ -126,7 +131,7 @@ describe('AskChat', () => {
     expect(requests[1]).toMatchObject({ session_id: null })
   })
 
-  it('an expired session says so and the next message starts over', async () => {
+  it('a session that has gone resets to a new, clean chat with no error', async () => {
     const { api, requests } = fakeApi(
       reply(),
       new ApiError(404, 'No such chat session for this user.'),
@@ -136,10 +141,14 @@ describe('AskChat', () => {
     await lastAnswer()
 
     send('And its lead time?')
-    expect(await screen.findByRole('alert')).toHaveTextContent(/start a new chat/i)
-    send('Try again')
-    await screen.findAllByRole('article', { name: /^Answer/ })
 
+    await waitFor(() =>
+      expect(screen.queryByText('Where does Acme ship?')).not.toBeInTheDocument(),
+    )
+    expect(screen.queryByText('And its lead time?')).not.toBeInTheDocument()
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+    send('Try again')
+    await lastAnswer()
     expect(requests[2]).toMatchObject({ session_id: null })
   })
 
@@ -254,5 +263,69 @@ describe('AskChat formats replies', () => {
 
     expect(answer.querySelector('img')).toBeNull()
     expect(answer).toHaveTextContent('<img src=x onerror=alert(1)>')
+  })
+})
+
+describe('AskChat layer precedence', () => {
+  it('tags each source with the layer it came from', async () => {
+    const { api } = fakeApi()
+    render(<AskChat me={PRIYA} api={api} />)
+
+    send('Where does Acme ship?')
+    const answer = await lastAnswer()
+
+    const sources = within(answer).getByRole('list', { name: 'Sources' })
+    const [first, second] = within(sources).getAllByRole('listitem')
+    expect(first).toHaveTextContent('Org')
+    expect(second).toHaveTextContent('Personal')
+  })
+
+  it('shows each inline marker with its layer, with no precedence verdict or strikes', async () => {
+    const { api } = fakeApi()
+    render(<AskChat me={PRIYA} api={api} />)
+
+    send('Where does Acme ship?')
+    const answer = await lastAnswer()
+
+    expect(within(answer).getByRole('link', { name: 'Source S1' })).toHaveTextContent(
+      'S1 · Org',
+    )
+    const personal = within(answer).getByRole('link', { name: 'Source S2' })
+    expect(personal).toHaveTextContent('S2 · Personal')
+    expect(
+      within(answer).queryByRole('note', { name: 'Layer check' }),
+    ).not.toBeInTheDocument()
+    expect(answer).not.toHaveTextContent(/precedence|overrid/i)
+  })
+})
+
+describe('AskChat on opening the tab', () => {
+  it('scrolls down to the message box and puts the cursor in it', () => {
+    const scrolled: Element[] = []
+    // jsdom has no scrollIntoView; stand one in that records what was scrolled to.
+    const original = Element.prototype.scrollIntoView
+    Element.prototype.scrollIntoView = function (this: Element) {
+      scrolled.push(this)
+    }
+    try {
+      const { rerender } = render(
+        <PageActiveContext.Provider value={false}>
+          <AskChat me={PRIYA} api={fakeApi().api} />
+        </PageActiveContext.Provider>,
+      )
+      const box = screen.getByLabelText('Message')
+      expect(scrolled).not.toContain(box)
+
+      rerender(
+        <PageActiveContext.Provider value={true}>
+          <AskChat me={PRIYA} api={fakeApi().api} />
+        </PageActiveContext.Provider>,
+      )
+
+      expect(scrolled).toContain(box)
+      expect(box).toHaveFocus()
+    } finally {
+      Element.prototype.scrollIntoView = original
+    }
   })
 })
