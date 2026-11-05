@@ -6,6 +6,7 @@ from app.adapters.agent_memory.documents import AgentMemoryDocuments, NotConfigu
 from app.adapters.agent_memory.graph import AgentMemoryGraph, NotConfiguredGraph
 from app.adapters.agent_memory.lab import AgentMemoryLab, NotConfiguredLab
 from app.adapters.agent_memory.people import AgentMemoryPeople, NotConfiguredPeople
+from app.adapters.agent_memory.passages import AgentMemoryPassages, NotConfiguredPassages
 from app.adapters.agent_memory.probe import AgentMemoryProbe, NotConfiguredProbe
 from app.adapters.agent_memory.scope_registry import (
     AgentMemoryScopeRegistry,
@@ -20,6 +21,7 @@ __all__ = [
     "AgentMemoryGraph",
     "AgentMemoryLab",
     "AgentMemoryPeople",
+    "AgentMemoryPassages",
     "AgentMemoryProbe",
     "AgentMemoryRecall",
     "AgentMemoryScopeRegistry",
@@ -30,6 +32,7 @@ __all__ = [
     "NotConfiguredGraph",
     "NotConfiguredLab",
     "NotConfiguredPeople",
+    "NotConfiguredPassages",
     "NotConfiguredProbe",
     "NotConfiguredRecall",
     "NotConfiguredScopeRegistry",

@@ -1,0 +1,1021 @@
+{
+  "topology_version": "2026-04-13",
+  "sections": [
+    {
+      "id": "strategy",
+      "label": "Analyze & Plan",
+      "ebitda_weight": 0.03
+    },
+    {
+      "id": "product-dev",
+      "label": "Develop Products",
+      "ebitda_weight": 0.05
+    },
+    {
+      "id": "content",
+      "label": "Create & Launch Content",
+      "ebitda_weight": 0.13
+    },
+    {
+      "id": "sourcing",
+      "label": "Source & Manufacture",
+      "ebitda_weight": 0.2
+    },
+    {
+      "id": "channels",
+      "label": "Manage Channels & Sales",
+      "ebitda_weight": 0.28
+    },
+    {
+      "id": "fulfillment",
+      "label": "Pick, Pack & Ship",
+      "ebitda_weight": 0.18
+    },
+    {
+      "id": "post-sale",
+      "label": "Deliver & Close",
+      "ebitda_weight": 0.13
+    }
+  ],
+  "domains": [
+    {
+      "id": "supply-chain",
+      "name": "Supply Chain",
+      "node_ids": [
+        "sc1",
+        "sc3",
+        "sc4",
+        "sc5",
+        "sc6",
+        "sc7",
+        "sc8",
+        "sc9",
+        "sc10",
+        "pi1",
+        "pi4",
+        "mo5",
+        "mo6"
+      ]
+    },
+    {
+      "id": "marketing",
+      "name": "Marketing",
+      "node_ids": [
+        "mkt1",
+        "mkt2",
+        "mkt4",
+        "mkt5",
+        "mkt6"
+      ]
+    },
+    {
+      "id": "merchant-ops",
+      "name": "Merchant Operations",
+      "node_ids": [
+        "mo1",
+        "mo2",
+        "mo3",
+        "mo4",
+        "mkt3",
+        "pi6",
+        "fi2"
+      ]
+    },
+    {
+      "id": "product-innovation",
+      "name": "Product Innovation & Development",
+      "node_ids": [
+        "pi2",
+        "pi3",
+        "pi5",
+        "pi7",
+        "pi8",
+        "mkt1"
+      ]
+    },
+    {
+      "id": "customer-success",
+      "name": "Customer Success",
+      "node_ids": [
+        "cs1",
+        "cs2"
+      ]
+    },
+    {
+      "id": "finance",
+      "name": "Finance",
+      "node_ids": [
+        "fi1",
+        "fi3",
+        "fi4",
+        "fi5",
+        "fi6",
+        "mo7",
+        "sc2"
+      ]
+    },
+    {
+      "id": "sales-marketing",
+      "name": "Sales & Marketing",
+      "node_ids": [
+        "brand-rel"
+      ]
+    },
+    {
+      "id": "people-culture",
+      "name": "People & Culture",
+      "node_ids": [
+        "ftw-enable"
+      ]
+    }
+  ],
+  "nodes": [
+    {
+      "id": "pi1",
+      "name": "Source to Develop Products & Tech",
+      "description": "Identify technology and product development opportunities",
+      "domain_id": "supply-chain",
+      "section_id": "product-dev",
+      "keywords": [
+        "source",
+        "develop",
+        "products",
+        "tech",
+        "technology",
+        "product development"
+      ]
+    },
+    {
+      "id": "pi2",
+      "name": "Design Products & Technology",
+      "description": "Create product designs, specs, and tech blueprints",
+      "domain_id": "product-innovation",
+      "section_id": "product-dev",
+      "keywords": [
+        "design",
+        "products",
+        "technology",
+        "specs",
+        "blueprints",
+        "product design"
+      ]
+    },
+    {
+      "id": "pi3",
+      "name": "Procure & Build Physical Assets",
+      "description": "Source materials and build physical product assets",
+      "domain_id": "product-innovation",
+      "section_id": "product-dev",
+      "keywords": [
+        "procure",
+        "build",
+        "physical",
+        "assets",
+        "materials"
+      ]
+    },
+    {
+      "id": "pi4",
+      "name": "Deploy Physical Assets",
+      "description": "Launch physical products into the market",
+      "domain_id": "supply-chain",
+      "section_id": "product-dev",
+      "keywords": [
+        "deploy",
+        "physical",
+        "launch",
+        "market"
+      ]
+    },
+    {
+      "id": "pi5",
+      "name": "Retire Physical Assets",
+      "description": "Phase out end-of-life physical products",
+      "domain_id": "product-innovation",
+      "section_id": "product-dev",
+      "keywords": [
+        "retire",
+        "end-of-life",
+        "phase out",
+        "discontinue"
+      ]
+    },
+    {
+      "id": "pi6",
+      "name": "Manage Product Information",
+      "description": "Maintain listings, content, and product data",
+      "domain_id": "merchant-ops",
+      "section_id": "content",
+      "keywords": [
+        "product information",
+        "listings",
+        "product data",
+        "catalog",
+        "pim"
+      ]
+    },
+    {
+      "id": "pi7",
+      "name": "Commercialize Product Development",
+      "description": "Launch and scale new products to market",
+      "domain_id": "product-innovation",
+      "section_id": "product-dev",
+      "keywords": [
+        "commercialize",
+        "launch",
+        "scale",
+        "new products"
+      ]
+    },
+    {
+      "id": "pi8",
+      "name": "Manufacture Products",
+      "description": "Execute manufacturing of physical products based on sourced materials",
+      "domain_id": "product-innovation",
+      "section_id": "sourcing",
+      "keywords": [
+        "manufacture",
+        "manufacturing",
+        "production",
+        "factory"
+      ]
+    },
+    {
+      "id": "mkt1",
+      "name": "Generate Ideas",
+      "description": "Ideate campaigns, promotions, and creative concepts",
+      "domain_id": "product-innovation",
+      "section_id": "strategy",
+      "keywords": [
+        "ideas",
+        "ideate",
+        "campaigns",
+        "promotions",
+        "creative",
+        "concepts"
+      ]
+    },
+    {
+      "id": "mkt3",
+      "name": "Manage Customer Segments",
+      "description": "Define and maintain audience segments for targeting",
+      "domain_id": "merchant-ops",
+      "section_id": "strategy",
+      "keywords": [
+        "customer segments",
+        "audience",
+        "targeting",
+        "segmentation"
+      ]
+    },
+    {
+      "id": "fi1",
+      "name": "Forecast Marketing Spend & Revenue",
+      "description": "Project revenue and plan marketing budget allocation",
+      "domain_id": "finance",
+      "section_id": "strategy",
+      "keywords": [
+        "forecast",
+        "marketing spend",
+        "revenue",
+        "budget",
+        "financial planning"
+      ]
+    },
+    {
+      "id": "fi2",
+      "name": "Understand Emerging Market Needs",
+      "description": "Analyze market trends to inform financial planning",
+      "domain_id": "merchant-ops",
+      "section_id": "strategy",
+      "keywords": [
+        "market needs",
+        "market trends",
+        "emerging",
+        "analysis",
+        "market research"
+      ]
+    },
+    {
+      "id": "sc10",
+      "name": "Forecast Item Sales By Location and Channel",
+      "description": "Forecast item-level sales demand by location and sales channel",
+      "domain_id": "supply-chain",
+      "section_id": "strategy",
+      "keywords": [
+        "forecast",
+        "sales",
+        "demand",
+        "location",
+        "channel",
+        "item-level"
+      ]
+    },
+    {
+      "id": "fi6",
+      "name": "Quantify Demand",
+      "description": "Translate sales forecasts into quantified demand plans for supply chain execution",
+      "domain_id": "finance",
+      "section_id": "strategy",
+      "keywords": [
+        "quantify",
+        "demand",
+        "demand planning",
+        "supply chain execution"
+      ]
+    },
+    {
+      "id": "brand-rel",
+      "name": "Build Brand Relationship",
+      "description": "Cultivate brand equity and sales relationships that shape market understanding",
+      "domain_id": "sales-marketing",
+      "section_id": "strategy",
+      "keywords": [
+        "brand",
+        "relationship",
+        "equity",
+        "sales relationships"
+      ]
+    },
+    {
+      "id": "ftw-enable",
+      "name": "Enable Full Time Workers",
+      "description": "Invest in people capacity and talent planning to meet emerging business needs",
+      "domain_id": "people-culture",
+      "section_id": "strategy",
+      "keywords": [
+        "people",
+        "talent",
+        "hiring",
+        "workforce",
+        "hr",
+        "human resources"
+      ]
+    },
+    {
+      "id": "mkt2",
+      "name": "Execute Ads & Promos",
+      "description": "Launch and manage paid advertising and promotional campaigns",
+      "domain_id": "marketing",
+      "section_id": "content",
+      "keywords": [
+        "ads",
+        "promos",
+        "advertising",
+        "campaigns",
+        "paid media",
+        "ppc",
+        "sponsored"
+      ]
+    },
+    {
+      "id": "mkt4",
+      "name": "Create Digital Assets",
+      "description": "Produce images, copy, and creative assets",
+      "domain_id": "marketing",
+      "section_id": "content",
+      "keywords": [
+        "digital assets",
+        "images",
+        "copy",
+        "creative",
+        "photography",
+        "a+ content"
+      ]
+    },
+    {
+      "id": "mkt5",
+      "name": "Deploy Digital Assets",
+      "description": "Publish assets to channels and storefronts",
+      "domain_id": "marketing",
+      "section_id": "content",
+      "keywords": [
+        "deploy",
+        "publish",
+        "storefronts",
+        "digital assets"
+      ]
+    },
+    {
+      "id": "mkt6",
+      "name": "Retire Digital Assets",
+      "description": "Archive or remove outdated marketing assets",
+      "domain_id": "marketing",
+      "section_id": "content",
+      "keywords": [
+        "retire",
+        "archive",
+        "outdated",
+        "marketing assets"
+      ]
+    },
+    {
+      "id": "sc1",
+      "name": "Source Product & Materials",
+      "description": "Identify and source raw materials and finished goods from suppliers",
+      "domain_id": "supply-chain",
+      "section_id": "sourcing",
+      "keywords": [
+        "source",
+        "raw materials",
+        "suppliers",
+        "finished goods",
+        "procurement"
+      ]
+    },
+    {
+      "id": "sc2",
+      "name": "Balance Product & Materials",
+      "description": "Balance inventory levels across warehouses and demand signals",
+      "domain_id": "finance",
+      "section_id": "sourcing",
+      "keywords": [
+        "balance",
+        "inventory",
+        "warehouses",
+        "demand signals"
+      ]
+    },
+    {
+      "id": "sc3",
+      "name": "Procure Products",
+      "description": "Execute purchase orders and manage supplier relationships",
+      "domain_id": "supply-chain",
+      "section_id": "sourcing",
+      "keywords": [
+        "procure",
+        "purchase orders",
+        "supplier",
+        "po",
+        "buying"
+      ]
+    },
+    {
+      "id": "sc8",
+      "name": "Manage Product Distribution",
+      "description": "Coordinate distribution center operations and network",
+      "domain_id": "supply-chain",
+      "section_id": "sourcing",
+      "keywords": [
+        "distribution",
+        "distribution center",
+        "dc",
+        "network"
+      ]
+    },
+    {
+      "id": "mo1",
+      "name": "Administer Sales Channels",
+      "description": "Configure and manage marketplace and direct channels",
+      "domain_id": "merchant-ops",
+      "section_id": "channels",
+      "keywords": [
+        "sales channels",
+        "marketplace",
+        "amazon",
+        "walmart",
+        "channel management",
+        "direct",
+        "pricing",
+        "price",
+        "price-elastic",
+        "elasticity",
+        "promotional pricing",
+        "promo",
+        "promos",
+        "promotion",
+        "promotions",
+        "discount",
+        "discounting",
+        "markdown",
+        "clearance",
+        "cannibalize",
+        "cannibalization",
+        "full-price",
+        "incremental",
+        "buy box",
+        "repricing",
+        "guardrail",
+        "guardrails"
+      ]
+    },
+    {
+      "id": "mo2",
+      "name": "Customize Direct Channels",
+      "description": "Personalize DTC storefronts and channel experiences",
+      "domain_id": "merchant-ops",
+      "section_id": "channels",
+      "keywords": [
+        "dtc",
+        "direct",
+        "storefront",
+        "shopify",
+        "customize",
+        "personalize"
+      ]
+    },
+    {
+      "id": "mo3",
+      "name": "Manage Customer Order",
+      "description": "Oversee order lifecycle from placement to fulfillment",
+      "domain_id": "merchant-ops",
+      "section_id": "channels",
+      "keywords": [
+        "customer order",
+        "order management",
+        "order lifecycle",
+        "fulfillment"
+      ]
+    },
+    {
+      "id": "mo4",
+      "name": "Route Order",
+      "description": "Direct orders to optimal fulfillment location",
+      "domain_id": "merchant-ops",
+      "section_id": "channels",
+      "keywords": [
+        "route",
+        "order routing",
+        "fulfillment location",
+        "oms"
+      ]
+    },
+    {
+      "id": "cs2",
+      "name": "Manage Customer Support",
+      "description": "Handle customer inquiries, issues, and resolution",
+      "domain_id": "customer-success",
+      "section_id": "channels",
+      "keywords": [
+        "customer support",
+        "support",
+        "inquiries",
+        "resolution",
+        "help desk"
+      ]
+    },
+    {
+      "id": "sc4",
+      "name": "Store Inventory",
+      "description": "Receive, inspect, and warehouse inventory",
+      "domain_id": "supply-chain",
+      "section_id": "fulfillment",
+      "keywords": [
+        "store",
+        "inventory",
+        "warehouse",
+        "receive",
+        "inspect",
+        "wms"
+      ]
+    },
+    {
+      "id": "sc5",
+      "name": "Package Order",
+      "description": "Pick, pack, and prepare orders for shipment",
+      "domain_id": "supply-chain",
+      "section_id": "fulfillment",
+      "keywords": [
+        "package",
+        "pick",
+        "pack",
+        "shipment",
+        "order packaging"
+      ]
+    },
+    {
+      "id": "sc6",
+      "name": "Select Transport",
+      "description": "Choose optimal carrier and shipping method",
+      "domain_id": "supply-chain",
+      "section_id": "fulfillment",
+      "keywords": [
+        "transport",
+        "carrier",
+        "shipping",
+        "freight",
+        "logistics"
+      ]
+    },
+    {
+      "id": "sc9",
+      "name": "Process Returns",
+      "description": "Receive, inspect, and restock or dispose returned items",
+      "domain_id": "supply-chain",
+      "section_id": "fulfillment",
+      "keywords": [
+        "returns",
+        "restock",
+        "dispose",
+        "rma",
+        "reverse logistics"
+      ]
+    },
+    {
+      "id": "mo5",
+      "name": "Hire Temp Workers",
+      "description": "Recruit and onboard temporary fulfillment staff",
+      "domain_id": "supply-chain",
+      "section_id": "fulfillment",
+      "keywords": [
+        "hire",
+        "temp",
+        "temporary",
+        "workers",
+        "staffing",
+        "labor"
+      ]
+    },
+    {
+      "id": "mo6",
+      "name": "Train Temp Workers",
+      "description": "Train temporary workers on operations and safety",
+      "domain_id": "supply-chain",
+      "section_id": "fulfillment",
+      "keywords": [
+        "train",
+        "training",
+        "safety",
+        "onboarding"
+      ]
+    },
+    {
+      "id": "mo7",
+      "name": "Monitor Efficiency",
+      "description": "Track operational KPIs and worker productivity",
+      "domain_id": "finance",
+      "section_id": "fulfillment",
+      "keywords": [
+        "monitor",
+        "efficiency",
+        "kpi",
+        "productivity",
+        "ops metrics"
+      ]
+    },
+    {
+      "id": "sc7",
+      "name": "Deliver Order",
+      "description": "Last-mile delivery to customer",
+      "domain_id": "supply-chain",
+      "section_id": "post-sale",
+      "keywords": [
+        "deliver",
+        "delivery",
+        "last-mile",
+        "last mile",
+        "shipping"
+      ]
+    },
+    {
+      "id": "cs1",
+      "name": "Manage Customer Reviews",
+      "description": "Monitor, respond to, and analyze customer reviews",
+      "domain_id": "customer-success",
+      "section_id": "post-sale",
+      "keywords": [
+        "reviews",
+        "customer reviews",
+        "ratings",
+        "feedback",
+        "reputation"
+      ]
+    },
+    {
+      "id": "fi3",
+      "name": "Recognize Revenue",
+      "description": "Apply revenue recognition policies to financial records",
+      "domain_id": "finance",
+      "section_id": "post-sale",
+      "keywords": [
+        "revenue recognition",
+        "financial records",
+        "accounting"
+      ]
+    },
+    {
+      "id": "fi4",
+      "name": "Manage Receivables",
+      "description": "Track and collect outstanding customer payments",
+      "domain_id": "finance",
+      "section_id": "post-sale",
+      "keywords": [
+        "receivables",
+        "payments",
+        "collections",
+        "accounts receivable",
+        "ar"
+      ]
+    },
+    {
+      "id": "fi5",
+      "name": "Manage Financials",
+      "description": "Oversee P&L, cash flow, and financial reporting",
+      "domain_id": "finance",
+      "section_id": "post-sale",
+      "keywords": [
+        "financials",
+        "p&l",
+        "cash flow",
+        "financial reporting",
+        "accounting"
+      ]
+    }
+  ],
+  "vct_goals": [
+    {
+      "id": "st-mgmt1",
+      "name": "Demand Forecast Accuracy",
+      "description": "Accuracy of item-level demand forecasts used to drive supply, inventory, and budget decisions",
+      "section_id": "strategy",
+      "effective_weight": 0.008
+    },
+    {
+      "id": "st-mgmt2",
+      "name": "Budget-to-Actual Accuracy",
+      "description": "Closeness of planned versus actual revenue and spend across all functions and time horizons",
+      "section_id": "strategy",
+      "effective_weight": 0.007
+    },
+    {
+      "id": "st-mgmt3",
+      "name": "Market Opportunity Capture",
+      "description": "Percentage of addressable market opportunity converted to active pipeline or revenue in the period",
+      "section_id": "strategy",
+      "effective_weight": 0.005
+    },
+    {
+      "id": "st-mgmt4",
+      "name": "Innovation Pipeline Velocity",
+      "description": "Speed and throughput at which ideas are converted into funded, in-flight innovation projects",
+      "section_id": "strategy",
+      "effective_weight": 0.003
+    },
+    {
+      "id": "st-mgmt5",
+      "name": "Competitive Positioning Accuracy",
+      "description": "Precision of competitive intelligence and price/assortment positioning relative to the competitive set",
+      "section_id": "strategy",
+      "effective_weight": 0.004
+    },
+    {
+      "id": "st-mgmt6",
+      "name": "Customer Segmentation Precision",
+      "description": "Accuracy and actionability of customer segment definitions driving targeting, pricing, and assortment",
+      "section_id": "strategy",
+      "effective_weight": 0.003
+    },
+    {
+      "id": "pd-mgmt1",
+      "name": "New Product Revenue Share",
+      "description": "Percentage of total revenue attributable to products launched in the past 12 months",
+      "section_id": "product-dev",
+      "effective_weight": 0.014
+    },
+    {
+      "id": "pd-mgmt2",
+      "name": "Product Cost Efficiency",
+      "description": "COGS efficiency of the product portfolio — actual cost per SKU vs. design targets, including landed cost",
+      "section_id": "product-dev",
+      "effective_weight": 0.013
+    },
+    {
+      "id": "pd-mgmt3",
+      "name": "Portfolio Lifecycle Health",
+      "description": "Balance and velocity of active, scaling, and retiring SKUs across the full catalog",
+      "section_id": "product-dev",
+      "effective_weight": 0.008
+    },
+    {
+      "id": "pd-mgmt4",
+      "name": "Tech Platform Reliability",
+      "description": "Uptime, deployment cadence, and stability of product technology and tooling platforms",
+      "section_id": "product-dev",
+      "effective_weight": 0.006
+    },
+    {
+      "id": "pd-mgmt5",
+      "name": "Product Quality & Compliance",
+      "description": "Pre- and post-launch defect rates, warranty claims, and regulatory compliance pass rates",
+      "section_id": "product-dev",
+      "effective_weight": 0.006
+    },
+    {
+      "id": "pd-mgmt6",
+      "name": "Commercialization Execution",
+      "description": "Readiness and accuracy of listing, inventory, channel setup, and initial content at product launch",
+      "section_id": "product-dev",
+      "effective_weight": 0.004
+    },
+    {
+      "id": "cnt-mgmt1",
+      "name": "Return on Ad Spend (ROAS)",
+      "description": "Revenue attributable to paid advertising divided by total advertising cost across all paid channels",
+      "section_id": "content",
+      "effective_weight": 0.039
+    },
+    {
+      "id": "cnt-mgmt2",
+      "name": "Organic Search Performance",
+      "description": "Share and rank quality of organic search traffic driven by listing content and SEO optimization",
+      "section_id": "content",
+      "effective_weight": 0.029
+    },
+    {
+      "id": "cnt-mgmt3",
+      "name": "Content Quality Coverage",
+      "description": "Percentage of the active catalog with complete, channel-approved, high-quality digital content",
+      "section_id": "content",
+      "effective_weight": 0.026
+    },
+    {
+      "id": "cnt-mgmt4",
+      "name": "Campaign Execution Speed",
+      "description": "Reliability and timeliness of launching campaigns and content against planned schedule",
+      "section_id": "content",
+      "effective_weight": 0.017
+    },
+    {
+      "id": "cnt-mgmt5",
+      "name": "Content Cost Efficiency",
+      "description": "Cost per produced and published content asset relative to asset lifecycle revenue contribution",
+      "section_id": "content",
+      "effective_weight": 0.013
+    },
+    {
+      "id": "cnt-mgmt6",
+      "name": "Digital Asset Lifecycle Health",
+      "description": "Currency, utilization, and governance quality of the digital asset library",
+      "section_id": "content",
+      "effective_weight": 0.007
+    },
+    {
+      "id": "src-mgmt1",
+      "name": "Supplier Cost Efficiency",
+      "description": "Unit cost performance relative to targets across all cost components: purchase price, freight, duties, and rebates",
+      "section_id": "sourcing",
+      "effective_weight": 0.056
+    },
+    {
+      "id": "src-mgmt2",
+      "name": "Manufacturing Yield",
+      "description": "Percentage of manufactured units passing first-pass quality inspection without rework or rejection",
+      "section_id": "sourcing",
+      "effective_weight": 0.044
+    },
+    {
+      "id": "src-mgmt3",
+      "name": "Supplier Reliability",
+      "description": "Supplier ability to fulfill purchase orders on time, in full, and to specification",
+      "section_id": "sourcing",
+      "effective_weight": 0.04
+    },
+    {
+      "id": "src-mgmt4",
+      "name": "Demand-Driven Procurement",
+      "description": "Alignment of purchase orders with forward demand forecasts, minimizing overstock and emergency buys",
+      "section_id": "sourcing",
+      "effective_weight": 0.03
+    },
+    {
+      "id": "src-mgmt5",
+      "name": "Inventory Investment Efficiency",
+      "description": "Efficiency of capital deployed in inventory: turnover, weeks of supply, and excess & obsolete reserve rate",
+      "section_id": "sourcing",
+      "effective_weight": 0.02
+    },
+    {
+      "id": "src-mgmt6",
+      "name": "Supply Chain Resilience",
+      "description": "Diversification and auditability of the supplier base against single-source and geo-political risk",
+      "section_id": "sourcing",
+      "effective_weight": 0.01
+    },
+    {
+      "id": "ch-mgmt0",
+      "name": "Search Demand",
+      "description": "Total addressable search demand available to the catalog, representing external market pull",
+      "section_id": "channels",
+      "effective_weight": 0.042
+    },
+    {
+      "id": "ch-mgmt1",
+      "name": "Impression Share",
+      "description": "Percentage of available impressions captured through organic rank and sponsored placements",
+      "section_id": "channels",
+      "effective_weight": 0.048
+    },
+    {
+      "id": "ch-mgmt2",
+      "name": "Click-Through Rate",
+      "description": "Percentage of impressions that result in a customer clicking through to the product detail page",
+      "section_id": "channels",
+      "effective_weight": 0.048
+    },
+    {
+      "id": "ch-mgmt3",
+      "name": "Conversion Rate",
+      "description": "Percentage of product detail page visits that result in a completed purchase",
+      "section_id": "channels",
+      "effective_weight": 0.059
+    },
+    {
+      "id": "ch-mgmt4",
+      "name": "BuyBox Win Rate",
+      "description": "Percentage of time the product listing holds the BuyBox, enabling direct purchase",
+      "section_id": "channels",
+      "effective_weight": 0.048
+    },
+    {
+      "id": "ch-mgmt5",
+      "name": "Average Order Value",
+      "description": "Average dollar value per completed order, influenced by bundling, pricing, and mix",
+      "section_id": "channels",
+      "effective_weight": 0.036
+    },
+    {
+      "id": "ff-mgmt1",
+      "name": "Inventory Availability",
+      "description": "Ability to fulfill orders immediately from on-hand stock without delay or substitution",
+      "section_id": "fulfillment",
+      "effective_weight": 0.045
+    },
+    {
+      "id": "ff-mgmt2",
+      "name": "Pick & Pack Accuracy",
+      "description": "Accuracy of order picking and packing, minimizing costly errors, reshipments, and customer contacts",
+      "section_id": "fulfillment",
+      "effective_weight": 0.036
+    },
+    {
+      "id": "ff-mgmt3",
+      "name": "Shipment On-Time Rate",
+      "description": "Percentage of orders shipped by the promised carrier pickup or ship-confirm deadline",
+      "section_id": "fulfillment",
+      "effective_weight": 0.04
+    },
+    {
+      "id": "ff-mgmt4",
+      "name": "Labor Productivity",
+      "description": "Output efficiency of warehouse labor measured in units processed per hour and cost per unit shipped",
+      "section_id": "fulfillment",
+      "effective_weight": 0.027
+    },
+    {
+      "id": "ff-mgmt5",
+      "name": "Carrier & Freight Cost Management",
+      "description": "Efficiency of outbound carrier selection, zone optimization, and freight cost per shipped unit",
+      "section_id": "fulfillment",
+      "effective_weight": 0.022
+    },
+    {
+      "id": "ff-mgmt6",
+      "name": "Returns Processing Efficiency",
+      "description": "Speed and cost efficiency of receiving, inspecting, and dispositioning returned inventory",
+      "section_id": "fulfillment",
+      "effective_weight": 0.011
+    },
+    {
+      "id": "ps-mgmt1",
+      "name": "Last-Mile Delivery Performance",
+      "description": "Reliability of final delivery to the customer preventing chargebacks, refunds, and NPS damage",
+      "section_id": "post-sale",
+      "effective_weight": 0.033
+    },
+    {
+      "id": "ps-mgmt2",
+      "name": "Customer Satisfaction",
+      "description": "Post-purchase satisfaction driving repeat purchase, LTV, review quality, and word-of-mouth revenue",
+      "section_id": "post-sale",
+      "effective_weight": 0.036
+    },
+    {
+      "id": "ps-mgmt3",
+      "name": "Review & Reputation Management",
+      "description": "Quality and velocity of channel reviews and seller scores that protect margin and conversion rate",
+      "section_id": "post-sale",
+      "effective_weight": 0.02
+    },
+    {
+      "id": "ps-mgmt4",
+      "name": "Revenue Recognition Accuracy",
+      "description": "Timeliness and accuracy of recording revenue, affecting financial reporting and working capital",
+      "section_id": "post-sale",
+      "effective_weight": 0.02
+    },
+    {
+      "id": "ps-mgmt5",
+      "name": "Cash Conversion Efficiency",
+      "description": "Speed and completeness of converting recognized revenue into collected cash within payment terms",
+      "section_id": "post-sale",
+      "effective_weight": 0.013
+    },
+    {
+      "id": "ps-mgmt6",
+      "name": "Customer Retention & Loyalty",
+      "description": "Long-term retention of high-value customers driving compounding revenue from repeat and loyalty spend",
+      "section_id": "post-sale",
+      "effective_weight": 0.01
+    }
+  ]
+}

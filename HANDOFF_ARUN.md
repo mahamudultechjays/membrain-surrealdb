@@ -162,6 +162,27 @@ The response:
 Scopes must sit under `org/spreetail`.
 **A grant registers any new path**, so a typo silently creates an empty scope: pick paths from `GET /admin/scopes` in the UI, never free text.
 
+### Onboarding (VCT node mapping)
+After sign-in, call `GET /api/v1/onboarding`. If `onboarded` is `false`, show the onboarding screen.
+
+| Method | Path | Notes |
+|---|---|---|
+| GET | `/api/v1/vct/map` | 41 nodes grouped by 8 domains, for a "pick another node" browser |
+| GET | `/api/v1/onboarding` | `{email, onboarded, primary_work, role, team, onboarded_at, nodes, domains}` |
+| POST | `/api/v1/onboarding/preview` | `{"primary_work": "I run receiving at the warehouse, and I pick carriers"}`. Nothing is saved. Takes about 10 seconds. |
+| POST | `/api/v1/onboarding/confirm` | `{"primary_work", "role", "team", "node_ids": ["sc4","sc6"], "primary_node_id": "sc4"}`. Calling it again replaces the earlier choice. |
+
+The preview returns `clauses[{clause, candidates[3 nodes]}]`, `suggested` (pre-tick these) and `domains`.
+- Candidates are ranked best first, with **no score**: Agent Memory recall returns rank positions, not confidence.
+- The user ticks nodes, at most 8, and picks a primary. The first ticked node is primary by default.
+- `domains` come from the nodes. **No team scope is granted yet**: the domain → team mapping is waiting on Spreetail.
+- 422 means an unknown node id. 503 means Agent Memory is down or the map is not seeded.
+
+Admin:
+- `POST /api/v1/admin/vct/seed` stores the nodes once. It was already done live on 5 Nov; it returns `seeded: 0` when they're already there.
+- `GET /api/v1/admin/users/{email}/onboarding` shows a user's nodes and domains.
+- `PUT /api/v1/admin/users/{email}/vct` with `{"node_ids": [...], "primary_node_id": null}` overrides them (`confirmed_by: "admin"`).
+
 ### Findings (static, no session)
 `GET /api/v1/findings/tests` (153 claims), `/capabilities` and `/gaps` (40 rows).
 Each file carries `source` and `checked`.
@@ -189,8 +210,12 @@ In priority order for the demo:
    - grant and revoke with a scope picker from `/admin/scopes` and a read/write choice;
    - register a team scope;
    - "ask as" one or two users (`as_user`).
-4. **Findings screen**: three tabs over `/findings/*`.
-5. **Navigation**: Capture, Ask, Admin (admins only), Findings, and Sign out.
+4. **Onboarding screen** (first sign-in):
+   - role, team and a "what do you do" box;
+   - preview, then nodes per clause as checkboxes (suggested ones pre-ticked), a primary choice and a "browse all nodes" picker from `/vct/map`;
+   - confirm, then show the resulting domains.
+5. **Findings screen**: three tabs over `/findings/*`.
+6. **Navigation**: Capture, Ask, Admin (admins only), Findings, and Sign out.
 
 **The old frontend prototype (`Capture.tsx`, `Explorer.tsx`, `GraphView.tsx` and `src/api/capture.ts`, `documents.ts`, `graph.ts`) is not on this branch.**
 It was written against the old API and also fails `tsc`.

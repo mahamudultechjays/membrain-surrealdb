@@ -13,11 +13,17 @@ from app.api.deps import (
     AccessServiceDep,
     AdminUserDep,
     MemoryPeopleDep,
+    OnboardingServiceDep,
     ScopeRegistryDep,
     is_admin,
 )
+from app.api.v1.endpoints.onboarding import status_of
 from app.core.config import settings
-from app.domain.errors import MemoryNotConfiguredError, MemoryUnavailableError
+from app.domain.errors import (
+    MemoryNotConfiguredError,
+    MemoryUnavailableError,
+    UnknownVctNodeError,
+)
 from app.domain.ports.user_scopes import ScopeGrant
 from app.schemas.admin import (
     GrantRequest,
@@ -27,6 +33,7 @@ from app.schemas.admin import (
     UsersResponse,
 )
 from app.schemas.auth import GrantOut
+from app.schemas.onboarding import AdminVctRequest, OnboardingStatus, SeedResponse
 from app.services import logger
 
 router = APIRouter(prefix="/admin")
@@ -142,6 +149,54 @@ async def register_scope(
         raise _unavailable(exc) from exc
     _log(request, admin.email, "register", None, path, None)
     return ScopesResponse(scopes=[path])
+
+
+@router.post("/vct/seed", response_model=SeedResponse)
+async def seed_vct(
+    request: Request, admin: AdminUserDep, onboarding: OnboardingServiceDep, force: bool = False
+) -> SeedResponse:
+    """Store the VCT nodes in the matcher scope, once. `seeded: 0` means it was
+    already there; `force` writes them again (duplicates are harmless)."""
+    try:
+        seeded = await onboarding.seed(force=force)
+    except (MemoryNotConfiguredError, MemoryUnavailableError) as exc:
+        raise _unavailable(exc) from exc
+    _log(request, admin.email, "vct_seed", None, settings.VCT_SCOPE, str(seeded))
+    return SeedResponse(scope=settings.VCT_SCOPE, seeded=seeded)
+
+
+@router.get("/users/{email}/onboarding", response_model=OnboardingStatus)
+async def user_onboarding(
+    email: str, admin: AdminUserDep, onboarding: OnboardingServiceDep
+) -> OnboardingStatus:
+    """A user's description, confirmed VCT nodes and the domains they give."""
+    return status_of(email, await onboarding.get(email), onboarding.map)
+
+
+@router.put("/users/{email}/vct", response_model=OnboardingStatus)
+async def set_user_vct(
+    email: str,
+    body: AdminVctRequest,
+    request: Request,
+    admin: AdminUserDep,
+    onboarding: OnboardingServiceDep,
+) -> OnboardingStatus:
+    """Replace a user's VCT nodes (marked confirmed_by admin), keeping their answers."""
+    current = await onboarding.get(email)
+    try:
+        record = await onboarding.confirm(
+            email,
+            primary_work=current.primary_work if current else "",
+            node_ids=body.node_ids,
+            primary_node_id=body.primary_node_id,
+            role=current.role if current else None,
+            team=current.team if current else None,
+            by="admin",
+        )
+    except UnknownVctNodeError as exc:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, str(exc)) from exc
+    _log(request, admin.email, "vct_set", email, settings.VCT_SCOPE, ",".join(body.node_ids))
+    return status_of(email, record, onboarding.map)
 
 
 async def _user(access: AccessServiceDep, email: str) -> UserGrants:

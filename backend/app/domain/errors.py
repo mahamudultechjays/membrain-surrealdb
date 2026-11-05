@@ -23,3 +23,11 @@ class ScopeNotGrantedError(Exception):
 
 class UnsupportedDocumentError(Exception):
     """The file type can't be read, or the file holds no text."""
+
+
+class UnknownVctNodeError(Exception):
+    """A VCT node id that is not on the metro map, or an invalid node choice."""
+
+
+class VctNotSeededError(Exception):
+    """The VCT matcher scope returned nothing: the nodes have not been seeded."""

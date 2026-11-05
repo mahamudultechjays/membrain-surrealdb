@@ -21,6 +21,7 @@ from app.composition import (
     get_memory_probe,
     get_memory_recall,
     get_memory_reflect,
+    get_onboarding_service,
     get_preview_cache,
     get_scope_registry,
     get_text_reader,
@@ -41,6 +42,7 @@ from app.schemas.auth import CurrentUser
 from app.services.access import AccessService
 from app.services.capture_flow import PreviewCache
 from app.services.chat_flow import ChatSessions
+from app.services.onboarding import OnboardingService
 
 MemoryProbeDep = Annotated[MemoryProbe, Depends(get_memory_probe)]
 MemoryCaptureDep = Annotated[MemoryCapture, Depends(get_memory_capture)]
@@ -57,6 +59,7 @@ MemoryReflectDep = Annotated[MemoryReflect, Depends(get_memory_reflect)]
 ChatSessionsDep = Annotated[ChatSessions, Depends(get_chat_sessions)]
 MemoryLabDep = Annotated[MemoryLab, Depends(get_memory_lab)]
 MemoryPeopleDep = Annotated[MemoryPeople, Depends(get_memory_people)]
+OnboardingServiceDep = Annotated[OnboardingService, Depends(get_onboarding_service)]
 
 
 async def get_current_user(request: Request) -> CurrentUser:

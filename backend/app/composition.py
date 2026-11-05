@@ -12,6 +12,7 @@ from app.adapters.agent_memory import (
     AgentMemoryGraph,
     AgentMemoryLab,
     AgentMemoryPeople,
+    AgentMemoryPassages,
     AgentMemoryProbe,
     AgentMemoryRecall,
     AgentMemoryScopeRegistry,
@@ -22,12 +23,13 @@ from app.adapters.agent_memory import (
     NotConfiguredGraph,
     NotConfiguredLab,
     NotConfiguredPeople,
+    NotConfiguredPassages,
     NotConfiguredProbe,
     NotConfiguredRecall,
     NotConfiguredScopeRegistry,
 )
 from app.adapters.files import PdfAndTextReader
-from app.adapters.sqlite import SqliteUserScopes
+from app.adapters.sqlite import SqliteOnboarding, SqliteUserScopes
 from app.core.config import settings
 from app.domain.ports.document_store import DocumentStore
 from app.domain.ports.memory_brain import MemoryBrain
@@ -36,12 +38,16 @@ from app.domain.ports.memory_graph import MemoryGraph
 from app.domain.ports.memory_people import MemoryPeople
 from app.domain.ports.memory_probe import MemoryProbe
 from app.domain.ports.memory_recall import MemoryRecall
+from app.domain.ports.onboarding import OnboardingRepository
+from app.domain.ports.passage_writer import PassageWriter
 from app.domain.ports.scope_registry import ScopeRegistry
 from app.domain.ports.text_reader import DocumentTextReader
 from app.domain.ports.user_scopes import UserScopeRepository
+from app.services import vct_map
 from app.services.access import AccessService
 from app.services.capture_flow import PreviewCache
 from app.services.chat_flow import ChatSessions
+from app.services.onboarding import OnboardingService
 
 
 @lru_cache
@@ -189,3 +195,24 @@ def get_preview_cache() -> PreviewCache:
 
 def get_text_reader() -> DocumentTextReader:
     return PdfAndTextReader()
+
+
+@lru_cache
+def get_onboarding_repository() -> OnboardingRepository:
+    return SqliteOnboarding(settings.USER_SCOPES_DB_PATH)
+
+
+def get_passage_writer() -> PassageWriter:
+    client = get_agent_memory_client()
+    return AgentMemoryPassages(client) if client else NotConfiguredPassages()
+
+
+def get_onboarding_service() -> OnboardingService:
+    return OnboardingService(
+        get_onboarding_repository(),
+        get_memory_recall(),
+        get_passage_writer(),
+        get_scope_registry(),
+        vct_map.load(),
+        vct_scope=settings.VCT_SCOPE,
+    )
