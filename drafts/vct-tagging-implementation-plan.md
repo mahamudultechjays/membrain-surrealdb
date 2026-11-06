@@ -25,6 +25,7 @@ Goal: tables and a repository, with no Agent Memory calls.
 - Adapter `app/adapters/sqlite/fact_tags.py` on `SqliteStore`, in the same file as `user_scopes`:
   - `fact_tags`, primary key `(fact_id, kind, tag)`, index on `(kind, tag, rank)` and `scope`.
   - `tag_feedback`, insert only.
+  - `tagged_facts(fact_id, scope, tagger_version, tagged_at)`: one row per fact the tagger has handled. It keeps a fact from being re-tagged after a person removes all its tags, and gives its scope for access checks.
 - Rules enforced in the adapter:
   - `save_auto` never overwrites rows with source `user`.
   - Every user edit writes `fact_tags` and `tag_feedback` in one transaction.

@@ -31,3 +31,7 @@ class UnknownVctNodeError(Exception):
 
 class VctNotSeededError(Exception):
     """The VCT matcher scope returned nothing: the nodes have not been seeded."""
+
+
+class FactNotTaggedError(Exception):
+    """The fact has never been processed by the VCT tagger, so it has no tag record."""

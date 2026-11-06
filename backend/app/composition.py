@@ -29,9 +29,10 @@ from app.adapters.agent_memory import (
     NotConfiguredScopeRegistry,
 )
 from app.adapters.files import PdfAndTextReader
-from app.adapters.sqlite import SqliteOnboarding, SqliteUserScopes
+from app.adapters.sqlite import SqliteFactTags, SqliteOnboarding, SqliteUserScopes
 from app.core.config import settings
 from app.domain.ports.document_store import DocumentStore
+from app.domain.ports.fact_tags import FactTagRepository
 from app.domain.ports.memory_brain import MemoryBrain
 from app.domain.ports.memory_capture import MemoryCapture
 from app.domain.ports.memory_graph import MemoryGraph
@@ -200,6 +201,12 @@ def get_text_reader() -> DocumentTextReader:
 @lru_cache
 def get_onboarding_repository() -> OnboardingRepository:
     return SqliteOnboarding(settings.USER_SCOPES_DB_PATH)
+
+
+@lru_cache
+def get_fact_tag_repository() -> FactTagRepository:
+    """VCT tags on facts (fact id + tags only), in the same file as the grants."""
+    return SqliteFactTags(settings.USER_SCOPES_DB_PATH)
 
 
 def get_passage_writer() -> PassageWriter:
