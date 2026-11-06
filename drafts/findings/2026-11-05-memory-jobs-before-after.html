@@ -1,0 +1,226 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Memory Jobs Before and After</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,600;8..60,700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root {
+  --bg: #f6f7f8; --surface: #ffffff; --fg: #1c2328; --muted: #5a6670; --line: #dde2e6;
+  --accent: #1f5f7a; --accent-bg: #e3eef3;
+  --ok: #2f7d4f; --ok-bg: #e5f2ea; --warn: #9a6a12; --warn-bg: #f7eedb; --bad: #a83a2c; --bad-bg: #f7e4e0;
+  --display: "Source Serif 4", Georgia, serif;
+  --body: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  --mono: "IBM Plex Mono", Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #12171b; --surface: #1a2126; --fg: #e3e8eb; --muted: #9aa7b0; --line: #2c363d;
+    --accent: #6fb6d3; --accent-bg: #1b2d36;
+    --ok: #74c493; --ok-bg: #1c2e24; --warn: #e0b45c; --warn-bg: #33291a; --bad: #ec8b7c; --bad-bg: #3a201c;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #12171b; --surface: #1a2126; --fg: #e3e8eb; --muted: #9aa7b0; --line: #2c363d;
+  --accent: #6fb6d3; --accent-bg: #1b2d36;
+  --ok: #74c493; --ok-bg: #1c2e24; --warn: #e0b45c; --warn-bg: #33291a; --bad: #ec8b7c; --bad-bg: #3a201c;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--fg); font-family: var(--body); font-size: 16px; line-height: 1.6; }
+.wrap { max-width: 1040px; margin: 0 auto; padding: 40px 16px 64px; display: flex; flex-direction: column; gap: 44px; }
+.col { max-width: 760px; }
+header { display: flex; flex-direction: column; gap: 12px; }
+.eyebrow { font-family: var(--mono); font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--accent); }
+h1 { font-family: var(--display); font-weight: 700; font-size: clamp(28px, 5vw, 38px); line-height: 1.15; margin: 0; text-wrap: balance; }
+h2 { font-family: var(--display); font-weight: 600; font-size: 22px; margin: 0; }
+h3 { font-size: 16px; font-weight: 600; margin: 0; line-height: 1.4; }
+p { margin: 0; }
+.lede { color: var(--muted); max-width: 65ch; }
+.meta { display: flex; flex-wrap: wrap; gap: 6px 20px; font-size: 13px; color: var(--muted); }
+.meta b { color: var(--fg); font-weight: 500; }
+code { font-family: var(--mono); font-size: 13px; overflow-wrap: anywhere; }
+section { display: flex; flex-direction: column; gap: 16px; }
+.sec-head { display: flex; flex-direction: column; gap: 4px; }
+.sec-head p { color: var(--muted); font-size: 14px; max-width: 70ch; }
+
+.flow { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+.stage { background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 14px 16px; display: flex; flex-direction: column; gap: 8px; }
+.stage .name { font-family: var(--mono); font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+.stage dl { display: grid; grid-template-columns: auto 1fr; gap: 2px 12px; margin: 0; font-size: 14px; }
+.stage dt { color: var(--muted); }
+.stage dd { margin: 0; font-family: var(--mono); font-variant-numeric: tabular-nums; text-align: right; }
+.stage dd.up { color: var(--accent); font-weight: 500; }
+.stage .foot { font-size: 13px; color: var(--muted); }
+
+.list { display: flex; flex-direction: column; border-top: 1px solid var(--line); }
+.f { display: grid; grid-template-columns: 4px 1fr; gap: 0 16px; padding: 14px 0; border-bottom: 1px solid var(--line); }
+.f .stripe { border-radius: 2px; }
+.f .body { display: flex; flex-direction: column; gap: 4px; max-width: 70ch; }
+.f .ev { font-size: 14px; color: var(--muted); }
+.ok .stripe { background: var(--ok); } .warn .stripe { background: var(--warn); } .bad .stripe { background: var(--bad); }
+
+.table-box { overflow-x: auto; background: var(--surface); border: 1px solid var(--line); border-radius: 6px; }
+table { border-collapse: collapse; width: 100%; font-size: 14px; }
+th, td { text-align: left; padding: 9px 14px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+tr:last-child td { border-bottom: 0; }
+td.num { font-family: var(--mono); text-align: right; }
+ol.entries { margin: 0; padding-left: 22px; display: flex; flex-direction: column; gap: 4px; max-width: 75ch; }
+
+.qa { display: flex; flex-direction: column; gap: 10px; padding-top: 18px; border-top: 1px solid var(--line); }
+.qn { font-family: var(--mono); font-size: 12px; color: var(--accent); margin-right: 6px; }
+.pair { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.side { background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 14px 16px; display: flex; flex-direction: column; gap: 8px; }
+.side.after { border-color: var(--accent); }
+.tag { font-family: var(--mono); font-size: 12px; color: var(--muted); }
+.after .tag { color: var(--accent); }
+.ans { font-size: 14.5px; display: flex; flex-direction: column; gap: 8px; }
+.note { font-size: 13px; color: var(--muted); }
+.small { font-size: 13px; color: var(--muted); }
+
+@media (max-width: 760px) {
+  .flow { grid-template-columns: 1fr 1fr; }
+  .pair { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+<main class="wrap">
+
+<header class="col">
+  <p class="eyebrow">Membrain · SurrealDB Agent Memory · lab run</p>
+  <h1>Consolidation, elaboration and reflection, before and after</h1>
+  <p class="lede">Eight planning notes went into one empty scope. We then ran Consolidate and Elaborate from the Admin Lab, and asked the same four reflection questions before and after.</p>
+  <div class="meta">
+    <span>Scope <b><code>org/spreetail/user/ske-c</code></b></span>
+    <span>Run <b>5 Nov 2026</b></span>
+    <span>Client <b>surrealdb-memory 1.0.0b1</b></span>
+    <span>Status <b>Internal draft</b></span>
+  </div>
+</header>
+
+<section>
+  <div class="sec-head col"><h2>The run at a glance</h2>
+  <p>Counts come from snapshots of the scope taken after each step. Reported counts come from the job responses.</p></div>
+  <div class="flow">
+    <div class="stage"><span class="name">1 · Ingest</span>
+      <dl><dt>Entities</dt><dd>12</dd><dt>Facts</dt><dd>17</dd><dt>Links</dt><dd>8</dd></dl>
+      <p class="foot">8 captures, about 7–9 s each.</p></div>
+    <div class="stage"><span class="name">2 · Consolidate</span>
+      <dl><dt>Entities</dt><dd class="up">18</dd><dt>Facts</dt><dd class="up">23</dd><dt>Links</dt><dd>8</dd></dl>
+      <p class="foot">18.4 s. Reported 6 created, 6 stored.</p></div>
+    <div class="stage"><span class="name">3 · Elaborate</span>
+      <dl><dt>Entities</dt><dd>18</dd><dt>Facts</dt><dd>23</dd><dt>Links</dt><dd class="up">77</dd></dl>
+      <p class="foot">262 s over 18 entities. Reported 159 links, 69 stored.</p></div>
+    <div class="stage"><span class="name">4 · Reflect</span>
+      <dl><dt>Questions</dt><dd>4</dd><dt>Evidence before</dt><dd>40</dd><dt>Evidence after</dt><dd class="up">45</dd></dl>
+      <p class="foot">Nothing saved (persist off), 8–13 s each.</p></div>
+  </div>
+</section>
+
+<section class="col">
+  <div class="sec-head"><h2>What we found</h2></div>
+  <div class="list">
+    <div class="f ok"><span class="stripe"></span><div class="body"><h3>Consolidation found the repeated themes</h3>
+      <p class="ev">It wrote 6 observations, one per topic, each backed by 2 or more notes. The Q4 discount caps had the most support: 4 notes.</p></div></div>
+    <div class="f warn"><span class="stripe"></span><div class="body"><h3>Consolidation added entities instead of merging them</h3>
+      <p class="ev">The observations were attached to 6 new entities whose ids repeat the type, such as <code>project/project/pricing_system</code>, next to the original <code>project/pricing_system</code>. Nothing was merged, updated or superseded; all 17 original facts remain.</p></div></div>
+    <div class="f warn"><span class="stripe"></span><div class="body"><h3>Elaboration noticed the duplicates but only linked them</h3>
+      <p class="ev">5 of the 6 pairs got a <code>same_as</code> or <code>is_identical_to</code> link. The entities stay separate.</p></div></div>
+    <div class="f warn"><span class="stripe"></span><div class="body"><h3>Elaboration multiplied links, loosely</h3>
+      <p class="ev">Links went from 8 to 77, all at trust 0.3. It used 38 different labels for 69 links across 68 pairs of entities, so nearly every link has its own wording. It reported 159 links, but stored 69.</p></div></div>
+    <div class="f ok"><span class="stripe"></span><div class="body"><h3>Reflection was already good before either job</h3>
+      <p class="ev">All four answers were correct from the raw notes alone: −1.8 and −0.6, caps of 15 / 12 / 8%, the $45K Prime Day loss, and the five-step workflow.</p></div></div>
+    <div class="f warn"><span class="stripe"></span><div class="body"><h3>After the jobs, answers connected more topics, but cited no observations</h3>
+      <p class="ev">Three of the four answers pulled in 1–2 extra entity records through the new links, and tied topics together (for example the Q4 caps with the Prime Day stockout). None of the 6 consolidation observations appeared as evidence in either round.</p></div></div>
+  </div>
+</section>
+
+<section class="col">
+  <div class="sec-head"><h2>1 · What went in</h2>
+  <p>Entries 1–8 of the SKE prompt set, captured one at a time with full extraction. Summaries here; the evidence lists quote the originals.</p></div>
+  <ol class="entries"><li>Move pricing from category-level to product-level elasticity, with a hierarchical model; basics about −2.5, branded about −0.6.</li><li>Forecasting and pricing use disconnected seasonality; unify them into one framework.</li><li>Promotions are ad hoc; build a promotional pricing engine with tiers, channel windows and guardrails.</li><li>Commit to Q4 guardrails: 15% basics, 12% mid-market, 8% branded, across all channels.</li><li>Top Amazon sellers keep stocking out at peaks because reorder triggers are static.</li><li>Prime Day stockout on the top 3 Amazon SKUs: about $45K lost in 48 hours.</li><li>The Bayesian model ran on 6 months of data: basics settled at −1.8, branded held at −0.6.</li><li>The repeated workflow: elasticity, seasonality, margin impact, guardrails, rollout.</li></ol>
+</section>
+
+<section>
+  <div class="sec-head col"><h2>2 · Consolidation: the 6 observations</h2>
+  <p>Each is a new fact with source <code>consolidation</code> and trust 0.35. Proof is the number of notes behind it, as shown in the Lab result panel.</p></div>
+  <div class="table-box"><table>
+    <thead><tr><th>Entity</th><th>Key</th><th>Observation</th><th>Proof</th></tr></thead>
+    <tbody><tr><td>hierarchical bayesian model</td><td><code>model_status_and_tuning</code></td><td>Category-level fallback is functional; shrinkage prior requires tuning to be less aggressive for commodity items</td><td class='num'>2</td></tr><tr><td>prime day event</td><td><code>impact_and_root_cause</code></td><td>Resulted in an estimated $45K revenue loss over 48 hours caused by static reorder points failing to account for demand surge</td><td class='num'>2</td></tr><tr><td>inventory replenishment model</td><td><code>status_and_requirements</code></td><td>Transitioning from static threshold-driven replenishment to demand-signal driven logic that integrates seasonality and elasticity into reorder points</td><td class='num'>2</td></tr><tr><td>q4 promotional pricing decision</td><td><code>discount_limits</code></td><td>Discount depth caps across all channels: max 15% for commodity basics, 12% for mid-market, and 8% for branded/exclusive</td><td class='num'>4</td></tr><tr><td>promotional pricing engine</td><td><code>status_and_requirements</code></td><td>Currently ad hoc and gut-feel driven; requires systematic accounting of elasticity, seasonality, tier-based discount depth, channel timing windows, margin erosion guardrails, and cannibalization prevention</td><td class='num'>2</td></tr><tr><td>pricing system</td><td><code>elasticity_characteristics</code></td><td>Pricing system uses category-level elasticity values and treats elasticity as static year-round without accounting for seasonality</td><td class='num'>2</td></tr></tbody></table></div>
+</section>
+
+<section>
+  <div class="sec-head col"><h2>3 · Elaboration: 69 new links</h2>
+  <p>Most used labels: <code>integrates_with</code> 9, <code>incorporates</code> 5, <code>informs</code> 4, <code>uses</code> 4, <code>supports</code> 4, <code>same_as</code> 3, <code>interacts_with</code> 2, <code>is_identical_to</code> 2. Below are the duplicate links, then a sample of the rest.</p></div>
+  <div class="table-box"><table>
+    <thead><tr><th>Entity</th><th>Link</th><th>Entity</th></tr></thead>
+    <tbody><tr><td><code>project/project/promotional_pricing_engine</code></td><td><code>is_identical_to</code></td><td><code>project/promotional_pricing_engine</code></td></tr><tr><td><code>project/project/inventory_replenishment_model</code></td><td><code>same_as</code></td><td><code>project/inventory_replenishment_model</code></td></tr><tr><td><code>project/pricing_system</code></td><td><code>same_as</code></td><td><code>project/project/pricing_system</code></td></tr><tr><td><code>policy/policy/q4_promotional_pricing_decision</code></td><td><code>is_identical_to</code></td><td><code>policy/q4_promotional_pricing_decision</code></td></tr><tr><td><code>event/event/prime_day_event</code></td><td><code>same_as</code></td><td><code>event/prime_day_event</code></td></tr></tbody></table></div>
+  <div class="table-box"><table>
+    <thead><tr><th>From</th><th>Link</th><th>To</th></tr></thead>
+    <tbody><tr><td>unified seasonality model</td><td><code>informs</code></td><td>q4 promotional pricing decision</td></tr><tr><td>unified seasonality model</td><td><code>accounts_for</code></td><td>prime day event</td></tr><tr><td>unified seasonality model</td><td><code>incorporates</code></td><td>hierarchical bayesian model</td></tr><tr><td>unified seasonality model</td><td><code>integrates_with</code></td><td>pricing analysis workflow</td></tr><tr><td>promotional pricing engine</td><td><code>interacts_with</code></td><td>inventory replenishment model</td></tr><tr><td>promotional pricing engine</td><td><code>integrates_with</code></td><td>unified seasonality model</td></tr><tr><td>promotional pricing engine</td><td><code>uses</code></td><td>hierarchical bayesian model</td></tr><tr><td>promotional pricing engine</td><td><code>informs</code></td><td>q4 promotional pricing decision</td></tr><tr><td>pricing system</td><td><code>discussed_in</code></td><td>q1 planning</td></tr><tr><td>pricing system</td><td><code>supports</code></td><td>prime day event</td></tr></tbody></table></div>
+</section>
+
+<section>
+  <div class="sec-head col"><h2>4 · Reflection, before and after</h2>
+  <p>Same four questions, same scope, nothing saved. "Before" ran straight after ingest; "after" ran once both jobs had finished. Answers are shown in full as returned.</p></div>
+  
+<article class="qa">
+  <h3><span class="qn">Q1</span> What is our current elasticity estimate for commodity basics and branded items?</h3>
+  <div class="pair">
+    <div class="side"><p class="tag">Before · 8 evidence · 11.5 s</p><div class="ans"><p>The hierarchical Bayesian model has already calibrated the empirical estimates: commodity basics settled at -1.8 (revising down from an initial -2.5 hypothesis), while branded/exclusive items remained stable at -0.6. Interestingly, while commodity basics exhibit less overall price sensitivity than first assumed, higher within-category variance requires loosening the shrinkage priors to avoid over-smoothing product-level differences. These elasticity values serve as the core constraint linking recent promotional discount guardrails (15% commodity, 8% branded) directly to the broader push to replace static replenishment and pricing systems with dynamic, demand-signal models.</p></div></div>
+    <div class="side after"><p class="tag">After · 8 evidence · 10.5 s</p><div class="ans"><p>The empirical data from the hierarchical Bayesian model reveals that commodity basics are less elastic than originally hypothesized (-1.8 vs. -2.5), while branded items held steady at -0.6. This shift directly impacts the broader push to unify pricing, promotional guardrails (such as the 15% Q4 discount cap), and inventory replenishment. Because commodity price sensitivity is lower than assumed—and likely softens further during peak demand—the current models risk underestimating optimal price points and under-ordering inventory, echoing the static forecasting failures that led to the $45K Prime Day stockout.</p></div></div>
+  </div>
+  <p class="note">Same evidence in both rounds.</p>
+</article>
+<article class="qa">
+  <h3><span class="qn">Q2</span> What are our Q4 promotional guardrails?</h3>
+  <div class="pair">
+    <div class="side"><p class="tag">Before · 10 evidence · 8.1 s</p><div class="ans"><p>The user has codified strict Q4 promotional discount caps across all channels by product tier—15% for commodity basics, 12% for mid-market, and 8% for branded/exclusive goods. These guardrails represent the first operational milestone in shifting away from gut-feel discounting toward a unified framework balancing elasticity, seasonality, and margin preservation. However, the success of these pricing limits is tightly coupled to broader operational risks: without dynamic replenishment and safety stock updates, promotional demand spikes—like the $45K Prime Day stockout—risk causing inventory depletion before the margin benefits of these guardrails can be realized.</p></div></div>
+    <div class="side after"><p class="tag">After · 11 evidence · 8.9 s</p><div class="ans"><p>The query seeks the explicit Q4 promotional caps—max 15% discount for commodity basics, 12% for mid-market, and 8% for branded/exclusive across all channels. Beneath these hard limits lies an urgent effort to replace merchant gut-feel with systematic rigor, directly bridging pricing guardrails with inventory preservation after static thresholds caused a $45K Prime Day stockout. Notably, while these guardrails assume strict margin defense, the recent Bayesian modeling revealed commodity elasticity (-1.8) is less sensitive than initially assumed (-2.5), suggesting that current Q4 discount caps may interact with seasonal demand surges in ways that the still-disconnected replenishment and pricing systems have yet to fully harmonize.</p></div></div>
+  </div>
+  <p class="note">Added after elaboration: <code>policy/Q4 promotional pricing decision</code></p>
+</article>
+<article class="qa">
+  <h3><span class="qn">Q3</span> What caused the Prime Day stockout and how does it relate to our replenishment redesign?</h3>
+  <div class="pair">
+    <div class="side"><p class="tag">Before · 10 evidence · 8.1 s</p><div class="ans"><p>The $45K Prime Day stockout directly exposes the operational risk of treating replenishment, pricing, and forecasting as siloed, static systems rather than an integrated loop. While merchants planned promotional discounts and anticipated high volume, the replenishment logic remained tied to static reorder thresholds and disconnected historical weekly averages. This failure validates the core thesis of your replenishment redesign: inventory triggers must actively ingest forward-looking demand signals—specifically combining promotional timing, unified seasonality models, and tier-specific elasticity data—so safety stock dynamically scales in advance of demand surges rather than reacting after inventory is wiped out.</p></div></div>
+    <div class="side after"><p class="tag">After · 12 evidence · 11.5 s</p><div class="ans"><p>The Prime Day stockout directly manifested the structural vulnerability the replenishment redesign aims to solve: relying on static safety stock thresholds rather than dynamic, signal-driven triggers during high-velocity events. This failure underscores that inventory planning cannot operate in isolation from pricing and elasticity—the $45K revenue loss occurred precisely because promotional surges and seasonal demand adjustments were disconnected from reorder calculations. Consequently, the redesign is not just an inventory operational tweak, but the missing integration bridge linking the promotional pricing engine, Bayesian elasticity modeling, and unified seasonality into dynamic reorder points.</p></div></div>
+  </div>
+  <p class="note">Added after elaboration: <code>event/Prime Day event</code>, <code>project/inventory replenishment model</code></p>
+</article>
+<article class="qa">
+  <h3><span class="qn">Q4</span> What repeatable workflow do we use for pricing analysis?</h3>
+  <div class="pair">
+    <div class="side"><p class="tag">Before · 12 evidence · 9.8 s</p><div class="ans"><p>The user has established a five-stage pricing workflow—evaluating elasticity, applying seasonal adjustments, modeling margin impact, establishing guardrails, and designing the rollout—to replace fragmented, merchant-driven decisions across seasonal events. While this cadence successfully formalized tier-based guardrails for Q4 (e.g., 8% for branded, 15% for commodity), the analytical pipeline is increasingly burdened by upstream system siloes, where pricing elasticity and demand forecasting operate on disconnected assumptions. Crucially, the workflow cannot remain an isolated commercial exercise: static replenishment triggers have already caused severe promotional stockouts (such as the $45K Prime Day loss), making the integration of elasticity and seasonal demand signals into operational inventory planning a critical, unaddressed extension of this playbook.</p></div></div>
+    <div class="side after"><p class="tag">After · 14 evidence · 12.8 s</p><div class="ans"><p>The user has repeatedly formalized a five-step pricing analysis sequence: assessing elasticity data (now moving toward hierarchical Bayesian product-level models), checking seasonality adjustments, modeling margin impact, establishing promotional guardrails (such as tier-based discount caps), and designing rollout plans.</p><p>Notably, this workflow is transitioning from a localized pricing exercise into an essential demand-signal operational framework. Because pricing decisions directly govern demand spikes and margin safety—as demonstrated by the $45K Prime Day stockout—standardizing this analytical workflow is tightly coupled with fixing inventory replenishment failures and moving away from static, gut-feel merchant planning.</p></div></div>
+  </div>
+  <p class="note">Added after elaboration: <code>project/promotional pricing engine</code>, <code>policy/Q4 promotional pricing decision</code></p>
+</article>
+</section>
+
+<section class="col">
+  <div class="sec-head"><h2>Caveats</h2></div>
+  <ul class="small">
+    <li>One run, one order (consolidate, then elaborate). Reflection is a model's synthesis, so wording varies between runs.</li>
+    <li>Agent Memory also elaborates in the background. All 69 elaboration links were created during the 262 s job window.</li>
+    <li>Earlier runs (ske-a, ske-b, 4 Nov) reported more consolidated facts than they stored; this run's counts matched.</li>
+  </ul>
+</section>
+
+<section class="col">
+  <div class="sec-head"><h2>Method and sources</h2></div>
+  <ul class="small">
+    <li>Snapshots and reflect answers: <code>drafts/findings/consolidation-run/</code> (snap-1/2/3, reflect-before/after JSON), taken 2026-11-05T08:26:55+00:00 to 2026-11-05T08:38:34+00:00 UTC.</li>
+    <li>Job traces: consolidate <code>rnwpoft04zmfcrxry523</code>; elaborate <code>qs2itfqbjc29shoipy5j</code> and 4 more.</li>
+    <li>API: SurrealDB Agent Memory <code>/consolidate</code>, <code>/elaborate</code>, <code>/reflect</code>, called through the Membrain Admin Lab (checked 5 Nov 2026).</li>
+  </ul>
+</section>
+
+</main>
+</body>
+</html>

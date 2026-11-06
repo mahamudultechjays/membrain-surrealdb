@@ -1,0 +1,330 @@
+{
+ "scope": "org/spreetail/user/ske-c",
+ "label": "1-ingested",
+ "taken_at": "2026-11-05T08:26:55+00:00",
+ "entities": [
+  {
+   "id": "['concept', 'branded/exclusive']",
+   "name": "branded/exclusive",
+   "type": "concept"
+  },
+  {
+   "id": "['concept', 'pricing_analysis_workflow']",
+   "name": "pricing analysis workflow",
+   "type": "concept"
+  },
+  {
+   "id": "['event', 'prime_day_event']",
+   "name": "Prime Day event",
+   "type": "event"
+  },
+  {
+   "id": "['event', 'q1_planning']",
+   "name": "Q1 planning",
+   "type": "event"
+  },
+  {
+   "id": "['organisation', 'amazon']",
+   "name": "Amazon",
+   "type": "organisation"
+  },
+  {
+   "id": "['policy', 'q4_promotional_pricing_decision']",
+   "name": "Q4 promotional pricing decision",
+   "type": "policy"
+  },
+  {
+   "id": "['project', 'demand_forecasting_system']",
+   "name": "demand forecasting system",
+   "type": "project"
+  },
+  {
+   "id": "['project', 'hierarchical_bayesian_model']",
+   "name": "hierarchical Bayesian model",
+   "type": "project"
+  },
+  {
+   "id": "['project', 'inventory_replenishment_model']",
+   "name": "inventory replenishment model",
+   "type": "project"
+  },
+  {
+   "id": "['project', 'pricing_system']",
+   "name": "pricing system",
+   "type": "project"
+  },
+  {
+   "id": "['project', 'promotional_pricing_engine']",
+   "name": "promotional pricing engine",
+   "type": "project"
+  },
+  {
+   "id": "['project', 'unified_seasonality_model']",
+   "name": "unified seasonality model",
+   "type": "project"
+  }
+ ],
+ "attributes": [
+  {
+   "id": "maa9lknw194vpecpzpjz",
+   "entity": "concept/pricing_analysis_workflow",
+   "key": "workflow_steps",
+   "value": "assess current elasticity data, check seasonality adjustments, model margin impact, set promotional guardrails, design rollout plan",
+   "summary": "pricing analysis workflow's workflow steps is assess current elasticity data, check seasonality adjustments, model margin impact, set promotional guardrails, design rollout plan",
+   "source": "turn",
+   "trust": 0.5,
+   "created_at": "2026-11-05T08:25:21.773644050+00:00",
+   "supersedes": null
+  },
+  {
+   "id": "a3kikimu8k3wlybbqcpy",
+   "entity": "project/hierarchical_bayesian_model",
+   "key": "requirements",
+   "value": "shrinkage prior needs to be less aggressive for commodity items",
+   "summary": "hierarchical Bayesian model's requirements is shrinkage prior needs to be less aggressive for commodity items",
+   "source": "turn",
+   "trust": 0.5,
+   "created_at": "2026-11-05T08:25:12.645008839+00:00",
+   "supersedes": null
+  },
+  {
+   "id": "q5xbtq0qca8dkxmf9r4w",
+   "entity": "project/hierarchical_bayesian_model",
+   "key": "status",
+   "value": "category-level fallback is working",
+   "summary": "hierarchical Bayesian model's status is category-level fallback is working",
+   "source": "turn",
+   "trust": 0.5,
+   "created_at": "2026-11-05T08:25:12.401869882+00:00",
+   "supersedes": null
+  },
+  {
+   "id": "bh7xyb19k88y3bs52eer",
+   "entity": "concept/branded/exclusive",
+   "key": "elasticity_level",
+   "value": "-0.6",
+   "summary": "branded/exclusive's elasticity level is -0.6",
+   "source": "turn",
+   "trust": 0.5,
+   "created_at": "2026-11-05T08:25:12.163115053+00:00",
+   "supersedes": null
+  },
+  {
+   "id": "v3caw60mkoju8jvcwoym",
+   "entity": "event/prime_day_event",
+   "key": "root_cause",
+   "value": "static reorder point didn't account for Prime Day demand surge",
+   "summary": "Prime Day event's root cause is static reorder point didn't account for Prime Day demand surge",
+   "source": "turn",
+   "trust": 0.5,
+   "created_at": "2026-11-05T08:25:01.749790099+00:00",
+   "supersedes": null
+  },
+  {
+   "id": "e868k3ruuqu76tvzrvga",
+   "entity": "event/prime_day_event",
+   "key": "revenue_loss",
+   "value": "estimated $45K over 48 hours",
+   "summary": "Prime Day event's revenue loss is estimated $45K over 48 hours",
+   "source": "turn",
+   "trust": 0.5,
+   "created_at": "2026-11-05T08:25:01.533815055+00:00",
+   "supersedes": null
+  },
+  {
+   "id": "labs9m2wy3yy9e9k0fkr",
+   "entity": "project/inventory_replenishment_model",
+   "key": "requirements",
+   "value": "integrating seasonality and elasticity into reorder point calculations",
+   "summary": "inventory replenishment model's requirements is integrating seasonality and elasticity into reorder point calculations",
+   "source": "turn",
+   "trust": 0.5,
+   "created_at": "2026-11-05T08:24:50.361178582+00:00",
+   "supersedes": null
+  },
+  {
+   "id": "rx7rndlhpp18s5btn3vl",
+   "entity": "project/inventory_replenishment_model",
+   "key": "status",
+   "value": "rethinking replenishment logic to be demand-signal driven rather than static threshold driven",
+   "summary": "inventory replenishment model's status is rethinking replenishment logic to be demand-signal driven rather than static threshold driven",
+   "source": "turn",
+   "trust": 0.5,
+   "created_at": "2026-11-05T08:24:50.140073248+00:00",
+   "supersedes": null
+  },
+  {
+   "id": "hakw9wx8nmtprj91sw1d",
+   "entity": "policy/q4_promotional_pricing_decision",
+   "key": "channel_scope",
+   "value": "applies across all channels",
+   "summary": "Q4 promotional pricing decision's channel scope is applies across all channels",
+   "source": "turn",
+   "trust": 0.5,
+   "created_at": "2026-11-05T08:24:38.849594583+00:00",
+   "supersedes": null
+  },
+  {
+   "id": "kie9uczfem9of7tg0rrv",
+   "entity": "policy/q4_promotional_pricing_decision",
+   "key": "mid_market_discount_limit",
+   "value": "12% for mid-market",
+   "summary": "Q4 promotional pricing decision's mid market discount limit is 12% for mid-market",
+   "source": "turn",
+   "trust": 0.5,
+   "created_at": "2026-11-05T08:24:38.616934636+00:00",
+   "supersedes": null
+  },
+  {
+   "id": "ej1ksrbpfuovv2pb7o54",
+   "entity": "policy/q4_promotional_pricing_decision",
+   "key": "branded_discount_limit",
+   "value": "8% for branded/exclusive",
+   "summary": "Q4 promotional pricing decision's branded discount limit is 8% for branded/exclusive",
+   "source": "turn",
+   "trust": 0.5,
+   "created_at": "2026-11-05T08:24:38.393648840+00:00",
+   "supersedes": null
+  },
+  {
+   "id": "wkyomsac3612amwyxgpf",
+   "entity": "policy/q4_promotional_pricing_decision",
+   "key": "commodity_discount_limit",
+   "value": "maximum 15% discount depth for commodity basics",
+   "summary": "Q4 promotional pricing decision's commodity discount limit is maximum 15% discount depth for commodity basics",
+   "source": "turn",
+   "trust": 0.5,
+   "created_at": "2026-11-05T08:24:38.155717990+00:00",
+   "supersedes": null
+  },
+  {
+   "id": "zpclb16ktzyzgqw8821t",
+   "entity": "project/promotional_pricing_engine",
+   "key": "requirements",
+   "value": "account for elasticity and seasonality, determine optimal discount depth by product tier, determine timing windows per channel, include guardrails against margin erosion, and prevent full-price demand cannibalization",
+   "summary": "promotional pricing engine's requirements is account for elasticity and seasonality, determine optimal discount depth by product tier, determine timing windows per channel, include guardrails against margin erosion, and prevent full-price demand cannibalization",
+   "source": "turn",
+   "trust": 0.5,
+   "created_at": "2026-11-05T08:24:21.290330973+00:00",
+   "supersedes": null
+  },
+  {
+   "id": "rmmmm05rejxy20vhx2br",
+   "entity": "project/promotional_pricing_engine",
+   "key": "status",
+   "value": "ad hoc and merchant gut-feel driven without a systematic framework",
+   "summary": "promotional pricing engine's status is ad hoc and merchant gut-feel driven without a systematic framework",
+   "source": "turn",
+   "trust": 0.5,
+   "created_at": "2026-11-05T08:24:21.050743164+00:00",
+   "supersedes": null
+  },
+  {
+   "id": "hgju0vjzeah0bryoteza",
+   "entity": "project/pricing_system",
+   "key": "elasticity_handling",
+   "value": "does not account for seasonality; treats elasticity as static year-round",
+   "summary": "pricing system's elasticity handling is does not account for seasonality; treats elasticity as static year-round",
+   "source": "turn",
+   "trust": 0.5,
+   "created_at": "2026-11-05T08:24:08.892717+00:00",
+   "supersedes": null
+  },
+  {
+   "id": "ij4aqcer48n4f0zdiwzl",
+   "entity": "project/demand_forecasting_system",
+   "key": "seasonality_adjustment_method",
+   "value": "simple seasonal index based on prior-year weekly sales",
+   "summary": "demand forecasting system's seasonality adjustment method is simple seasonal index based on prior-year weekly sales",
+   "source": "turn",
+   "trust": 0.5,
+   "created_at": "2026-11-05T08:24:08.672628760+00:00",
+   "supersedes": null
+  },
+  {
+   "id": "iww9gzvgwdt6a8supzou",
+   "entity": "project/pricing_system",
+   "key": "elasticity_level",
+   "value": "category-level elasticity values",
+   "summary": "pricing system's elasticity level is category-level elasticity values",
+   "source": "turn",
+   "trust": 0.5,
+   "created_at": "2026-11-05T08:23:56.699691996+00:00",
+   "supersedes": null
+  }
+ ],
+ "relations": [
+  {
+   "id": "jsne29c5pl6adqfrumqd",
+   "subject": "concept/pricing_analysis_workflow",
+   "label": "applies_to",
+   "object": "event/q1_planning",
+   "source": "turn",
+   "trust": 0.5,
+   "created_at": "2026-11-05T08:25:22.373975666+00:00"
+  },
+  {
+   "id": "z8pb1z8i7a9932c0zea7",
+   "subject": "concept/pricing_analysis_workflow",
+   "label": "applies_to",
+   "object": "policy/q4_promotional_pricing_decision",
+   "source": "turn",
+   "trust": 0.5,
+   "created_at": "2026-11-05T08:25:21.987165500+00:00"
+  },
+  {
+   "id": "wlhpgdbbaixkc3g46zv2",
+   "subject": "event/prime_day_event",
+   "label": "applies_to",
+   "object": "organisation/amazon",
+   "source": "turn",
+   "trust": 0.5,
+   "created_at": "2026-11-05T08:25:01.961470874+00:00"
+  },
+  {
+   "id": "bkr4yrfocym8mq15u943",
+   "subject": "person/principal:GHr42XnIGtK5",
+   "label": "works_on",
+   "object": "project/inventory_replenishment_model",
+   "source": "turn",
+   "trust": 0.5,
+   "created_at": "2026-11-05T08:24:50.578603746+00:00"
+  },
+  {
+   "id": "no1nsrvgcsal95p717c5",
+   "subject": "policy/q4_promotional_pricing_decision",
+   "label": "applies_to",
+   "object": "project/promotional_pricing_engine",
+   "source": "turn",
+   "trust": 0.5,
+   "created_at": "2026-11-05T08:24:39.067419127+00:00"
+  },
+  {
+   "id": "7rbdqcubpgviqpza1efz",
+   "subject": "person/principal:GHr42XnIGtK5",
+   "label": "works_on",
+   "object": "project/promotional_pricing_engine",
+   "source": "turn",
+   "trust": 0.5,
+   "created_at": "2026-11-05T08:24:21.509398923+00:00"
+  },
+  {
+   "id": "nrz4z2byrey2g3trgt4e",
+   "subject": "person/principal:GHr42XnIGtK5",
+   "label": "works_on",
+   "object": "project/unified_seasonality_model",
+   "source": "turn",
+   "trust": 0.5,
+   "created_at": "2026-11-05T08:24:09.120748745+00:00"
+  },
+  {
+   "id": "znm3z5mjrnuvf8oetitc",
+   "subject": "person/principal:GHr42XnIGtK5",
+   "label": "works_on",
+   "object": "project/pricing_system",
+   "source": "turn",
+   "trust": 0.5,
+   "created_at": "2026-11-05T08:23:56.913854536+00:00"
+  }
+ ]
+}

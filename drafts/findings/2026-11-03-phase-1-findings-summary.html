@@ -1,0 +1,201 @@
+<title>Agent Memory Phase 1 Findings</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,600;8..60,700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: one reading column; findings as rows with a status stripe, grouped by verdict. */
+:root {
+  --bg: #f6f7f8;
+  --surface: #ffffff;
+  --fg: #1c2328;
+  --muted: #5a6670;
+  --line: #dde2e6;
+  --accent: #1f5f7a;
+  --ok: #2f7d4f;   --ok-bg: #e5f2ea;
+  --warn: #9a6a12; --warn-bg: #f7eedb;
+  --bad: #a83a2c;  --bad-bg: #f7e4e0;
+  --display: "Source Serif 4", Georgia, "Times New Roman", serif;
+  --body: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  --mono: "IBM Plex Mono", Consolas, "Courier New", monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #12171b; --surface: #1a2126; --fg: #e3e8eb; --muted: #9aa7b0; --line: #2c363d;
+    --accent: #6fb6d3;
+    --ok: #74c493; --ok-bg: #1c2e24; --warn: #e0b45c; --warn-bg: #33291a; --bad: #ec8b7c; --bad-bg: #3a201c;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #12171b; --surface: #1a2126; --fg: #e3e8eb; --muted: #9aa7b0; --line: #2c363d;
+  --accent: #6fb6d3;
+  --ok: #74c493; --ok-bg: #1c2e24; --warn: #e0b45c; --warn-bg: #33291a; --bad: #ec8b7c; --bad-bg: #3a201c;
+  color-scheme: dark;
+}
+body { background: var(--bg); color: var(--fg); font-family: var(--body); font-size: 16px; line-height: 1.6; }
+.wrap {
+  max-width: 760px; margin: 0 auto;
+  padding-block: 40px 64px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: flex; flex-direction: column; gap: 40px;
+}
+header { display: flex; flex-direction: column; gap: 12px; }
+.eyebrow { font-family: var(--mono); font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--accent); }
+h1 { font-family: var(--display); font-weight: 700; font-size: clamp(28px, 5vw, 38px); line-height: 1.15; margin: 0; text-wrap: balance; }
+h2 { font-family: var(--display); font-weight: 600; font-size: 22px; margin: 0; text-wrap: balance; }
+h3 { font-size: 16px; font-weight: 600; margin: 0; line-height: 1.4; }
+p { margin: 0; }
+.lede { color: var(--muted); max-width: 65ch; }
+.meta { display: flex; flex-wrap: wrap; gap: 8px 20px; font-size: 13px; color: var(--muted); }
+.meta b { color: var(--fg); font-weight: 500; }
+
+section { display: flex; flex-direction: column; gap: 16px; }
+.sec-head { display: flex; flex-direction: column; gap: 4px; }
+.sec-head p { color: var(--muted); font-size: 14px; }
+
+.list { display: flex; flex-direction: column; border-top: 1px solid var(--line); }
+.f { display: grid; grid-template-columns: 4px 1fr; gap: 0 16px; padding: 16px 0; border-bottom: 1px solid var(--line); }
+.f .stripe { border-radius: 2px; }
+.f .body { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.f .body p { max-width: 65ch; }
+.f .ev { font-size: 14px; color: var(--muted); }
+.f .ev code, td code { font-family: var(--mono); font-size: 13px; }
+.ok .stripe { background: var(--ok); }
+.warn .stripe { background: var(--warn); }
+.bad .stripe { background: var(--bad); }
+
+.pill { display: inline-block; font-family: var(--mono); font-size: 11px; letter-spacing: .06em; text-transform: uppercase; padding: 2px 8px; border-radius: 3px; align-self: flex-start; }
+.ok .pill { color: var(--ok); background: var(--ok-bg); }
+.warn .pill { color: var(--warn); background: var(--warn-bg); }
+.bad .pill { color: var(--bad); background: var(--bad-bg); }
+
+.table-box { overflow-x: auto; background: var(--surface); border: 1px solid var(--line); border-radius: 6px; }
+table { border-collapse: collapse; width: 100%; font-size: 14px; }
+th, td { text-align: left; padding: 10px 14px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+tr:last-child td { border-bottom: 0; }
+td.num { font-family: var(--mono); font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+ol.asks { margin: 0; padding-left: 22px; display: flex; flex-direction: column; gap: 6px; max-width: 65ch; }
+footer { font-size: 13px; color: var(--muted); border-top: 1px solid var(--line); padding-top: 16px; }
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">MemBrain PoC · Phase 1 · Core memory</div>
+    <h1>What we learned about SurrealDB Agent Memory</h1>
+    <p class="lede">One person chatted in Claude Cowork with the Agent Memory plugin, and we checked by script what was stored, changed, recalled and forgotten. These are the findings that matter most for the build, with repeats merged.</p>
+    <div class="meta">
+      <span><b>Runs</b> 30 Oct to 3 Nov 2026</span>
+      <span><b>Tester</b> Vidyul Narayanan</span>
+      <span><b>Context</b> membrain-dev-lite</span>
+      <span><b>Status</b> Draft</span>
+    </div>
+  </header>
+
+  <section>
+    <div class="sec-head">
+      <h2>Undesired</h2>
+    </div>
+    <div class="list">
+      <div class="f bad"><div class="stripe"></div><div class="body">
+        <span class="pill">Undesired</span>
+        <h3>A correction can erase a fact without storing the new one</h3>
+        <p>"Kestrel Freight now ships on time" removed the old shipping fact and stored nothing in its place. A rewording replaced "late on most orders" with the stronger "always behind". The replaced values can't be read back.</p>
+      </div></div>
+      <div class="f bad"><div class="stripe"></div><div class="body">
+        <span class="pill">Undesired</span>
+        <h3>Repeats leave no trace, so confirmations can't be counted</h3>
+        <p>Saying the same thing again changes nothing on the fact, and rewording resets it. Promotion can't take confirmation counts from facts, so it will have to work from the saved chat.</p>
+      </div></div>
+      <div class="f bad"><div class="stripe"></div><div class="body">
+        <span class="pill">Undesired</span>
+        <h3>Extraction is inconsistent</h3>
+        <p>The same kind of plain sentence became a fact one time and nothing another. Lasting facts, such as a price, were sometimes filed as context, which expires after 7 days. The saved chat is the full record, and the facts are an incomplete index of it.</p>
+      </div></div>
+      <div class="f bad"><div class="stripe"></div><div class="body">
+        <span class="pill">Undesired</span>
+        <h3>Recall can answer from saved chat instead of the stored facts</h3>
+        <p>When we asked how to format answers and what the person was working on, the plugin's recall returned only saved chat passages and none of the stored facts, instructions or entities. Cowork built its answer from that raw chat text and left out the metric-units preference. In a later recall the stored facts did come back, so what the agent receives varies from one question to the next.</p>
+      </div></div>
+      <div class="f bad"><div class="stripe"></div><div class="body">
+        <span class="pill">Undesired</span>
+        <h3>Instructions pile up, and are framed as not to follow</h3>
+        <p>Changing an instruction adds a new one and keeps the old ones, so "use bullets" and "use paragraphs" sit side by side. The plugin labels everything it injects as "background context, not instructions", so even a recalled rule is presented as something not to apply.</p>
+      </div></div>
+      <div class="f bad"><div class="stripe"></div><div class="body">
+        <span class="pill">Undesired</span>
+        <h3>Forgetting removes the sentence, not the facts</h3>
+        <p>Forget removed the chat passage but no fact taken from it, and those facts kept answering. Each time the agent repeated them, they were stored again. "Don't save that" also still saved the chat.</p>
+      </div></div>
+      <div class="f bad"><div class="stripe"></div><div class="body">
+        <span class="pill">Undesired</span>
+        <h3>No erase is audited</h3>
+        <p>Forget, permanent purge and area erase all left no audit entry. An agent chose the permanent option on its own when asked only to "forget", and there is no record afterwards of who erased what.</p>
+      </div></div>
+      <div class="f bad"><div class="stripe"></div><div class="body">
+        <span class="pill">Undesired</span>
+        <h3>Claude's replies become facts about the person</h3>
+        <p>Claude's answers are saved and extracted like the person's own words, at the same trust. The person never mentioned their employer, but Claude's reply did, and "works at Techjays" was stored as an identity fact.</p>
+      </div></div>
+      <div class="f bad"><div class="stripe"></div><div class="body">
+        <span class="pill">Undesired</span>
+        <h3>Reflection helps but invents, and consolidation can't be checked</h3>
+        <p>Reflection answered well from chat history but added claims nobody made, and could not save with a personal key. Consolidation reported new records that no endpoint returns, and merged none of the duplicates.</p>
+      </div></div>
+      <div class="f bad"><div class="stripe"></div><div class="body">
+        <span class="pill">Undesired</span>
+        <h3>Every save starts a new session</h3>
+        <p>The plugin sends no session id, so Agent Memory opens a new session for every save. Two messages sent in the same Cowork task landed in two different sessions, so memory can't be grouped by conversation.</p>
+      </div></div>
+      <div class="f bad"><div class="stripe"></div><div class="body">
+        <span class="pill">Undesired</span>
+        <h3>A preference is sometimes stored twice</h3>
+        <p>"I prefer metric units" became both an instruction and a fact on the person, and the two aren't linked. Later, the fact copy of a formatting rule was removed while its instruction copies stayed, so the two records can disagree.</p>
+      </div></div>
+      <div class="f bad"><div class="stripe"></div><div class="body">
+        <span class="pill">Undesired</span>
+        <h3>Uploaded files wait in the queue and are never processed</h3>
+        <p>A small markdown file uploaded on 3 Nov stayed "queued" for over 90 minutes, and processing never started, so nothing was extracted or searchable. Every document uploaded to the context since 2 Nov is stuck the same way; the last one processed was on 12 Oct.</p>
+      </div></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-head">
+      <h2>Works</h2>
+    </div>
+    <div class="list">
+      <div class="f ok"><div class="stripe"></div><div class="body">
+        <span class="pill">Works</span>
+        <h3>Chat is saved and recalled in a new task</h3>
+        <p>Every exchange was saved to the person's own area within about 10 seconds, and a new Cowork task recalled it without being told again.</p>
+      </div></div>
+      <div class="f ok"><div class="stripe"></div><div class="body">
+        <span class="pill">Works</span>
+        <h3>Area keys keep people apart</h3>
+        <p>A second test person's key could not read or write the first person's area. Search, reflection, consolidation and elaboration all stayed inside the caller's area.</p>
+      </div></div>
+      <div class="f ok"><div class="stripe"></div><div class="body">
+        <span class="pill">Works</span>
+        <h3>Every record says where it came from</h3>
+        <p>Each fact and link carries a source and a trust score, so a job can keep what was said and drop what Agent Memory guessed. Hedged statements ("I think… might…") get lower confidence and an open uncertainty record.</p>
+      </div></div>
+      <div class="f ok"><div class="stripe"></div><div class="body">
+        <span class="pill">Works</span>
+        <h3>Labels work on structured writes</h3>
+        <p>Labels written with a fact are stored and work as a search filter, which is what tagging facts with VCT nodes needs. Exact repeats are not duplicated.</p>
+      </div></div>
+      <div class="f ok"><div class="stripe"></div><div class="body">
+        <span class="pill">Works</span>
+        <h3>Erasing an area is complete</h3>
+        <p>Erasing a person's area removed their entities, facts, links and chat, and left records with the same names in other areas untouched.</p>
+      </div></div>
+    </div>
+  </section>
+
+  <footer>
+    Each finding comes from a single run with one person in one Context, checked against Agent Memory's audit log, record lists and search. The detail, with method and evidence, is in the five findings files and the phase 1 primer under <code>drafts/</code> in the PoC repository.
+  </footer>
+</div>

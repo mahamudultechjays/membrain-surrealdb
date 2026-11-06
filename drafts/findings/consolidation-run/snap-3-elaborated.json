@@ -1,0 +1,1047 @@
+{
+ "scope": "org/spreetail/user/ske-c",
+ "label": "3-elaborated",
+ "taken_at": "2026-11-05T08:37:46+00:00",
+ "entities": [
+  {
+   "id": "['concept', 'branded/exclusive']",
+   "name": "branded/exclusive",
+   "type": "concept"
+  },
+  {
+   "id": "['concept', 'pricing_analysis_workflow']",
+   "name": "pricing analysis workflow",
+   "type": "concept"
+  },
+  {
+   "id": "['event', 'prime_day_event']",
+   "name": "Prime Day event",
+   "type": "event"
+  },
+  {
+   "id": "['event', 'q1_planning']",
+   "name": "Q1 planning",
+   "type": "event"
+  },
+  {
+   "id": "['event', 'event/prime_day_event']",
+   "name": "event/Prime Day event",
+   "type": "event"
+  },
+  {
+   "id": "['organisation', 'amazon']",
+   "name": "Amazon",
+   "type": "organisation"
+  },
+  {
+   "id": "['policy', 'q4_promotional_pricing_decision']",
+   "name": "Q4 promotional pricing decision",
+   "type": "policy"
+  },
+  {
+   "id": "['policy', 'policy/q4_promotional_pricing_decision']",
+   "name": "policy/Q4 promotional pricing decision",
+   "type": "policy"
+  },
+  {
+   "id": "['project', 'demand_forecasting_system']",
+   "name": "demand forecasting system",
+   "type": "project"
+  },
+  {
+   "id": "['project', 'hierarchical_bayesian_model']",
+   "name": "hierarchical Bayesian model",
+   "type": "project"
+  },
+  {
+   "id": "['project', 'inventory_replenishment_model']",
+   "name": "inventory replenishment model",
+   "type": "project"
+  },
+  {
+   "id": "['project', 'pricing_system']",
+   "name": "pricing system",
+   "type": "project"
+  },
+  {
+   "id": "['project', 'project/hierarchical_bayesian_model']",
+   "name": "project/hierarchical Bayesian model",
+   "type": "project"
+  },
+  {
+   "id": "['project', 'project/inventory_replenishment_model']",
+   "name": "project/inventory replenishment model",
+   "type": "project"
+  },
+  {
+   "id": "['project', 'project/pricing_system']",
+   "name": "project/pricing system",
+   "type": "project"
+  },
+  {
+   "id": "['project', 'project/promotional_pricing_engine']",
+   "name": "project/promotional pricing engine",
+   "type": "project"
+  },
+  {
+   "id": "['project', 'promotional_pricing_engine']",
+   "name": "promotional pricing engine",
+   "type": "project"
+  },
+  {
+   "id": "['project', 'unified_seasonality_model']",
+   "name": "unified seasonality model",
+   "type": "project"
+  }
+ ],
+ "attributes": [
+  {
+   "id": "z6f49nwmfacm1e77tapn",
+   "entity": "project/project/hierarchical_bayesian_model",
+   "key": "model_status_and_tuning",
+   "value": "Category-level fallback is functional; shrinkage prior requires tuning to be less aggressive for commodity items",
+   "summary": "project/hierarchical Bayesian model's model status and tuning is Category-level fallback is functional; shrinkage prior requires tuning to be less aggressive for commodity items",
+   "source": "consolidation",
+   "trust": 0.35,
+   "created_at": "2026-11-05T08:31:59.937665264+00:00",
+   "supersedes": null
+  },
+  {
+   "id": "nop4ypec74crslxsevwe",
+   "entity": "event/event/prime_day_event",
+   "key": "impact_and_root_cause",
+   "value": "Resulted in an estimated $45K revenue loss over 48 hours caused by static reorder points failing to account for demand surge",
+   "summary": "event/Prime Day event's impact and root cause is Resulted in an estimated $45K revenue loss over 48 hours caused by static reorder points failing to account for demand surge",
+   "source": "consolidation",
+   "trust": 0.35,
+   "created_at": "2026-11-05T08:31:58.965784606+00:00",
+   "supersedes": null
+  },
+  {
+   "id": "is4dmdksf9o4gw0ppi1d",
+   "entity": "project/project/inventory_replenishment_model",
+   "key": "status_and_requirements",
+   "value": "Transitioning from static threshold-driven replenishment to demand-signal driven logic that integrates seasonality and elasticity into reorder points",
+   "summary": "project/inventory replenishment model's status and requirements is Transitioning from static threshold-driven replenishment to demand-signal driven logic that integrates seasonality and elasticity into reorder points",
+   "source": "consolidation",
+   "trust": 0.35,
+   "created_at": "2026-11-05T08:31:57.971343996+00:00",
+   "supersedes": null
+  },
+  {
+   "id": "iso7547w7b5f35avun89",
+   "entity": "policy/policy/q4_promotional_pricing_decision",
+   "key": "discount_limits",
+   "value": "Discount depth caps across all channels: max 15% for commodity basics, 12% for mid-market, and 8% for branded/exclusive",
+   "summary": "policy/Q4 promotional pricing decision's discount limits is Discount depth caps across all channels: max 15% for commodity basics, 12% for mid-market, and 8% for branded/exclusive",
+   "source": "consolidation",
+   "trust": 0.35,
+   "created_at": "2026-11-05T08:31:57.030678106+00:00",
+   "supersedes": null
+  },
+  {
+   "id": "q5ydtrsag05vi0zi0fy0",
+   "entity": "project/project/promotional_pricing_engine",
+   "key": "status_and_requirements",
+   "value": "Currently ad hoc and gut-feel driven; requires systematic accounting of elasticity, seasonality, tier-based discount depth, channel timing windows, margin erosion guardrails, and cannibalization prevention",
+   "summary": "project/promotional pricing engine's status and requirements is Currently ad hoc and gut-feel driven; requires systematic accounting of elasticity, seasonality, tier-based discount depth, channel timing windows, margin erosion guardrails, and cannibalization prevention",
+   "source": "consolidation",
+   "trust": 0.35,
+   "created_at": "2026-11-05T08:31:56.069386136+00:00",
+   "supersedes": null
+  },
+  {
+   "id": "dsdoh1cu9kxhhf8s6hso",
+   "entity": "project/project/pricing_system",
+   "key": "elasticity_characteristics",
+   "value": "Pricing system uses category-level elasticity values and treats elasticity as static year-round without accounting for seasonality",
+   "summary": "project/pricing system's elasticity characteristics is Pricing system uses category-level elasticity values and treats elasticity as static year-round without accounting for seasonality",
+   "source": "consolidation",
+   "trust": 0.35,
+   "created_at": "2026-11-05T08:31:55.095978739+00:00",
+   "supersedes": null
+  },
+  {
+   "id": "maa9lknw194vpecpzpjz",
+   "entity": "concept/pricing_analysis_workflow",
+   "key": "workflow_steps",
+   "value": "assess current elasticity data, check seasonality adjustments, model margin impact, set promotional guardrails, design rollout plan",
+   "summary": "pricing analysis workflow's workflow steps is assess current elasticity data, check seasonality adjustments, model margin impact, set promotional guardrails, design rollout plan",
+   "source": "turn",
+   "trust": 0.5,
+   "created_at": "2026-11-05T08:25:21.773644050+00:00",
+   "supersedes": null
+  },
+  {
+   "id": "a3kikimu8k3wlybbqcpy",
+   "entity": "project/hierarchical_bayesian_model",
+   "key": "requirements",
+   "value": "shrinkage prior needs to be less aggressive for commodity items",
+   "summary": "hierarchical Bayesian model's requirements is shrinkage prior needs to be less aggressive for commodity items",
+   "source": "turn",
+   "trust": 0.5,
+   "created_at": "2026-11-05T08:25:12.645008839+00:00",
+   "supersedes": null
+  },
+  {
+   "id": "q5xbtq0qca8dkxmf9r4w",
+   "entity": "project/hierarchical_bayesian_model",
+   "key": "status",
+   "value": "category-level fallback is working",
+   "summary": "hierarchical Bayesian model's status is category-level fallback is working",
+   "source": "turn",
+   "trust": 0.5,
+   "created_at": "2026-11-05T08:25:12.401869882+00:00",
+   "supersedes": null
+  },
+  {
+   "id": "bh7xyb19k88y3bs52eer",
+   "entity": "concept/branded/exclusive",
+   "key": "elasticity_level",
+   "value": "-0.6",
+   "summary": "branded/exclusive's elasticity level is -0.6",
+   "source": "turn",
+   "trust": 0.5,
+   "created_at": "2026-11-05T08:25:12.163115053+00:00",
+   "supersedes": null
+  },
+  {
+   "id": "v3caw60mkoju8jvcwoym",
+   "entity": "event/prime_day_event",
+   "key": "root_cause",
+   "value": "static reorder point didn't account for Prime Day demand surge",
+   "summary": "Prime Day event's root cause is static reorder point didn't account for Prime Day demand surge",
+   "source": "turn",
+   "trust": 0.5,
+   "created_at": "2026-11-05T08:25:01.749790099+00:00",
+   "supersedes": null
+  },
+  {
+   "id": "e868k3ruuqu76tvzrvga",
+   "entity": "event/prime_day_event",
+   "key": "revenue_loss",
+   "value": "estimated $45K over 48 hours",
+   "summary": "Prime Day event's revenue loss is estimated $45K over 48 hours",
+   "source": "turn",
+   "trust": 0.5,
+   "created_at": "2026-11-05T08:25:01.533815055+00:00",
+   "supersedes": null
+  },
+  {
+   "id": "labs9m2wy3yy9e9k0fkr",
+   "entity": "project/inventory_replenishment_model",
+   "key": "requirements",
+   "value": "integrating seasonality and elasticity into reorder point calculations",
+   "summary": "inventory replenishment model's requirements is integrating seasonality and elasticity into reorder point calculations",
+   "source": "turn",
+   "trust": 0.5,
+   "created_at": "2026-11-05T08:24:50.361178582+00:00",
+   "supersedes": null
+  },
+  {
+   "id": "rx7rndlhpp18s5btn3vl",
+   "entity": "project/inventory_replenishment_model",
+   "key": "status",
+   "value": "rethinking replenishment logic to be demand-signal driven rather than static threshold driven",
+   "summary": "inventory replenishment model's status is rethinking replenishment logic to be demand-signal driven rather than static threshold driven",
+   "source": "turn",
+   "trust": 0.5,
+   "created_at": "2026-11-05T08:24:50.140073248+00:00",
+   "supersedes": null
+  },
+  {
+   "id": "hakw9wx8nmtprj91sw1d",
+   "entity": "policy/q4_promotional_pricing_decision",
+   "key": "channel_scope",
+   "value": "applies across all channels",
+   "summary": "Q4 promotional pricing decision's channel scope is applies across all channels",
+   "source": "turn",
+   "trust": 0.5,
+   "created_at": "2026-11-05T08:24:38.849594583+00:00",
+   "supersedes": null
+  },
+  {
+   "id": "kie9uczfem9of7tg0rrv",
+   "entity": "policy/q4_promotional_pricing_decision",
+   "key": "mid_market_discount_limit",
+   "value": "12% for mid-market",
+   "summary": "Q4 promotional pricing decision's mid market discount limit is 12% for mid-market",
+   "source": "turn",
+   "trust": 0.5,
+   "created_at": "2026-11-05T08:24:38.616934636+00:00",
+   "supersedes": null
+  },
+  {
+   "id": "ej1ksrbpfuovv2pb7o54",
+   "entity": "policy/q4_promotional_pricing_decision",
+   "key": "branded_discount_limit",
+   "value": "8% for branded/exclusive",
+   "summary": "Q4 promotional pricing decision's branded discount limit is 8% for branded/exclusive",
+   "source": "turn",
+   "trust": 0.5,
+   "created_at": "2026-11-05T08:24:38.393648840+00:00",
+   "supersedes": null
+  },
+  {
+   "id": "wkyomsac3612amwyxgpf",
+   "entity": "policy/q4_promotional_pricing_decision",
+   "key": "commodity_discount_limit",
+   "value": "maximum 15% discount depth for commodity basics",
+   "summary": "Q4 promotional pricing decision's commodity discount limit is maximum 15% discount depth for commodity basics",
+   "source": "turn",
+   "trust": 0.5,
+   "created_at": "2026-11-05T08:24:38.155717990+00:00",
+   "supersedes": null
+  },
+  {
+   "id": "zpclb16ktzyzgqw8821t",
+   "entity": "project/promotional_pricing_engine",
+   "key": "requirements",
+   "value": "account for elasticity and seasonality, determine optimal discount depth by product tier, determine timing windows per channel, include guardrails against margin erosion, and prevent full-price demand cannibalization",
+   "summary": "promotional pricing engine's requirements is account for elasticity and seasonality, determine optimal discount depth by product tier, determine timing windows per channel, include guardrails against margin erosion, and prevent full-price demand cannibalization",
+   "source": "turn",
+   "trust": 0.5,
+   "created_at": "2026-11-05T08:24:21.290330973+00:00",
+   "supersedes": null
+  },
+  {
+   "id": "rmmmm05rejxy20vhx2br",
+   "entity": "project/promotional_pricing_engine",
+   "key": "status",
+   "value": "ad hoc and merchant gut-feel driven without a systematic framework",
+   "summary": "promotional pricing engine's status is ad hoc and merchant gut-feel driven without a systematic framework",
+   "source": "turn",
+   "trust": 0.5,
+   "created_at": "2026-11-05T08:24:21.050743164+00:00",
+   "supersedes": null
+  },
+  {
+   "id": "hgju0vjzeah0bryoteza",
+   "entity": "project/pricing_system",
+   "key": "elasticity_handling",
+   "value": "does not account for seasonality; treats elasticity as static year-round",
+   "summary": "pricing system's elasticity handling is does not account for seasonality; treats elasticity as static year-round",
+   "source": "turn",
+   "trust": 0.5,
+   "created_at": "2026-11-05T08:24:08.892717+00:00",
+   "supersedes": null
+  },
+  {
+   "id": "ij4aqcer48n4f0zdiwzl",
+   "entity": "project/demand_forecasting_system",
+   "key": "seasonality_adjustment_method",
+   "value": "simple seasonal index based on prior-year weekly sales",
+   "summary": "demand forecasting system's seasonality adjustment method is simple seasonal index based on prior-year weekly sales",
+   "source": "turn",
+   "trust": 0.5,
+   "created_at": "2026-11-05T08:24:08.672628760+00:00",
+   "supersedes": null
+  },
+  {
+   "id": "iww9gzvgwdt6a8supzou",
+   "entity": "project/pricing_system",
+   "key": "elasticity_level",
+   "value": "category-level elasticity values",
+   "summary": "pricing system's elasticity level is category-level elasticity values",
+   "source": "turn",
+   "trust": 0.5,
+   "created_at": "2026-11-05T08:23:56.699691996+00:00",
+   "supersedes": null
+  }
+ ],
+ "relations": [
+  {
+   "id": "d5k3t32l2hjqdh4gk38d",
+   "subject": "project/unified_seasonality_model",
+   "label": "informs",
+   "object": "policy/policy/q4_promotional_pricing_decision",
+   "source": "elaboration",
+   "trust": 0.3,
+   "created_at": "2026-11-05T08:37:03.978231911+00:00"
+  },
+  {
+   "id": "cx0zdkh7nhfnoiymu1qg",
+   "subject": "project/unified_seasonality_model",
+   "label": "accounts_for",
+   "object": "event/event/prime_day_event",
+   "source": "elaboration",
+   "trust": 0.3,
+   "created_at": "2026-11-05T08:37:03.556903345+00:00"
+  },
+  {
+   "id": "xab5al5dnanr508qkoow",
+   "subject": "project/unified_seasonality_model",
+   "label": "incorporates",
+   "object": "project/project/hierarchical_bayesian_model",
+   "source": "elaboration",
+   "trust": 0.3,
+   "created_at": "2026-11-05T08:37:03.137338654+00:00"
+  },
+  {
+   "id": "h0v8zc7dsqv45wc39a8h",
+   "subject": "project/unified_seasonality_model",
+   "label": "integrates_with",
+   "object": "concept/pricing_analysis_workflow",
+   "source": "elaboration",
+   "trust": 0.3,
+   "created_at": "2026-11-05T08:37:02.705077874+00:00"
+  },
+  {
+   "id": "3gd8ml8aol3tggs1q4es",
+   "subject": "project/project/promotional_pricing_engine",
+   "label": "interacts_with",
+   "object": "project/inventory_replenishment_model",
+   "source": "elaboration",
+   "trust": 0.3,
+   "created_at": "2026-11-05T08:36:37.272820083+00:00"
+  },
+  {
+   "id": "ewql1dnrx5hvxxak61ev",
+   "subject": "project/project/promotional_pricing_engine",
+   "label": "integrates_with",
+   "object": "project/unified_seasonality_model",
+   "source": "elaboration",
+   "trust": 0.3,
+   "created_at": "2026-11-05T08:36:36.851309070+00:00"
+  },
+  {
+   "id": "d8c6t6pzbx6n8smmmpc7",
+   "subject": "project/project/promotional_pricing_engine",
+   "label": "uses",
+   "object": "project/hierarchical_bayesian_model",
+   "source": "elaboration",
+   "trust": 0.3,
+   "created_at": "2026-11-05T08:36:36.436805257+00:00"
+  },
+  {
+   "id": "jeqflwb0yw6aepz278oe",
+   "subject": "project/project/promotional_pricing_engine",
+   "label": "informs",
+   "object": "policy/q4_promotional_pricing_decision",
+   "source": "elaboration",
+   "trust": 0.3,
+   "created_at": "2026-11-05T08:36:36.021224991+00:00"
+  },
+  {
+   "id": "hvo5ne7hbmiwbncinhe7",
+   "subject": "project/project/promotional_pricing_engine",
+   "label": "is_identical_to",
+   "object": "project/promotional_pricing_engine",
+   "source": "elaboration",
+   "trust": 0.3,
+   "created_at": "2026-11-05T08:36:35.596540700+00:00"
+  },
+  {
+   "id": "x2xs46mxqdw7rc3wfijj",
+   "subject": "project/project/pricing_system",
+   "label": "discussed_in",
+   "object": "event/q1_planning",
+   "source": "elaboration",
+   "trust": 0.3,
+   "created_at": "2026-11-05T08:36:30.343385059+00:00"
+  },
+  {
+   "id": "6d5h4utqroccvu0iw3ym",
+   "subject": "project/project/pricing_system",
+   "label": "supports",
+   "object": "event/prime_day_event",
+   "source": "elaboration",
+   "trust": 0.3,
+   "created_at": "2026-11-05T08:36:29.938054318+00:00"
+  },
+  {
+   "id": "qpkxgshhr7748q2tniqo",
+   "subject": "project/project/pricing_system",
+   "label": "informs",
+   "object": "policy/q4_promotional_pricing_decision",
+   "source": "elaboration",
+   "trust": 0.3,
+   "created_at": "2026-11-05T08:36:29.518558253+00:00"
+  },
+  {
+   "id": "m6pfq0d8djiknbyh56cl",
+   "subject": "project/project/pricing_system",
+   "label": "uses",
+   "object": "project/unified_seasonality_model",
+   "source": "elaboration",
+   "trust": 0.3,
+   "created_at": "2026-11-05T08:36:29.095568896+00:00"
+  },
+  {
+   "id": "4vo1y9upxmfecz782c6y",
+   "subject": "project/project/pricing_system",
+   "label": "incorporates",
+   "object": "project/promotional_pricing_engine",
+   "source": "elaboration",
+   "trust": 0.3,
+   "created_at": "2026-11-05T08:36:28.649676048+00:00"
+  },
+  {
+   "id": "h0ngkfev9svbu576a4wt",
+   "subject": "project/project/pricing_system",
+   "label": "integrates_with",
+   "object": "project/project/inventory_replenishment_model",
+   "source": "elaboration",
+   "trust": 0.3,
+   "created_at": "2026-11-05T08:36:28.225472007+00:00"
+  },
+  {
+   "id": "oailntrgzno4q82pcsq8",
+   "subject": "project/project/inventory_replenishment_model",
+   "label": "same_as",
+   "object": "project/inventory_replenishment_model",
+   "source": "elaboration",
+   "trust": 0.3,
+   "created_at": "2026-11-05T08:36:23.985484017+00:00"
+  },
+  {
+   "id": "ny9rfczdu1o15znvr7m9",
+   "subject": "project/project/inventory_replenishment_model",
+   "label": "shares_data_with",
+   "object": "project/unified_seasonality_model",
+   "source": "elaboration",
+   "trust": 0.3,
+   "created_at": "2026-11-05T08:36:23.567035329+00:00"
+  },
+  {
+   "id": "8n8zgy4jr8yxhthrdomw",
+   "subject": "project/project/inventory_replenishment_model",
+   "label": "utilizes",
+   "object": "project/hierarchical_bayesian_model",
+   "source": "elaboration",
+   "trust": 0.3,
+   "created_at": "2026-11-05T08:36:23.141639358+00:00"
+  },
+  {
+   "id": "w6g65rjyv1hodndrkkks",
+   "subject": "project/project/inventory_replenishment_model",
+   "label": "integrates_with",
+   "object": "project/project/promotional_pricing_engine",
+   "source": "elaboration",
+   "trust": 0.3,
+   "created_at": "2026-11-05T08:36:22.696752707+00:00"
+  },
+  {
+   "id": "domfu66mga2a92o16n55",
+   "subject": "project/project/hierarchical_bayesian_model",
+   "label": "part_of",
+   "object": "project/project/pricing_system",
+   "source": "elaboration",
+   "trust": 0.3,
+   "created_at": "2026-11-05T08:36:18.564780810+00:00"
+  },
+  {
+   "id": "0hbnu2ehtjg8qt0hfop4",
+   "subject": "project/project/hierarchical_bayesian_model",
+   "label": "used_during",
+   "object": "event/event/prime_day_event",
+   "source": "elaboration",
+   "trust": 0.3,
+   "created_at": "2026-11-05T08:36:18.152022473+00:00"
+  },
+  {
+   "id": "xxo6o4vl5p32rg8eagh1",
+   "subject": "project/project/hierarchical_bayesian_model",
+   "label": "supports",
+   "object": "policy/policy/q4_promotional_pricing_decision",
+   "source": "elaboration",
+   "trust": 0.3,
+   "created_at": "2026-11-05T08:36:17.711617176+00:00"
+  },
+  {
+   "id": "sck79xczggel5mjbklow",
+   "subject": "project/project/hierarchical_bayesian_model",
+   "label": "integrates_with",
+   "object": "project/project/promotional_pricing_engine",
+   "source": "elaboration",
+   "trust": 0.3,
+   "created_at": "2026-11-05T08:36:17.299735213+00:00"
+  },
+  {
+   "id": "q1lf8p8lk324yc3vtlbn",
+   "subject": "project/project/hierarchical_bayesian_model",
+   "label": "integrates_with",
+   "object": "project/project/inventory_replenishment_model",
+   "source": "elaboration",
+   "trust": 0.3,
+   "created_at": "2026-11-05T08:36:16.874366904+00:00"
+  },
+  {
+   "id": "jd4u2vuz5cxrw3mb2ioz",
+   "subject": "project/pricing_system",
+   "label": "same_as",
+   "object": "project/project/pricing_system",
+   "source": "elaboration",
+   "trust": 0.3,
+   "created_at": "2026-11-05T08:36:12.273173022+00:00"
+  },
+  {
+   "id": "g1wqnog5wwxoewxyi2hk",
+   "subject": "project/pricing_system",
+   "label": "supports",
+   "object": "event/prime_day_event",
+   "source": "elaboration",
+   "trust": 0.3,
+   "created_at": "2026-11-05T08:36:11.850808705+00:00"
+  },
+  {
+   "id": "7wb0tt05tma6tbrufhyp",
+   "subject": "project/pricing_system",
+   "label": "interacts_with",
+   "object": "project/project/inventory_replenishment_model",
+   "source": "elaboration",
+   "trust": 0.3,
+   "created_at": "2026-11-05T08:36:11.440289936+00:00"
+  },
+  {
+   "id": "1efecavkx5cbyyf70z96",
+   "subject": "project/pricing_system",
+   "label": "integrates_with",
+   "object": "project/project/promotional_pricing_engine",
+   "source": "elaboration",
+   "trust": 0.3,
+   "created_at": "2026-11-05T08:36:11.020080767+00:00"
+  },
+  {
+   "id": "kv6luulu4vqd0b6xw678",
+   "subject": "project/pricing_system",
+   "label": "incorporates",
+   "object": "project/project/hierarchical_bayesian_model",
+   "source": "elaboration",
+   "trust": 0.3,
+   "created_at": "2026-11-05T08:36:10.596399349+00:00"
+  },
+  {
+   "id": "ms1hscngmt4pcxt9pr2e",
+   "subject": "project/demand_forecasting_system",
+   "label": "shares_data_with",
+   "object": "project/project/pricing_system",
+   "source": "elaboration",
+   "trust": 0.3,
+   "created_at": "2026-11-05T08:35:17.191261037+00:00"
+  },
+  {
+   "id": "xijn7uuojwy1icwzvwts",
+   "subject": "project/demand_forecasting_system",
+   "label": "integrates_with",
+   "object": "project/project/promotional_pricing_engine",
+   "source": "elaboration",
+   "trust": 0.3,
+   "created_at": "2026-11-05T08:35:16.748519760+00:00"
+  },
+  {
+   "id": "cz37aoby6vjkox97hjth",
+   "subject": "project/demand_forecasting_system",
+   "label": "feeds_into",
+   "object": "project/project/inventory_replenishment_model",
+   "source": "elaboration",
+   "trust": 0.3,
+   "created_at": "2026-11-05T08:35:16.334034953+00:00"
+  },
+  {
+   "id": "5lic1b6knvbs7zq1e1v2",
+   "subject": "project/demand_forecasting_system",
+   "label": "uses",
+   "object": "project/project/hierarchical_bayesian_model",
+   "source": "elaboration",
+   "trust": 0.3,
+   "created_at": "2026-11-05T08:35:15.920896471+00:00"
+  },
+  {
+   "id": "9732hz9y7v478f78an3l",
+   "subject": "policy/policy/q4_promotional_pricing_decision",
+   "label": "is_identical_to",
+   "object": "policy/q4_promotional_pricing_decision",
+   "source": "elaboration",
+   "trust": 0.3,
+   "created_at": "2026-11-05T08:35:01.364254717+00:00"
+  },
+  {
+   "id": "h91ueca7k2v8gq21qif7",
+   "subject": "policy/policy/q4_promotional_pricing_decision",
+   "label": "informed_by",
+   "object": "project/demand_forecasting_system",
+   "source": "elaboration",
+   "trust": 0.3,
+   "created_at": "2026-11-05T08:35:00.953952525+00:00"
+  },
+  {
+   "id": "bbgby126end7fl22vfzd",
+   "subject": "policy/policy/q4_promotional_pricing_decision",
+   "label": "applies_to",
+   "object": "project/pricing_system",
+   "source": "elaboration",
+   "trust": 0.3,
+   "created_at": "2026-11-05T08:35:00.546626837+00:00"
+  },
+  {
+   "id": "cnaqk0oj8biop75xoaqw",
+   "subject": "policy/policy/q4_promotional_pricing_decision",
+   "label": "implemented_by",
+   "object": "project/promotional_pricing_engine",
+   "source": "elaboration",
+   "trust": 0.3,
+   "created_at": "2026-11-05T08:35:00.108850193+00:00"
+  },
+  {
+   "id": "amwedop30z3gf7pn58v3",
+   "subject": "project/project/promotional_pricing_engine",
+   "label": "part_of",
+   "object": "project/project/pricing_system",
+   "source": "elaboration",
+   "trust": 0.3,
+   "created_at": "2026-11-05T08:34:53.013842186+00:00"
+  },
+  {
+   "id": "mzvpowbpvqrv60agt5f8",
+   "subject": "policy/policy/q4_promotional_pricing_decision",
+   "label": "impacts",
+   "object": "project/project/inventory_replenishment_model",
+   "source": "elaboration",
+   "trust": 0.3,
+   "created_at": "2026-11-05T08:34:52.603154200+00:00"
+  },
+  {
+   "id": "li9itg4qpn5lgwxua22l",
+   "subject": "policy/policy/q4_promotional_pricing_decision",
+   "label": "governed_by",
+   "object": "project/project/pricing_system",
+   "source": "elaboration",
+   "trust": 0.3,
+   "created_at": "2026-11-05T08:34:52.177686502+00:00"
+  },
+  {
+   "id": "deg31x2gn4v2uvkz9k3z",
+   "subject": "policy/policy/q4_promotional_pricing_decision",
+   "label": "implemented_by",
+   "object": "project/project/promotional_pricing_engine",
+   "source": "elaboration",
+   "trust": 0.3,
+   "created_at": "2026-11-05T08:34:51.776310994+00:00"
+  },
+  {
+   "id": "1rdiiwj7p4d93v9z5jtr",
+   "subject": "project/project/pricing_system",
+   "label": "incorporates",
+   "object": "project/project/promotional_pricing_engine",
+   "source": "elaboration",
+   "trust": 0.3,
+   "created_at": "2026-11-05T08:34:37.089291956+00:00"
+  },
+  {
+   "id": "qq3yhtcmgm6mf7vqehfd",
+   "subject": "organisation/amazon",
+   "label": "implements",
+   "object": "policy/policy/q4_promotional_pricing_decision",
+   "source": "elaboration",
+   "trust": 0.3,
+   "created_at": "2026-11-05T08:34:36.692295067+00:00"
+  },
+  {
+   "id": "t1tte2030graaezt0l9s",
+   "subject": "organisation/amazon",
+   "label": "deploys",
+   "object": "project/project/promotional_pricing_engine",
+   "source": "elaboration",
+   "trust": 0.3,
+   "created_at": "2026-11-05T08:34:36.272309837+00:00"
+  },
+  {
+   "id": "u995hp04iciv1mgams0g",
+   "subject": "organisation/amazon",
+   "label": "uses",
+   "object": "project/project/inventory_replenishment_model",
+   "source": "elaboration",
+   "trust": 0.3,
+   "created_at": "2026-11-05T08:34:35.851532952+00:00"
+  },
+  {
+   "id": "2o6jnyli00shfmanm8kb",
+   "subject": "organisation/amazon",
+   "label": "operates",
+   "object": "project/project/pricing_system",
+   "source": "elaboration",
+   "trust": 0.3,
+   "created_at": "2026-11-05T08:34:35.445459323+00:00"
+  },
+  {
+   "id": "14n2gmlg6l7ekh5j3p3l",
+   "subject": "project/demand_forecasting_system",
+   "label": "predicts_demand_for",
+   "object": "event/event/prime_day_event",
+   "source": "elaboration",
+   "trust": 0.3,
+   "created_at": "2026-11-05T08:34:13.460456423+00:00"
+  },
+  {
+   "id": "w3cgwo7n3xqmdchw8u23",
+   "subject": "project/project/inventory_replenishment_model",
+   "label": "forecasts_for",
+   "object": "event/event/prime_day_event",
+   "source": "elaboration",
+   "trust": 0.3,
+   "created_at": "2026-11-05T08:34:13.047028101+00:00"
+  },
+  {
+   "id": "4fc17vz5xgj1fgnfyf93",
+   "subject": "project/project/pricing_system",
+   "label": "used_during",
+   "object": "event/event/prime_day_event",
+   "source": "elaboration",
+   "trust": 0.3,
+   "created_at": "2026-11-05T08:34:12.626715352+00:00"
+  },
+  {
+   "id": "yuo51gpy07a2samz8esw",
+   "subject": "project/project/promotional_pricing_engine",
+   "label": "supports_event",
+   "object": "event/event/prime_day_event",
+   "source": "elaboration",
+   "trust": 0.3,
+   "created_at": "2026-11-05T08:34:12.217024060+00:00"
+  },
+  {
+   "id": "vsqsolf2ea6hzzhgwot4",
+   "subject": "event/event/prime_day_event",
+   "label": "same_as",
+   "object": "event/prime_day_event",
+   "source": "elaboration",
+   "trust": 0.3,
+   "created_at": "2026-11-05T08:34:11.809191195+00:00"
+  },
+  {
+   "id": "5vr0953uyxr0rv9fr6p8",
+   "subject": "event/event/prime_day_event",
+   "label": "organized_by",
+   "object": "organisation/amazon",
+   "source": "elaboration",
+   "trust": 0.3,
+   "created_at": "2026-11-05T08:34:11.393178800+00:00"
+  },
+  {
+   "id": "uj8ta9fwaeeyz06ywwzy",
+   "subject": "event/q1_planning",
+   "label": "scopes",
+   "object": "project/project/promotional_pricing_engine",
+   "source": "elaboration",
+   "trust": 0.3,
+   "created_at": "2026-11-05T08:33:58.673671217+00:00"
+  },
+  {
+   "id": "ss212xpwbqaimlueu2em",
+   "subject": "event/q1_planning",
+   "label": "plans_for",
+   "object": "project/project/inventory_replenishment_model",
+   "source": "elaboration",
+   "trust": 0.3,
+   "created_at": "2026-11-05T08:33:58.270058723+00:00"
+  },
+  {
+   "id": "mutkf19rcqtkwxm2od4e",
+   "subject": "event/q1_planning",
+   "label": "evaluates",
+   "object": "policy/policy/q4_promotional_pricing_decision",
+   "source": "elaboration",
+   "trust": 0.3,
+   "created_at": "2026-11-05T08:33:57.854568663+00:00"
+  },
+  {
+   "id": "x0ieve3nemyomkn3e9ir",
+   "subject": "event/prime_day_event",
+   "label": "influences",
+   "object": "policy/policy/q4_promotional_pricing_decision",
+   "source": "elaboration",
+   "trust": 0.3,
+   "created_at": "2026-11-05T08:33:44.546504425+00:00"
+  },
+  {
+   "id": "14gcs57kg88m1qdvxx5u",
+   "subject": "event/prime_day_event",
+   "label": "incorporates",
+   "object": "project/unified_seasonality_model",
+   "source": "elaboration",
+   "trust": 0.3,
+   "created_at": "2026-11-05T08:33:44.137411676+00:00"
+  },
+  {
+   "id": "dsxo0dal2n11599xj5nh",
+   "subject": "event/prime_day_event",
+   "label": "evaluated_by",
+   "object": "project/project/promotional_pricing_engine",
+   "source": "elaboration",
+   "trust": 0.3,
+   "created_at": "2026-11-05T08:33:43.699278798+00:00"
+  },
+  {
+   "id": "bzo2i8rfze6dslmq1nx3",
+   "subject": "event/prime_day_event",
+   "label": "optimizes_for",
+   "object": "project/project/inventory_replenishment_model",
+   "source": "elaboration",
+   "trust": 0.3,
+   "created_at": "2026-11-05T08:33:43.288599606+00:00"
+  },
+  {
+   "id": "edcvysb1xxwx328n4v8o",
+   "subject": "event/prime_day_event",
+   "label": "utilized_by",
+   "object": "project/demand_forecasting_system",
+   "source": "elaboration",
+   "trust": 0.3,
+   "created_at": "2026-11-05T08:33:42.853414103+00:00"
+  },
+  {
+   "id": "pbaee9q5hrz8qqqkasmu",
+   "subject": "concept/pricing_analysis_workflow",
+   "label": "analyzes",
+   "object": "event/event/prime_day_event",
+   "source": "elaboration",
+   "trust": 0.3,
+   "created_at": "2026-11-05T08:33:34.936565196+00:00"
+  },
+  {
+   "id": "m5p47t56idy6ck32az0z",
+   "subject": "concept/pricing_analysis_workflow",
+   "label": "supports",
+   "object": "project/project/promotional_pricing_engine",
+   "source": "elaboration",
+   "trust": 0.3,
+   "created_at": "2026-11-05T08:33:34.511583041+00:00"
+  },
+  {
+   "id": "3ejmqrntowdzbooe9439",
+   "subject": "concept/pricing_analysis_workflow",
+   "label": "informs",
+   "object": "policy/policy/q4_promotional_pricing_decision",
+   "source": "elaboration",
+   "trust": 0.3,
+   "created_at": "2026-11-05T08:33:34.099498237+00:00"
+  },
+  {
+   "id": "xvnvrl5eyt6phafx0y08",
+   "subject": "concept/pricing_analysis_workflow",
+   "label": "utilizes",
+   "object": "project/hierarchical_bayesian_model",
+   "source": "elaboration",
+   "trust": 0.3,
+   "created_at": "2026-11-05T08:33:33.670328561+00:00"
+  },
+  {
+   "id": "uo6944nzts8ltugou9qt",
+   "subject": "concept/pricing_analysis_workflow",
+   "label": "integrates_with",
+   "object": "project/project/pricing_system",
+   "source": "elaboration",
+   "trust": 0.3,
+   "created_at": "2026-11-05T08:33:33.261919839+00:00"
+  },
+  {
+   "id": "as5j6uhq5690gyy9r76g",
+   "subject": "concept/branded/exclusive",
+   "label": "targeted_by",
+   "object": "project/project/promotional_pricing_engine",
+   "source": "elaboration",
+   "trust": 0.3,
+   "created_at": "2026-11-05T08:33:06.152984340+00:00"
+  },
+  {
+   "id": "am8lpyrte8qiunh4okte",
+   "subject": "concept/branded/exclusive",
+   "label": "governed_by",
+   "object": "policy/policy/q4_promotional_pricing_decision",
+   "source": "elaboration",
+   "trust": 0.3,
+   "created_at": "2026-11-05T08:33:05.745499210+00:00"
+  },
+  {
+   "id": "88xcxorttr8ru05rzpfe",
+   "subject": "concept/branded/exclusive",
+   "label": "modeled_by",
+   "object": "project/project/hierarchical_bayesian_model",
+   "source": "elaboration",
+   "trust": 0.3,
+   "created_at": "2026-11-05T08:33:05.327419671+00:00"
+  },
+  {
+   "id": "zwkjcw0hvguqd7l8q66a",
+   "subject": "concept/branded/exclusive",
+   "label": "analyzed_in",
+   "object": "concept/pricing_analysis_workflow",
+   "source": "elaboration",
+   "trust": 0.3,
+   "created_at": "2026-11-05T08:33:04.918407802+00:00"
+  },
+  {
+   "id": "jsne29c5pl6adqfrumqd",
+   "subject": "concept/pricing_analysis_workflow",
+   "label": "applies_to",
+   "object": "event/q1_planning",
+   "source": "turn",
+   "trust": 0.5,
+   "created_at": "2026-11-05T08:25:22.373975666+00:00"
+  },
+  {
+   "id": "z8pb1z8i7a9932c0zea7",
+   "subject": "concept/pricing_analysis_workflow",
+   "label": "applies_to",
+   "object": "policy/q4_promotional_pricing_decision",
+   "source": "turn",
+   "trust": 0.5,
+   "created_at": "2026-11-05T08:25:21.987165500+00:00"
+  },
+  {
+   "id": "wlhpgdbbaixkc3g46zv2",
+   "subject": "event/prime_day_event",
+   "label": "applies_to",
+   "object": "organisation/amazon",
+   "source": "turn",
+   "trust": 0.5,
+   "created_at": "2026-11-05T08:25:01.961470874+00:00"
+  },
+  {
+   "id": "bkr4yrfocym8mq15u943",
+   "subject": "person/principal:GHr42XnIGtK5",
+   "label": "works_on",
+   "object": "project/inventory_replenishment_model",
+   "source": "turn",
+   "trust": 0.5,
+   "created_at": "2026-11-05T08:24:50.578603746+00:00"
+  },
+  {
+   "id": "no1nsrvgcsal95p717c5",
+   "subject": "policy/q4_promotional_pricing_decision",
+   "label": "applies_to",
+   "object": "project/promotional_pricing_engine",
+   "source": "turn",
+   "trust": 0.5,
+   "created_at": "2026-11-05T08:24:39.067419127+00:00"
+  },
+  {
+   "id": "7rbdqcubpgviqpza1efz",
+   "subject": "person/principal:GHr42XnIGtK5",
+   "label": "works_on",
+   "object": "project/promotional_pricing_engine",
+   "source": "turn",
+   "trust": 0.5,
+   "created_at": "2026-11-05T08:24:21.509398923+00:00"
+  },
+  {
+   "id": "nrz4z2byrey2g3trgt4e",
+   "subject": "person/principal:GHr42XnIGtK5",
+   "label": "works_on",
+   "object": "project/unified_seasonality_model",
+   "source": "turn",
+   "trust": 0.5,
+   "created_at": "2026-11-05T08:24:09.120748745+00:00"
+  },
+  {
+   "id": "znm3z5mjrnuvf8oetitc",
+   "subject": "person/principal:GHr42XnIGtK5",
+   "label": "works_on",
+   "object": "project/pricing_system",
+   "source": "turn",
+   "trust": 0.5,
+   "created_at": "2026-11-05T08:23:56.913854536+00:00"
+  }
+ ]
+}
