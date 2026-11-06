@@ -1,4 +1,5 @@
 import type { AskLayer, AskResponse } from '@/api/ask'
+import type { VctApi } from '@/api/vct'
 import { findConflicts } from '@/components/ask/conflicts'
 import FactRow from '@/components/ask/FactRow'
 import { LAYER_LABELS } from '@/components/ask/layers'
@@ -7,10 +8,13 @@ interface Props {
   answer: AskResponse
   /** Whose grants were read, e.g. "Priya" or "Priya + Arun". */
   who: string
+  /** Also list, crossed out, the facts the VCT filter dropped. */
+  compare?: boolean
+  vctApi?: VctApi
 }
 
 /** The answer, one section per layer in the order the backend returned them. */
-export default function AskAnswer({ answer, who }: Props) {
+export default function AskAnswer({ answer, who, compare = false, vctApi }: Props) {
   const { metadata } = answer
   const conflicts = findConflicts(answer.layers)
   const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : 's'}`
@@ -23,6 +27,17 @@ export default function AskAnswer({ answer, who }: Props) {
         read · tier {metadata.resolution_tier ?? 'none'} ·{' '}
         {metadata.latency_ms.toLocaleString('en')} ms · as {who}
       </p>
+      {metadata.filter && (
+        <p className="mono ask-summary">
+          value chain filter{' '}
+          {[
+            ...metadata.filter.goals,
+            ...metadata.filter.nodes,
+            ...metadata.filter.domains,
+          ].join(', ')}{' '}
+          · {plural(metadata.filter.removed, 'result')} removed
+        </p>
+      )}
 
       {conflicts.map((conflict) => (
         <div key={conflict.entity} className="ask-conflict" role="note">
@@ -38,7 +53,12 @@ export default function AskAnswer({ answer, who }: Props) {
       ))}
 
       {answer.layers.map((layer) => (
-        <LayerSection key={`${layer.layer}:${layer.area}`} layer={layer} />
+        <LayerSection
+          key={`${layer.layer}:${layer.area}`}
+          layer={layer}
+          compare={compare}
+          vctApi={vctApi}
+        />
       ))}
 
       <footer className="mono ask-footer">
@@ -52,7 +72,16 @@ export default function AskAnswer({ answer, who }: Props) {
   )
 }
 
-function LayerSection({ layer }: { layer: AskLayer }) {
+function LayerSection({
+  layer,
+  compare,
+  vctApi,
+}: {
+  layer: AskLayer
+  compare: boolean
+  vctApi?: VctApi
+}) {
+  const removed = compare ? (layer.removed ?? []) : []
   return (
     <section
       className="ask-layer"
@@ -75,9 +104,19 @@ function LayerSection({ layer }: { layer: AskLayer }) {
       ) : (
         <ul className="ask-facts">
           {layer.facts.map((fact) => (
-            <FactRow key={fact.source.hit_id} fact={fact} />
+            <FactRow key={fact.source.hit_id} fact={fact} vctApi={vctApi} />
           ))}
         </ul>
+      )}
+      {removed.length > 0 && (
+        <div className="vct-removed">
+          <p className="ask-muted">Removed by the filter ({removed.length})</p>
+          <ul className="ask-facts">
+            {removed.map((fact) => (
+              <FactRow key={fact.source.hit_id} fact={fact} removed />
+            ))}
+          </ul>
+        </div>
       )}
     </section>
   )

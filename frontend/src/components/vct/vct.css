@@ -1,0 +1,276 @@
+/* VCT tags: chips, the editor, Ask's filter bar, Brain's coverage and the admin panel. */
+
+.vct-tags {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.vct-chip {
+  max-width: 260px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.vct-chip[data-kind='goal'] {
+  background: var(--mb-note-soft);
+  color: var(--mb-note);
+}
+
+.vct-chip[data-kind='node'] {
+  background: var(--mb-accent-soft);
+  color: var(--mb-accent-ink);
+}
+
+/* A person confirmed it: a solid edge. */
+.vct-chip[data-source='user'] {
+  box-shadow: inset 0 0 0 1px currentcolor;
+}
+
+.vct-pending {
+  border: 1px dashed var(--mb-line);
+  background: transparent;
+  color: var(--mb-muted);
+}
+
+.vct-muted {
+  margin: 0;
+  color: var(--mb-muted);
+  font-size: 13px;
+}
+
+.vct-small {
+  min-height: 30px;
+  padding: 0 10px;
+  font-size: 13px;
+}
+
+.vct-select {
+  min-height: 36px;
+  max-width: 100%;
+  padding: 0 8px;
+  border: 1px solid var(--mb-line);
+  border-radius: var(--mb-radius-sm);
+  background: var(--mb-bg);
+  color: var(--mb-ink);
+  font: inherit;
+  font-size: 14px;
+}
+
+/* Editor */
+.vct-editor {
+  display: grid;
+  gap: 12px;
+  margin-top: 8px;
+  padding: 12px;
+  border: 1px solid var(--mb-line);
+  border-radius: var(--mb-radius-sm);
+  background: var(--mb-surface);
+}
+
+.vct-kind {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.vct-kind legend {
+  margin-bottom: 4px;
+  font-weight: 600;
+}
+
+.vct-current,
+.vct-alternatives {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.vct-alt {
+  min-height: 32px;
+  font-size: 13px;
+}
+
+.vct-pick-label {
+  color: var(--mb-muted);
+  font-size: 13px;
+}
+
+/* Ask filter */
+.vct-filter {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 12px 20px;
+  margin-top: 12px;
+}
+
+.vct-filter-kind {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 6px;
+}
+
+.vct-filter-label {
+  display: grid;
+  gap: 4px;
+  color: var(--mb-muted);
+  font-size: 13px;
+}
+
+.vct-on {
+  min-height: 36px;
+  border-color: var(--mb-accent);
+  background: var(--mb-accent-soft);
+  color: var(--mb-accent-ink);
+  font-size: 13px;
+}
+
+.vct-compare {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 36px;
+  font-size: 14px;
+}
+
+.vct-removed {
+  margin-top: 8px;
+}
+
+.vct-removed .ask-fact-text {
+  color: var(--mb-muted);
+  text-decoration: line-through;
+}
+
+/* Coverage */
+.vct-coverage {
+  display: grid;
+  gap: 12px;
+}
+
+.vct-grid-wrap {
+  overflow-x: auto;
+}
+
+.vct-grid {
+  min-width: 640px;
+  border-collapse: separate;
+  border-spacing: 4px;
+  font-size: 13px;
+}
+
+.vct-grid th {
+  padding: 4px 6px;
+  color: var(--mb-muted);
+  font-weight: 600;
+  text-align: left;
+}
+
+.vct-grid td {
+  min-width: 64px;
+  padding: 6px;
+  border-radius: 6px;
+  background: var(--mb-soft);
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+
+.vct-grid td[data-level='some'] {
+  background: var(--mb-accent-soft);
+  color: var(--mb-accent-ink);
+}
+
+.vct-grid td[data-level='high'] {
+  background: var(--mb-accent);
+  color: var(--mb-on-accent);
+  font-weight: 700;
+}
+
+.vct-grid td[data-gap] {
+  outline: 1.5px dashed var(--mb-warn);
+  color: var(--mb-warn);
+  font-weight: 700;
+}
+
+.vct-grid td.vct-none {
+  background: transparent;
+  color: var(--mb-muted);
+}
+
+.vct-heading {
+  margin: 8px 0 0;
+  font-size: 16px;
+}
+
+.vct-gap-list {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.vct-gap-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  padding: 8px 0;
+  border-bottom: 1px dashed var(--mb-line);
+}
+
+/* Admin tagger */
+.vct-tagger {
+  display: grid;
+  gap: 10px;
+}
+
+.vct-tagger-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.vct-tagger-head h2 {
+  margin: 0;
+  font-size: 18px;
+}
+
+.vct-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 8px;
+  margin: 0;
+}
+
+.vct-stats div {
+  padding: 8px 10px;
+  border: 1px solid var(--mb-line);
+  border-radius: var(--mb-radius-sm);
+}
+
+.vct-stats dt {
+  color: var(--mb-muted);
+  font-size: 12px;
+}
+
+.vct-stats dd {
+  margin: 0;
+  font-size: 18px;
+  font-variant-numeric: tabular-nums;
+}
+
+.vct-textarea {
+  min-height: 72px;
+  padding: 8px;
+  resize: vertical;
+}

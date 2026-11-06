@@ -1,14 +1,29 @@
 import { useEffect, useId, useRef, useState } from 'react'
 import type { AskFact } from '@/api/ask'
+import type { FactTags, VctApi } from '@/api/vct'
 import { formatScore } from '@/components/ask/layers'
+import { TagEditor, VctTags } from '@/components/vct/Vct'
 
 /**
  * One recalled fact. The score button opens its source inline, below the row:
  * a disclosure rather than a modal, so it reads well at 375px and keeps the
  * fact in view. Focus moves into the panel on open and back on Escape.
  */
-export default function FactRow({ fact }: { fact: AskFact }) {
+export default function FactRow({
+  fact,
+  vctApi,
+  removed = false,
+}: {
+  fact: AskFact
+  vctApi?: VctApi
+  /** A fact the VCT filter dropped, shown only to compare: no editing. */
+  removed?: boolean
+}) {
   const [open, setOpen] = useState(false)
+  // Only facts (attribute hits) carry VCT tags; edits update the chips at once.
+  const taggable = fact.source.hit_kind === 'attribute' && !removed
+  const [tags, setTags] = useState<FactTags | null | undefined>(fact.tags)
+  const [editing, setEditing] = useState(false)
   const triggerRef = useRef<HTMLButtonElement>(null)
   const panelRef = useRef<HTMLElement>(null)
   const factId = useId()
@@ -44,6 +59,17 @@ export default function FactRow({ fact }: { fact: AskFact }) {
           {fact.fact}
         </span>
         <span className="ask-fact-meta">
+          <VctTags tags={tags} />
+          {taggable && (
+            <button
+              type="button"
+              className="ask-score"
+              aria-expanded={editing}
+              onClick={() => setEditing(!editing)}
+            >
+              {editing ? 'Close tags' : 'Edit tags'}
+            </button>
+          )}
           <span
             className="tag"
             data-tone={source.kind === 'document' ? 'note' : undefined}
@@ -64,6 +90,9 @@ export default function FactRow({ fact }: { fact: AskFact }) {
           </button>
         </span>
       </div>
+      {editing && (
+        <TagEditor factId={fact.source.hit_id} api={vctApi} onChange={setTags} />
+      )}
       {open && (
         <section
           ref={panelRef}

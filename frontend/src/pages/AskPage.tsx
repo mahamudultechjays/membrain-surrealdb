@@ -14,6 +14,13 @@ import KeepAlive from '@/components/KeepAlive'
 import { useHashSubRoute } from '@/hooks/useHashRoute'
 import { useVisited } from '@/hooks/useVisited'
 import ScopePicker from '@/components/ScopePicker'
+import type { VctApi } from '@/api/vct'
+import { VctFilterBar } from '@/components/vct/Vct'
+import {
+  NO_VCT_FILTER,
+  hasVctFilter,
+  type VctFilterValue,
+} from '@/components/vct/vctState'
 import '@/pages/ask.css'
 
 /** Questions that hit the mock seed data, so the demo always has something to show. */
@@ -36,6 +43,7 @@ type Run =
 interface Props {
   me: Me
   api?: AskApi
+  vctApi?: VctApi
 }
 
 const MODES = ['search', 'chat', 'reflect'] as const
@@ -57,6 +65,7 @@ const MODE_INTROS: Record<Mode, string> = {
 export default function AskPage({
   me,
   api = askApi,
+  vctApi,
   chatApi,
   reflectApi,
 }: Props & { chatApi?: ChatApi; reflectApi?: ReflectApi }) {
@@ -83,7 +92,7 @@ export default function AskPage({
           ) : m === 'reflect' ? (
             <AskReflect me={me} api={reflectApi} />
           ) : (
-            <AskSearch me={me} api={api} />
+            <AskSearch me={me} api={api} vctApi={vctApi} />
           )}
         </KeepAlive>
       ))}
@@ -91,7 +100,10 @@ export default function AskPage({
   )
 }
 
-function AskSearch({ me, api = askApi }: Props) {
+function AskSearch({ me, api = askApi, vctApi }: Props) {
+  // Value-chain filter: keep only facts tagged with these goals, nodes or domains.
+  const [vct, setVct] = useState<VctFilterValue>(NO_VCT_FILTER)
+  const [compare, setCompare] = useState(false)
   // Spaces left out of the search. It starts on the user's own space; once
   // they pick "all", a newly granted space is included straight away.
   const [excluded, setExcluded] = useState<string[]>(() => startExcluded(me.grants))
@@ -128,7 +140,10 @@ function AskSearch({ me, api = askApi }: Props) {
     setRun({ status: 'loading', id: ++runCount.current })
     const askedAs = who
     api
-      .ask({ q: text, scopes: narrowed }, controller.signal)
+      .ask(
+        { q: text, scopes: narrowed, ...(hasVctFilter(vct) ? vct : {}) },
+        controller.signal,
+      )
       .then((answer) => {
         if (!controller.signal.aborted)
           setRun({ status: 'success', answer, who: askedAs })
@@ -214,6 +229,13 @@ function AskSearch({ me, api = askApi }: Props) {
             </button>
           ))}
         </fieldset>
+        <VctFilterBar
+          value={vct}
+          onChange={setVct}
+          compare={compare}
+          onCompare={setCompare}
+          api={vctApi}
+        />
       </form>
 
       <div className="ask-result">
@@ -227,7 +249,14 @@ function AskSearch({ me, api = askApi }: Props) {
         )}
         {run.status === 'loading' && <AskLoading key={run.id} onCancel={cancel} />}
         {run.status === 'error' && <AskFailure error={run.error} />}
-        {run.status === 'success' && <AskAnswer answer={run.answer} who={run.who} />}
+        {run.status === 'success' && (
+          <AskAnswer
+            answer={run.answer}
+            who={run.who}
+            compare={compare && hasVctFilter(vct)}
+            vctApi={vctApi}
+          />
+        )}
       </div>
     </>
   )

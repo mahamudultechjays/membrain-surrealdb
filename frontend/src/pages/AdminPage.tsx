@@ -11,6 +11,8 @@ import {
 } from '@/api/scopePaths'
 import { describe, memoryRows, type MemoryRow } from '@/components/admin/memoryAccess'
 import MemoryLab from '@/components/admin/MemoryLab'
+import { OnboardUser, TaggerPanel } from '@/components/vct/Vct'
+import type { VctApi } from '@/api/vct'
 import NewScope from '@/components/admin/NewScope'
 import { LAYER_LABELS } from '@/components/ask/layers'
 import { isAbort, messageOf } from '@/components/capture/format'
@@ -25,6 +27,7 @@ interface Props {
   api?: AdminApi
   /** The memory jobs' API; defaults to the real (or mock) one. */
   labApi?: LabApi
+  vctApi?: VctApi
 }
 
 type UsersState =
@@ -810,16 +813,21 @@ function ScopeCells({
   )
 }
 
-const SECTIONS = ['access', 'lab'] as const
+const SECTIONS = ['access', 'lab', 'vct'] as const
 type Section = (typeof SECTIONS)[number]
-const SECTION_LABELS: Record<Section, string> = { access: 'Access', lab: 'Lab' }
+const SECTION_LABELS: Record<Section, string> = {
+  access: 'Access',
+  lab: 'Lab',
+  vct: 'Value chain',
+}
 
 /**
- * Admin has two sections, each with its own URL: #/admin/access (who may read
- * or write which scope) and #/admin/lab (memory jobs: consolidate, elaborate,
- * reflect). Both stay mounted once opened, so a running job keeps going.
+ * Admin has three sections, each with its own URL: #/admin/access (who may read
+ * or write which scope), #/admin/lab (memory jobs: consolidate, elaborate,
+ * reflect) and #/admin/vct (the VCT tagger, and onboarding people to the value
+ * chain). Each stays mounted once opened, so a running job keeps going.
  */
-export default function AdminPage({ me, api = adminApi, labApi }: Props) {
+export default function AdminPage({ me, api = adminApi, labApi, vctApi }: Props) {
   const section = useHashSubRoute(SECTIONS, 'access')
   const visited = useVisited(section)
   return (
@@ -840,7 +848,16 @@ export default function AdminPage({ me, api = adminApi, labApi }: Props) {
       </div>
       {visited.map((s) => (
         <KeepAlive key={s} active={s === section}>
-          {s === 'lab' ? <MemoryLab api={labApi} /> : <AdminAccess me={me} api={api} />}
+          {s === 'lab' ? (
+            <MemoryLab api={labApi} />
+          ) : s === 'vct' ? (
+            <div className="vct-admin">
+              <TaggerPanel api={vctApi} />
+              <OnboardUser api={vctApi} />
+            </div>
+          ) : (
+            <AdminAccess me={me} api={api} />
+          )}
         </KeepAlive>
       ))}
     </main>

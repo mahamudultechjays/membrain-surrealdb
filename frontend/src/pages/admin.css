@@ -913,3 +913,9 @@ button.scope-pick:hover {
     max-height: 240px;
   }
 }
+
+/* Value chain tab: the tagger panel above the onboarding tool. */
+.vct-admin {
+  display: grid;
+  gap: 16px;
+}

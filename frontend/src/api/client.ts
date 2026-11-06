@@ -51,6 +51,22 @@ export async function apiPost<T>(
   return (response.status === 204 ? undefined : await response.json()) as T
 }
 
+/** PUTs JSON and returns the JSON reply. */
+export async function apiPut<T>(
+  path: string,
+  body: unknown,
+  { signal }: { signal?: AbortSignal } = {},
+): Promise<T> {
+  const response = await fetch(`${BASE_URL}${path}`, {
+    method: 'PUT',
+    headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+    signal,
+  })
+  if (!response.ok) throw await errorFrom(response, `PUT ${path}`)
+  return (await response.json()) as T
+}
+
 export async function apiDelete(
   path: string,
   { signal }: { signal?: AbortSignal } = {},

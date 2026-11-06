@@ -1,6 +1,7 @@
 import { apiGet } from '@/api/client'
 import { USE_MOCK_API } from '@/api/config'
 import { mockAskApi } from '@/api/mock/ask'
+import type { FactTags } from '@/api/vct'
 
 // Mirrors backend/app/schemas/ask.py on feat/capture-ak-scoping-api.
 
@@ -26,6 +27,8 @@ export interface FactSource {
 export interface AskFact {
   fact: string
   source: FactSource
+  /** The fact's active VCT node and goal; null or absent when it has none. */
+  tags?: FactTags | null
 }
 
 export interface AskLayer {
@@ -37,6 +40,16 @@ export interface AskLayer {
   facts: AskFact[]
   /** Set when this layer's recall failed; the other layers still answer. */
   error: string | null
+  /** Facts a VCT filter dropped from this layer, for comparing with no filter. */
+  removed?: AskFact[]
+}
+
+export interface AskFilter {
+  goals: string[]
+  nodes: string[]
+  domains: string[]
+  /** Hits the filter dropped across all layers. */
+  removed: number
 }
 
 export interface AskMetadata {
@@ -47,6 +60,8 @@ export interface AskMetadata {
   /** Echoed back, but not applied: recall has no matching option. */
   include_inferred: boolean
   trace_ids: string[]
+  /** Set when a VCT goal, node or domain filter was applied. */
+  filter?: AskFilter | null
 }
 
 export interface AskResponse {
@@ -68,6 +83,10 @@ export interface AskRequest {
   /** Narrows the search to some of the readable scopes (403 if any is not readable). */
   scopes?: string[]
   include_inferred?: boolean
+  /** VCT ids: keep only facts whose active tag matches (any within a kind, every kind). */
+  goals?: string[]
+  nodes?: string[]
+  domains?: string[]
 }
 
 export interface AskApi {
@@ -75,10 +94,24 @@ export interface AskApi {
 }
 
 export const httpAskApi: AskApi = {
-  ask: ({ q, as_users = [], scopes = [], include_inferred = false }, signal) => {
+  ask: (
+    {
+      q,
+      as_users = [],
+      scopes = [],
+      include_inferred = false,
+      goals = [],
+      nodes = [],
+      domains = [],
+    },
+    signal,
+  ) => {
     const params = new URLSearchParams({ q, include_inferred: String(include_inferred) })
     for (const email of as_users) params.append('as_user', email)
     for (const scope of scopes) params.append('scope', scope)
+    for (const goal of goals) params.append('goal', goal)
+    for (const node of nodes) params.append('node', node)
+    for (const domain of domains) params.append('domain', domain)
     return apiGet<AskResponse>(`/api/v1/ask?${params.toString()}`, { signal })
   },
 }

@@ -1063,3 +1063,13 @@ fieldset.graph-pill {
     display: none;
   }
 }
+
+/* Value-chain tags inside an open fact. */
+.brain-vct {
+  margin-bottom: 12px;
+}
+
+.brain-vct-heading {
+  margin: 0 0 4px;
+  font-size: 14px;
+}

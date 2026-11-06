@@ -38,16 +38,25 @@ import {
 import { isAbort, messageOf } from '@/components/capture/format'
 import HeaderSlot from '@/components/HeaderSlot'
 import ScopePicker from '@/components/ScopePicker'
+import { TagEditor, VctCoverageView, VctTags } from '@/components/vct/Vct'
+import type { VctApi } from '@/api/vct'
 import { useHashSubRoute } from '@/hooks/useHashRoute'
 import '@/pages/brain.css'
 
 // The graph pulls in reagraph and three.js: loaded only when someone opens it.
 const BrainGraph = lazy(() => import('@/components/brain/graph/BrainGraph'))
 
-/** Two views of the same filtered rows: #/brain/list (default) and #/brain/graph. */
-const VIEWS = ['list', 'graph'] as const
+/**
+ * Views of the same memory: #/brain/list (default), #/brain/graph, and
+ * #/brain/vct for value-chain coverage and facts without a goal.
+ */
+const VIEWS = ['list', 'graph', 'vct'] as const
 type View = (typeof VIEWS)[number]
-const VIEW_LABELS: Record<View, string> = { list: 'List', graph: 'Graph' }
+const VIEW_LABELS: Record<View, string> = {
+  list: 'List',
+  graph: 'Graph',
+  vct: 'Value chain',
+}
 
 /** The answer to one request, tagged with that request's key. */
 type Result =
@@ -59,6 +68,7 @@ type Load = { status: 'loading' } | Result
 interface Props {
   me: Me
   api?: BrainApi
+  vctApi?: VctApi
 }
 
 const DATE = new Intl.DateTimeFormat('en-GB', {
@@ -136,7 +146,7 @@ const domId = (rowId: string) => `brain-${rowId.replace(/[^a-z0-9]+/gi, '-')}`
  * opens to show its details. The space filter is applied by the backend (it
  * only returns what the user may read); the rest filters and sorts what came back.
  */
-export default function BrainPage({ me, api = brainApi }: Props) {
+export default function BrainPage({ me, api = brainApi, vctApi }: Props) {
   const [result, setResult] = useState<Result | null>(null)
   const own = ownScope(me.grants)
   // The page opens on the user's own space alone, until they use the Spaces menu.
@@ -327,7 +337,13 @@ export default function BrainPage({ me, api = brainApi }: Props) {
                 href={`#/brain/${v}`}
                 aria-current={v === view ? 'page' : undefined}
               >
-                {v === 'list' ? <ListIcon /> : <GraphIcon />}
+                {v === 'list' ? (
+                  <ListIcon />
+                ) : v === 'graph' ? (
+                  <GraphIcon />
+                ) : (
+                  <ChainIcon />
+                )}
                 {VIEW_LABELS[v]}
               </a>
             ))}
@@ -518,6 +534,21 @@ export default function BrainPage({ me, api = brainApi }: Props) {
           Could not load memory: {load.message}
         </p>
       )}
+      {!none && load.status === 'ready' && view === 'vct' && (
+        <VctCoverageView
+          api={vctApi}
+          facts={rows
+            .filter((r): r is RecordRow => r.kind === 'fact' && !r.replaced)
+            .map((r) => ({
+              id: r.record_id,
+              entity: r.entity,
+              key: r.key,
+              value: r.value,
+              tags: r.vct,
+              tagged: r.vct_tagged ?? false,
+            }))}
+        />
+      )}
       {!none && load.status === 'ready' && view === 'graph' && (
         <Suspense fallback={<p className="brain-muted">Loading the graph…</p>}>
           <BrainGraph rows={shown} onOpen={openInList} />
@@ -571,6 +602,7 @@ export default function BrainPage({ me, api = brainApi }: Props) {
                     setOpen((current) => (current === row.id ? null : row.id))
                   }
                   onReveal={reveal}
+                  vctApi={vctApi}
                 />
               ))}
             </ul>
@@ -713,6 +745,18 @@ function GraphIcon() {
   )
 }
 
+/** Three stops on a line: the value chain. */
+function ChainIcon() {
+  return (
+    <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" fill="none">
+      <path d="M2 8h12" stroke="currentColor" strokeWidth="1.3" />
+      <circle cx="3" cy="8" r="2" fill="currentColor" />
+      <circle cx="8" cy="8" r="2" fill="currentColor" />
+      <circle cx="13" cy="8" r="2" fill="currentColor" />
+    </svg>
+  )
+}
+
 function SearchIcon() {
   return (
     <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
@@ -754,10 +798,11 @@ interface ItemProps {
   byId: ReadonlyMap<string, BrainRow>
   onToggle: () => void
   onReveal: (id: string) => void
+  vctApi?: VctApi
 }
 
 /** One row of the list: a fact, a relation or a memory chunk. */
-function BrainItem({ row, open, byId, onToggle, onReveal }: ItemProps) {
+function BrainItem({ row, open, byId, onToggle, onReveal, vctApi }: ItemProps) {
   const panelId = domId(row.id)
   const chunk = row.kind === 'chunk'
   const replaced = isRecord(row) && row.replaced
@@ -834,7 +879,7 @@ function BrainItem({ row, open, byId, onToggle, onReveal }: ItemProps) {
         ) : row.kind === 'document' ? (
           <DocumentDetail id={panelId} row={row} />
         ) : (
-          <RecordDetail id={panelId} row={row} onReveal={onReveal} />
+          <RecordDetail id={panelId} row={row} onReveal={onReveal} vctApi={vctApi} />
         ))}
     </li>
   )
@@ -1099,6 +1144,9 @@ function RecordLine({ row }: { row: RecordRow }) {
         {row.kind === 'relation' ? '→' : '='}
       </span>
       <span className="brain-value">{row.value}</span>
+      {row.kind === 'fact' && !row.replaced && (
+        <VctTags tags={row.vct} tagged={row.vct_tagged ?? false} />
+      )}
     </span>
   )
 }
@@ -1118,15 +1166,23 @@ function RecordDetail({
   id,
   row,
   onReveal,
+  vctApi,
 }: {
   id: string
   row: RecordRow
   onReveal: (id: string) => void
+  vctApi?: VctApi
 }) {
   const relation = row.kind === 'relation'
   const chunk = row.chunk
   return (
     <div id={id} className="brain-detail brain-record">
+      {!relation && !row.replaced && (
+        <section className="brain-vct" aria-label="Value chain tags">
+          <h3 className="brain-vct-heading">Value chain</h3>
+          <TagEditor factId={row.record_id} api={vctApi} />
+        </section>
+      )}
       <dl className="brain-detail-grid">
         <dt>Entity</dt>
         <dd>

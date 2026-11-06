@@ -7,6 +7,7 @@ import type {
   BrainSource,
   BrainUnknown,
 } from '@/api/brain'
+import type { FactTags } from '@/api/vct'
 
 export type Since = 'any' | '1d' | '7d' | '30d'
 export type SortBy = 'latest' | 'oldest' | 'entity' | 'fact'
@@ -90,6 +91,10 @@ export interface RecordRow extends RowBase {
   source: BrainSource | null
   /** The row id of the memory chunk this was extracted from, when it is loaded. */
   chunk: string | null
+  /** A fact's active VCT node and goal; never set on relations. */
+  vct?: FactTags | null
+  /** False until the VCT tagger has handled the fact. */
+  vct_tagged?: boolean
 }
 
 /** A memory chunk: the text of one captured turn. */
@@ -265,6 +270,8 @@ export function toRows(
       source: fact.source ?? null,
       chunk: chunkOf(fact.source),
       origin: originOf(fact.source),
+      vct: fact.vct ?? null,
+      vct_tagged: fact.vct_tagged ?? false,
     })),
     ...entity.relations.map((relation): RecordRow => ({
       id: `relation:${relation.id}`,

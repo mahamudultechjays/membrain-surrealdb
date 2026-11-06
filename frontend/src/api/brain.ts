@@ -1,3 +1,4 @@
+import type { FactTags } from '@/api/vct'
 import { apiGet } from '@/api/client'
 import { USE_MOCK_API } from '@/api/config'
 import { mockBrainApi } from '@/api/mock/brain'
@@ -40,6 +41,10 @@ export interface BrainFact extends BrainExtras {
   summary: string | null
   /** Descriptive tags such as "source=email"; empty when it has none. */
   labels: string[]
+  /** The fact's active VCT node and goal; null or absent when it has none. */
+  vct?: FactTags | null
+  /** False until the VCT tagger has handled the fact. */
+  vct_tagged?: boolean
 }
 
 export interface BrainRelation extends BrainExtras {
