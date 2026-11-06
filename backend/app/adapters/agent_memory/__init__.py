@@ -3,6 +3,7 @@ from app.adapters.agent_memory.brain import AgentMemoryBrain, NotConfiguredBrain
 from app.adapters.agent_memory.capture import AgentMemoryCapture, NotConfiguredCapture
 from app.adapters.agent_memory.chat import AgentMemoryChat, NotConfiguredChat
 from app.adapters.agent_memory.documents import AgentMemoryDocuments, NotConfiguredDocuments
+from app.adapters.agent_memory.fact_lister import AgentMemoryFactLister, NotConfiguredFactLister
 from app.adapters.agent_memory.graph import AgentMemoryGraph, NotConfiguredGraph
 from app.adapters.agent_memory.lab import AgentMemoryLab, NotConfiguredLab
 from app.adapters.agent_memory.passages import AgentMemoryPassages, NotConfiguredPassages
@@ -18,6 +19,7 @@ __all__ = [
     "AgentMemoryCapture",
     "AgentMemoryChat",
     "AgentMemoryDocuments",
+    "AgentMemoryFactLister",
     "AgentMemoryGraph",
     "AgentMemoryLab",
     "AgentMemoryPassages",
@@ -29,6 +31,7 @@ __all__ = [
     "NotConfiguredCapture",
     "NotConfiguredChat",
     "NotConfiguredDocuments",
+    "NotConfiguredFactLister",
     "NotConfiguredGraph",
     "NotConfiguredLab",
     "NotConfiguredPassages",

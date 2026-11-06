@@ -24,6 +24,7 @@ from app.composition import (
     get_onboarding_service,
     get_preview_cache,
     get_scope_registry,
+    get_tagger_service,
     get_text_reader,
 )
 from app.core.config import settings
@@ -43,6 +44,7 @@ from app.services.access import AccessService
 from app.services.capture_flow import PreviewCache
 from app.services.chat_flow import ChatSessions
 from app.services.onboarding import OnboardingService
+from app.services.tagger import TaggerService
 
 MemoryProbeDep = Annotated[MemoryProbe, Depends(get_memory_probe)]
 MemoryCaptureDep = Annotated[MemoryCapture, Depends(get_memory_capture)]
@@ -60,6 +62,7 @@ ChatSessionsDep = Annotated[ChatSessions, Depends(get_chat_sessions)]
 MemoryLabDep = Annotated[MemoryLab, Depends(get_memory_lab)]
 MemoryPeopleDep = Annotated[MemoryPeople, Depends(get_memory_people)]
 OnboardingServiceDep = Annotated[OnboardingService, Depends(get_onboarding_service)]
+TaggerServiceDep = Annotated[TaggerService, Depends(get_tagger_service)]
 
 
 async def get_current_user(request: Request) -> CurrentUser:

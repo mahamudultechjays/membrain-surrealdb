@@ -1,14 +1,14 @@
 """The VCT metro map, read once from app/data/vct.
 
 A copy of membrain's backend/data/spreetail-metro-map.json; `topology_version`
-says which revision. Only nodes and domains are used here.
+says which revision.
 """
 
 import json
 from functools import cache
 from pathlib import Path
 
-from app.domain.vct import VctDomain, VctMap, VctNode
+from app.domain.vct import VctDomain, VctGoal, VctMap, VctNode, VctSection
 
 MAP_FILE = Path(__file__).resolve().parent.parent / "data" / "vct" / "spreetail-metro-map.json"
 
@@ -32,5 +32,19 @@ def load() -> VctMap:
                 keywords=tuple(n.get("keywords", [])),
             )
             for n in data["nodes"]
+        ),
+        sections=tuple(
+            VctSection(id=s["id"], label=s["label"], ebitda_weight=float(s["ebitda_weight"]))
+            for s in data["sections"]
+        ),
+        goals=tuple(
+            VctGoal(
+                id=g["id"],
+                name=g["name"],
+                description=g["description"],
+                section_id=g["section_id"],
+                weight=float(g["effective_weight"]),
+            )
+            for g in data["vct_goals"]
         ),
     )

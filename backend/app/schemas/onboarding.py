@@ -77,3 +77,5 @@ class OnboardingStatus(BaseModel):
 class SeedResponse(BaseModel):
     scope: str
     seeded: int
+    goals_scope: str | None = None
+    goals_seeded: int = 0

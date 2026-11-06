@@ -35,3 +35,7 @@ class VctNotSeededError(Exception):
 
 class FactNotTaggedError(Exception):
     """The fact has never been processed by the VCT tagger, so it has no tag record."""
+
+
+class TaggerBusyError(Exception):
+    """A VCT tagger run is already in progress."""

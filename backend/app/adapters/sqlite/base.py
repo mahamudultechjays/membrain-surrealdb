@@ -2,11 +2,12 @@
 
 Each call opens its own connection in a worker thread, so the event loop never
 blocks and no connection is shared across threads (":memory:" keeps one shared
-connection instead, for tests).
+connection instead, for tests, used by one thread at a time).
 """
 
 import asyncio
 import sqlite3
+import threading
 from collections.abc import Callable
 from pathlib import Path
 from typing import Any
@@ -16,6 +17,7 @@ class SqliteStore:
     def __init__(self, path: str | Path, schema: str) -> None:
         self._path = str(path)
         self._shared: sqlite3.Connection | None = None
+        self._shared_lock = threading.Lock()
         if self._path == ":memory:":
             self._shared = sqlite3.connect(":memory:", check_same_thread=False)
         else:
@@ -31,7 +33,7 @@ class SqliteStore:
 
     def _run[T](self, work: Callable[[sqlite3.Connection], T]) -> T:
         if self._shared is not None:
-            with self._shared:
+            with self._shared_lock, self._shared:
                 return work(self._shared)
         db = sqlite3.connect(self._path)
         try:

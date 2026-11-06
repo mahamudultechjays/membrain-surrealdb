@@ -39,7 +39,7 @@ Goal: tag every untagged fact, on a schedule and on demand.
 - Port `FactLister` with `newest(limit, cursor)`, returning `id`, `value`, `summary`, `scopes`, `supersedes`.
   - Adapter: reuse the paging in `adapters/agent_memory/brain.py` (`GET /attributes`).
 - Service `app/services/tagger.py`, `TaggerService.run()`:
-  1. Page newest first and stop at a page where every fact is already tagged (cap: 50 pages).
+  1. Page through all facts of the tagged scopes (200 per page, at most 50 pages) and pick the ones not yet processed. Built: no early stop, since a capped run would otherwise never reach older facts.
   2. For each new fact: if `supersedes` has user tags, copy them first.
   3. Recall the fact's summary (or `value`) against the nodes scope and the goals scope, k=10, and keep the first 3 distinct ids of each.
   4. Save them as `auto` with `TAGGER_VERSION`.

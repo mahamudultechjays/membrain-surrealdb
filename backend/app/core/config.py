@@ -45,6 +45,13 @@ class Settings(BaseSettings):
     # (onboarding and fact tagging recall against them). No user is granted them.
     VCT_SCOPE: str = "org/spreetail/vct/nodes"
     VCT_GOALS_SCOPE: str = "org/spreetail/vct/goals"
+    # VCT tagger: tags facts with nodes and goals every TAGGER_INTERVAL_HOURS.
+    # TAGGER_SCOPES is a comma-separated allowlist (exact scopes, no sub-scopes);
+    # the pilot tags one personal scope. TAGGER_MAX_FACTS caps one run.
+    TAGGER_ENABLED: bool = True
+    TAGGER_INTERVAL_HOURS: float = 3.0
+    TAGGER_SCOPES: str = "org/spreetail/user/mahamudul_hasan"
+    TAGGER_MAX_FACTS: int = 500
 
     # Login: Entra ID SSO, as in membrain (Authlib + a signed session cookie).
     # The app registration must allow <FRONTEND_URL>/api/v1/auth/callback.

@@ -9,6 +9,7 @@ from app.adapters.agent_memory import (
     AgentMemoryCapture,
     AgentMemoryChat,
     AgentMemoryDocuments,
+    AgentMemoryFactLister,
     AgentMemoryGraph,
     AgentMemoryLab,
     AgentMemoryPassages,
@@ -20,6 +21,7 @@ from app.adapters.agent_memory import (
     NotConfiguredCapture,
     NotConfiguredChat,
     NotConfiguredDocuments,
+    NotConfiguredFactLister,
     NotConfiguredGraph,
     NotConfiguredLab,
     NotConfiguredPassages,
@@ -49,6 +51,7 @@ from app.services.access import AccessService
 from app.services.capture_flow import PreviewCache
 from app.services.chat_flow import ChatSessions
 from app.services.onboarding import OnboardingService
+from app.services.tagger import TaggerService
 
 
 @lru_cache
@@ -95,6 +98,8 @@ async def close_clients() -> None:
         await get_memory_chat().close()
     if get_memory_lab.cache_info().currsize:
         await get_memory_lab().close()
+    if get_fact_lister.cache_info().currsize:
+        await get_fact_lister().close()
     client = get_agent_memory_client()
     if client is not None:
         await client.close()
@@ -222,4 +227,28 @@ def get_onboarding_service() -> OnboardingService:
         get_scope_registry(),
         vct_map.load(),
         vct_scope=settings.VCT_SCOPE,
+    )
+
+
+@lru_cache
+def get_fact_lister() -> AgentMemoryFactLister | NotConfiguredFactLister:
+    """One per process: it holds the read key minted for the tagged scopes."""
+    client = get_agent_memory_client()
+    return AgentMemoryFactLister(client, _connect) if client else NotConfiguredFactLister()
+
+
+@lru_cache
+def get_tagger_service() -> TaggerService:
+    """One per process: it keeps the running and last tagger run."""
+    return TaggerService(
+        get_fact_tag_repository(),
+        get_fact_lister(),
+        get_memory_recall(),
+        get_passage_writer(),
+        get_scope_registry(),
+        vct_map.load(),
+        scopes=settings.TAGGER_SCOPES.split(","),
+        nodes_scope=settings.VCT_SCOPE,
+        goals_scope=settings.VCT_GOALS_SCOPE,
+        max_facts=settings.TAGGER_MAX_FACTS,
     )

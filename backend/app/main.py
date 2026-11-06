@@ -1,7 +1,8 @@
 """Application entrypoint and app factory."""
 
+import asyncio
 from collections.abc import AsyncIterator
-from contextlib import asynccontextmanager
+from contextlib import asynccontextmanager, suppress
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -9,16 +10,24 @@ from starlette.middleware.sessions import SessionMiddleware
 
 from app.api.middleware import TRACE_ID_HEADER, TraceMiddleware
 from app.api.v1.router import api_router
-from app.composition import close_clients
+from app.composition import close_clients, get_agent_memory_client, get_tagger_service
 from app.core.config import settings
 from app.core.logging import setup_logging
 
 
 @asynccontextmanager
 async def lifespan(_: FastAPI) -> AsyncIterator[None]:
+    tagger: asyncio.Task[None] | None = None
+    if settings.TAGGER_ENABLED and get_agent_memory_client() is not None:
+        interval = settings.TAGGER_INTERVAL_HOURS * 3600
+        tagger = asyncio.create_task(get_tagger_service().loop(interval))
     try:
         yield
     finally:
+        if tagger is not None:
+            tagger.cancel()
+            with suppress(asyncio.CancelledError):
+                await tagger
         await close_clients()
 
 

@@ -15,6 +15,7 @@ from app.api.deps import (
     MemoryPeopleDep,
     OnboardingServiceDep,
     ScopeRegistryDep,
+    TaggerServiceDep,
     is_admin,
 )
 from app.api.v1.endpoints.onboarding import status_of
@@ -34,7 +35,9 @@ from app.schemas.admin import (
 )
 from app.schemas.auth import GrantOut
 from app.schemas.onboarding import AdminVctRequest, OnboardingStatus, SeedResponse
+from app.schemas.tagger import TaggerRunOut, TaggerStatus
 from app.services import logger
+from app.services.tagger import TaggerRun, TaggerService
 
 router = APIRouter(prefix="/admin")
 
@@ -153,16 +156,73 @@ async def register_scope(
 
 @router.post("/vct/seed", response_model=SeedResponse)
 async def seed_vct(
-    request: Request, admin: AdminUserDep, onboarding: OnboardingServiceDep, force: bool = False
+    request: Request,
+    admin: AdminUserDep,
+    onboarding: OnboardingServiceDep,
+    tagger: TaggerServiceDep,
+    force: bool = False,
 ) -> SeedResponse:
-    """Store the VCT nodes in the matcher scope, once. `seeded: 0` means it was
-    already there; `force` writes them again (duplicates are harmless)."""
+    """Store the VCT nodes and goals in their matcher scopes, once. `seeded: 0`
+    means they were already there; `force` writes them again (duplicates are harmless)."""
     try:
         seeded = await onboarding.seed(force=force)
+        goals = await tagger.seed_goals(force=force)
     except (MemoryNotConfiguredError, MemoryUnavailableError) as exc:
         raise _unavailable(exc) from exc
-    _log(request, admin.email, "vct_seed", None, settings.VCT_SCOPE, str(seeded))
-    return SeedResponse(scope=settings.VCT_SCOPE, seeded=seeded)
+    _log(request, admin.email, "vct_seed", None, settings.VCT_SCOPE, f"{seeded}/{goals}")
+    return SeedResponse(
+        scope=settings.VCT_SCOPE,
+        seeded=seeded,
+        goals_scope=settings.VCT_GOALS_SCOPE,
+        goals_seeded=goals,
+    )
+
+
+@router.get("/vct/tagger", response_model=TaggerStatus)
+async def tagger_status(admin: AdminUserDep, tagger: TaggerServiceDep) -> TaggerStatus:
+    """The VCT tagger: what it tags, whether it is running, and its last run."""
+    return _tagger_status(tagger)
+
+
+@router.post("/vct/tagger/run", response_model=TaggerStatus, status_code=status.HTTP_202_ACCEPTED)
+async def run_tagger(
+    request: Request, admin: AdminUserDep, tagger: TaggerServiceDep
+) -> TaggerStatus:
+    """Start a tagger run now, in the background; 409 while one is running."""
+    if not tagger.start():
+        raise HTTPException(status.HTTP_409_CONFLICT, "The VCT tagger is already running.")
+    _log(request, admin.email, "vct_tagger_run", None, ",".join(tagger.scopes), None)
+    return _tagger_status(tagger)
+
+
+def _tagger_status(tagger: TaggerService) -> TaggerStatus:
+    return TaggerStatus(
+        enabled=settings.TAGGER_ENABLED,
+        version=tagger.version,
+        scopes=tagger.scopes,
+        interval_hours=settings.TAGGER_INTERVAL_HOURS,
+        running=tagger.running,
+        next_run_at=tagger.next_run_at,
+        current=_run_out(tagger.current),
+        last=_run_out(tagger.last),
+    )
+
+
+def _run_out(run: TaggerRun | None) -> TaggerRunOut | None:
+    if run is None:
+        return None
+    return TaggerRunOut(
+        started_at=run.started_at,
+        finished_at=run.finished_at,
+        scopes=run.scopes,
+        listed=run.listed,
+        new=run.new,
+        tagged=run.tagged,
+        carried=run.carried,
+        failed=run.failed,
+        capped=run.capped,
+        error=run.error,
+    )
 
 
 @router.get("/users/{email}/onboarding", response_model=OnboardingStatus)

@@ -3,17 +3,19 @@ from collections.abc import Iterator
 import pytest
 from fastapi.testclient import TestClient
 
-from app.adapters.sqlite import SqliteOnboarding
-from app.composition import get_onboarding_service
+from app.adapters.sqlite import SqliteFactTags, SqliteOnboarding
+from app.composition import get_onboarding_service, get_tagger_service
 from app.domain.errors import MemoryUnavailableError, UnknownVctNodeError, VctNotSeededError
 from app.domain.ports.memory_recall import RecallHit, RecallResult
 from app.main import app
 from app.services import vct_map
 from app.services.access import AccessService
 from app.services.onboarding import OnboardingService, node_text, split_clauses
+from app.services.tagger import TaggerService
 from tests.conftest import FakeRegistry, sign_in
 
 SCOPE = "org/spreetail/vct/nodes"
+GOALS = "org/spreetail/vct/goals"
 EMAIL = "priya.shah@x.com"
 VMAP = vct_map.load()
 
@@ -74,8 +76,30 @@ def service(
 
 
 @pytest.fixture
-def client(access: AccessService, service: OnboardingService) -> Iterator[TestClient]:
+def tagger(recall: FakeRecall, passages: FakePassages, registry: FakeRegistry) -> TaggerService:
+    class NoFacts:
+        async def page(self, scopes: list[str], *, limit: int, cursor: str | None) -> None:
+            raise AssertionError("not listed in onboarding tests")
+
+    return TaggerService(
+        SqliteFactTags(":memory:"),
+        NoFacts(),  # type: ignore[arg-type]
+        recall,
+        passages,
+        registry,
+        VMAP,
+        scopes=[],
+        nodes_scope=SCOPE,
+        goals_scope=GOALS,
+    )
+
+
+@pytest.fixture
+def client(
+    access: AccessService, service: OnboardingService, tagger: TaggerService
+) -> Iterator[TestClient]:
     app.dependency_overrides[get_onboarding_service] = lambda: service
+    app.dependency_overrides[get_tagger_service] = lambda: tagger
     with TestClient(app) as test_client:
         sign_in(test_client, EMAIL, "Priya Shah")
         yield test_client
@@ -226,8 +250,14 @@ def test_admin_seeds_views_and_overrides(client: TestClient, passages: FakePassa
     bad = client.put(f"/api/v1/admin/users/{EMAIL}/vct", json={"node_ids": ["zz9"]})
     fresh = client.put("/api/v1/admin/users/new@x.com/vct", json={"node_ids": ["cs2"]})
 
-    assert seeded.json() == {"scope": SCOPE, "seeded": 41}
-    assert len(passages.written) == 41
+    assert seeded.json() == {
+        "scope": SCOPE,
+        "seeded": 41,
+        "goals_scope": GOALS,
+        "goals_seeded": 42,
+    }
+    assert len(passages.written) == 83
+    assert passages.written[-1][1] == GOALS
     assert [n["id"] for n in viewed.json()["nodes"]] == ["sc6"]
     assert changed.json()["team"] == "Ops"
     assert [(n["id"], n["confirmed_by"]) for n in changed.json()["nodes"]] == [
