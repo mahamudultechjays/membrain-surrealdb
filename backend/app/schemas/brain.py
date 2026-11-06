@@ -3,6 +3,8 @@ chunks they were extracted from, filtered by scope."""
 
 from pydantic import BaseModel
 
+from app.schemas.vct_tags import FactTagsOut
+
 
 class BrainSourceOut(BaseModel):
     # e.g. "turn" (a captured input) or "elaboration" (inferred from one).
@@ -35,6 +37,10 @@ class BrainFactOut(BaseModel):
     valid_from: str | None
     valid_until: str | None
     source: BrainSourceOut
+    # The fact's active VCT node and goal; null when it has none.
+    vct: FactTagsOut | None = None
+    # False until the VCT tagger has handled the fact.
+    vct_tagged: bool = False
 
 
 class BrainRelationOut(BaseModel):

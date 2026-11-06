@@ -1,8 +1,10 @@
+import asyncio
 from collections.abc import Collection, Iterator
 
 import pytest
 from fastapi.testclient import TestClient
 
+from app.adapters.sqlite import SqliteFactTags
 from app.composition import get_memory_brain, get_scope_registry
 from app.domain.errors import MemoryNotConfiguredError
 from app.domain.ports.memory_brain import (
@@ -396,3 +398,17 @@ def test_replaced_values_come_from_entity_histories_only_when_asked(
     assert fake.histories == ["organisation/acme"]
     assert ("f0", True) in acme_keys(full)
     assert (full["replaced_loaded"], full["replaced_missing"]) == (True, 0)
+
+
+def test_facts_carry_their_vct_tags(client: TestClient, tags: SqliteFactTags) -> None:
+    asyncio.run(tags.save_auto("f1", ORG, nodes=["sc1"], goals=["src-mgmt3"], version="v1"))
+    sign_in(client, "priya.shah@x.com", "Priya Shah")
+
+    facts = _by_name(client.get("/api/v1/brain").json())["Acme Logistics"]["facts"]
+
+    tagged = next(f for f in facts if f["id"] == "f1")
+    assert tagged["vct_tagged"] is True
+    assert tagged["vct"]["node"]["id"] == "sc1"
+    assert tagged["vct"]["goal"]["id"] == "src-mgmt3"
+    other = next(f for f in facts if f["id"] != "f1")
+    assert (other["vct"], other["vct_tagged"]) == (None, False)

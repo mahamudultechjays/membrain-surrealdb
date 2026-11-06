@@ -89,7 +89,7 @@ Goal: anyone who can read a fact's scope can fix its tags.
 ## Phase 5 · Coverage, gaps and tagger stats
 
 - `GET /api/v1/vct/coverage`: fact counts per node and goal, rolled up to domain and section, over the caller's readable scopes only.
-- `GET /api/v1/vct/untagged?kind=goal`: facts without a goal, newest first, paged. The text comes from the listing, never from our tables.
+- Facts without a goal: built into `GET /api/v1/brain` instead of a separate endpoint. Each fact carries `vct` (active node and goal) and `vct_tagged`, so the UI lists processed facts with no goal. Brain already has the fact text and scope.
 - `GET /api/v1/admin/vct/tagger` adds:
   - total tagged
   - correction rate, last 7 days: changed or removed ÷ tags shown

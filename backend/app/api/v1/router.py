@@ -16,6 +16,7 @@ from app.api.v1.endpoints import (
     graph,
     health,
     onboarding,
+    vct,
 )
 
 api_router = APIRouter()
@@ -32,3 +33,4 @@ api_router.include_router(admin_lab.router, tags=["admin"])
 api_router.include_router(documents.router, tags=["documents"])
 api_router.include_router(graph.router, tags=["graph"])
 api_router.include_router(brain.router, tags=["brain"])
+api_router.include_router(vct.router, tags=["vct"])

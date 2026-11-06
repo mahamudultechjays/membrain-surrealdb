@@ -25,8 +25,10 @@ from app.schemas.onboarding import (
     OnboardingPreviewResponse,
     OnboardingStatus,
     VctDomainOut,
+    VctGoalOut,
     VctMapResponse,
     VctNodeOut,
+    VctSectionOut,
 )
 from app.services import logger
 
@@ -35,7 +37,8 @@ router = APIRouter()
 
 @router.get("/vct/map", response_model=VctMapResponse)
 async def vct_map(user: CurrentUserDep, onboarding: OnboardingServiceDep) -> VctMapResponse:
-    """Every VCT node grouped by domain, for a node picker."""
+    """Every VCT node grouped by domain, and every goal grouped by section,
+    for the node and goal pickers."""
     vmap = onboarding.map
     return VctMapResponse(
         topology_version=vmap.topology_version,
@@ -48,6 +51,19 @@ async def vct_map(user: CurrentUserDep, onboarding: OnboardingServiceDep) -> Vct
                 nodes=[_node(n) for n in vmap.nodes if n.domain_id == d.id],
             )
             for d in vmap.domains
+        ],
+        sections=[
+            VctSectionOut(
+                id=sec.id,
+                label=sec.label,
+                ebitda_weight=sec.ebitda_weight,
+                goals=[
+                    VctGoalOut(id=g.id, name=g.name, description=g.description, weight=g.weight)
+                    for g in vmap.goals
+                    if g.section_id == sec.id
+                ],
+            )
+            for sec in vmap.sections
         ],
     )
 
@@ -161,5 +177,9 @@ def unavailable(exc: Exception) -> HTTPException:
 
 def _node(node: VctNode) -> VctNodeOut:
     return VctNodeOut(
-        id=node.id, name=node.name, description=node.description, domain_id=node.domain_id
+        id=node.id,
+        name=node.name,
+        description=node.description,
+        domain_id=node.domain_id,
+        section_id=node.section_id,
     )

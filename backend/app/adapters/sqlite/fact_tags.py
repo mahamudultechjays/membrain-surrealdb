@@ -235,6 +235,17 @@ class SqliteFactTags(SqliteStore):
         )
         return [TagCount(kind, tag, n) for kind, tag, n in rows]
 
+    async def totals(self, scopes: list[str]) -> tuple[int, int]:
+        if not scopes:
+            return (0, 0)
+        rows = await self._query(
+            "SELECT COUNT(*), COALESCE(SUM(NOT EXISTS ("
+            "SELECT 1 FROM fact_tags f WHERE f.fact_id = t.fact_id AND f.kind = 'goal')), 0) "
+            f"FROM tagged_facts t WHERE t.scope IN ({_marks(scopes)})",
+            tuple(scopes),
+        )
+        return (int(rows[0][0]), int(rows[0][1]))
+
     async def without(self, kind: TagKind, scopes: list[str], limit: int, offset: int) -> list[str]:
         if not scopes:
             return []

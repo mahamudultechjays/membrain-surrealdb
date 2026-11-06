@@ -10,6 +10,7 @@ class VctNodeOut(BaseModel):
     name: str
     description: str
     domain_id: str
+    section_id: str = ""
 
 
 class DomainRef(BaseModel):
@@ -21,9 +22,26 @@ class VctDomainOut(DomainRef):
     nodes: list[VctNodeOut]
 
 
+class VctGoalOut(BaseModel):
+    id: str
+    name: str
+    description: str
+    # The goal's share of EBITDA.
+    weight: float
+
+
+class VctSectionOut(BaseModel):
+    id: str
+    label: str
+    ebitda_weight: float
+    goals: list[VctGoalOut]
+
+
 class VctMapResponse(BaseModel):
     topology_version: str
     domains: list[VctDomainOut]
+    # The value-chain sections in order, each with its goals.
+    sections: list[VctSectionOut] = Field(default_factory=list)
 
 
 class OnboardingPreviewRequest(BaseModel):

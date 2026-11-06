@@ -5,7 +5,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from app.adapters.sqlite import SqliteFactTags
-from app.composition import get_fact_tag_repository, get_memory_recall
+from app.composition import get_memory_recall
 from app.domain.errors import MemoryNotConfiguredError, MemoryUnavailableError
 from app.domain.ports.memory_recall import RecallHit, RecallResult
 from app.main import app
@@ -39,14 +39,8 @@ def recall() -> FakeRecall:
 
 
 @pytest.fixture
-def tags() -> SqliteFactTags:
-    return SqliteFactTags(":memory:")
-
-
-@pytest.fixture
 def client(recall: FakeRecall, access: AccessService, tags: SqliteFactTags) -> Iterator[TestClient]:
     app.dependency_overrides[get_memory_recall] = lambda: recall
-    app.dependency_overrides[get_fact_tag_repository] = lambda: tags
     with TestClient(app) as test_client:
         # Both users exist; the session ends up as Priya.
         sign_in(test_client, "arun.das@x.com", "Arun Das")

@@ -6,12 +6,14 @@ ADMIN_EMAILS get past `require_admin`. Scopes are kept under ORG_SCOPE.
 """
 
 from collections import defaultdict
+from datetime import UTC, datetime, timedelta
 
 from fastapi import APIRouter, HTTPException, Request, status
 
 from app.api.deps import (
     AccessServiceDep,
     AdminUserDep,
+    FactTagRepositoryDep,
     MemoryPeopleDep,
     OnboardingServiceDep,
     ScopeRegistryDep,
@@ -25,6 +27,7 @@ from app.domain.errors import (
     MemoryUnavailableError,
     UnknownVctNodeError,
 )
+from app.domain.ports.fact_tags import FactTagRepository
 from app.domain.ports.user_scopes import ScopeGrant
 from app.schemas.admin import (
     GrantRequest,
@@ -35,11 +38,14 @@ from app.schemas.admin import (
 )
 from app.schemas.auth import GrantOut
 from app.schemas.onboarding import AdminVctRequest, OnboardingStatus, SeedResponse
-from app.schemas.tagger import TaggerRunOut, TaggerStatus
+from app.schemas.tagger import ConfusionOut, TaggerRunOut, TaggerStats, TaggerStatus
 from app.services import logger
 from app.services.tagger import TaggerRun, TaggerService
 
 router = APIRouter(prefix="/admin")
+
+# The window for the tagger's correction rate.
+STATS_DAYS = 7
 
 
 @router.get("/users", response_model=UsersResponse)
@@ -179,23 +185,29 @@ async def seed_vct(
 
 
 @router.get("/vct/tagger", response_model=TaggerStatus)
-async def tagger_status(admin: AdminUserDep, tagger: TaggerServiceDep) -> TaggerStatus:
-    """The VCT tagger: what it tags, whether it is running, and its last run."""
-    return _tagger_status(tagger)
+async def tagger_status(
+    admin: AdminUserDep, tagger: TaggerServiceDep, tags: FactTagRepositoryDep
+) -> TaggerStatus:
+    """The VCT tagger: what it tags, whether it is running, its last run, and
+    how often people corrected its tags in the last 7 days."""
+    return await _tagger_status(tagger, tags)
 
 
 @router.post("/vct/tagger/run", response_model=TaggerStatus, status_code=status.HTTP_202_ACCEPTED)
 async def run_tagger(
-    request: Request, admin: AdminUserDep, tagger: TaggerServiceDep
+    request: Request, admin: AdminUserDep, tagger: TaggerServiceDep, tags: FactTagRepositoryDep
 ) -> TaggerStatus:
     """Start a tagger run now, in the background; 409 while one is running."""
     if not tagger.start():
         raise HTTPException(status.HTTP_409_CONFLICT, "The VCT tagger is already running.")
     _log(request, admin.email, "vct_tagger_run", None, ",".join(tagger.scopes), None)
-    return _tagger_status(tagger)
+    return await _tagger_status(tagger, tags)
 
 
-def _tagger_status(tagger: TaggerService) -> TaggerStatus:
+async def _tagger_status(tagger: TaggerService, tags: FactTagRepository) -> TaggerStatus:
+    since = (datetime.now(UTC) - timedelta(days=STATS_DAYS)).isoformat(timespec="seconds")
+    feedback = await tags.feedback_stats(since)
+    tagged, _ = await tags.totals(tagger.scopes)
     return TaggerStatus(
         enabled=settings.TAGGER_ENABLED,
         version=tagger.version,
@@ -205,6 +217,16 @@ def _tagger_status(tagger: TaggerService) -> TaggerStatus:
         next_run_at=tagger.next_run_at,
         current=_run_out(tagger.current),
         last=_run_out(tagger.last),
+        tagged_facts=tagged,
+        stats=TaggerStats(
+            days=STATS_DAYS,
+            edits=feedback.edits,
+            corrections=feedback.corrections,
+            correction_rate=round(feedback.corrections / feedback.edits, 3)
+            if feedback.edits
+            else None,
+            confusions=[ConfusionOut(old=o, new=n, times=t) for o, n, t in feedback.confusions],
+        ),
     )
 
 

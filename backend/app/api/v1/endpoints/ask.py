@@ -64,7 +64,7 @@ async def ask(
     )
     if unknown := flt.unknown(vmap):
         raise HTTPException(
-            status.HTTP_422_UNPROCESSABLE_ENTITY, f"Unknown VCT ids: {', '.join(unknown)}"
+            status.HTTP_422_UNPROCESSABLE_CONTENT, f"Unknown VCT ids: {', '.join(unknown)}"
         )
     emails = [user.email]
     if as_user:

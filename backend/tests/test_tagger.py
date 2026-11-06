@@ -264,8 +264,8 @@ async def test_goals_are_seeded_once() -> None:
 
 
 @pytest.fixture
-def service() -> TaggerService:
-    return _service(FakeLister([[_fact("f1", "freight")]]))
+def service(tags: SqliteFactTags) -> TaggerService:
+    return _service(FakeLister([[_fact("f1", "freight")]]), tags=tags)
 
 
 @pytest.fixture
@@ -295,6 +295,30 @@ def test_admin_runs_the_tagger_and_reads_its_status(client: TestClient) -> None:
     assert started.status_code == 202
     assert status["running"] is False
     assert status["last"]["tagged"] == 1
+    assert status["tagged_facts"] == 1
+    assert status["stats"] == {
+        "days": 7,
+        "edits": 0,
+        "corrections": 0,
+        "correction_rate": None,
+        "confusions": [],
+    }
+
+
+def test_status_reports_corrections_from_the_last_week(
+    client: TestClient, tags: SqliteFactTags
+) -> None:
+    sign_in(client, "admin@x.com", "Ada Admin")
+    asyncio.run(tags.save_auto("f1", ME, nodes=["mo1"], goals=["ff-mgmt5"], version="v1"))
+    asyncio.run(tags.set_tag("f1", "node", "fi4", "admin@x.com"))
+    asyncio.run(tags.accept("f1", "goal", "admin@x.com"))
+
+    stats = client.get("/api/v1/admin/vct/tagger").json()["stats"]
+
+    assert stats["edits"] == 2
+    assert stats["corrections"] == 1
+    assert stats["correction_rate"] == 0.5
+    assert stats["confusions"] == [{"old": "mo1", "new": "fi4", "times": 1}]
 
 
 def test_a_second_run_while_running_is_409(client: TestClient, service: TaggerService) -> None:

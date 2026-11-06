@@ -92,6 +92,10 @@ class FactTagRepository(Protocol):
         """How many facts carry each rank 1 tag, over these scopes only."""
         ...
 
+    async def totals(self, scopes: list[str]) -> tuple[int, int]:
+        """(processed facts, processed facts with no goal) over these scopes."""
+        ...
+
     async def without(self, kind: TagKind, scopes: list[str], limit: int, offset: int) -> list[str]:
         """Processed fact ids in these scopes with no tag of this kind, newest first."""
         ...

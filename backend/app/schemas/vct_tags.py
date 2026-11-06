@@ -2,7 +2,7 @@
 
 from typing import Literal
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from app.domain.ports.fact_tags import FactTag
 from app.domain.vct import VctMap
@@ -26,6 +26,43 @@ class TagRef(BaseModel):
 class FactTagsOut(BaseModel):
     node: TagRef | None = None
     goal: TagRef | None = None
+
+
+class TagEditRequest(BaseModel):
+    kind: Literal["node", "goal"]
+    # change: pick `tag` as the active tag; remove: drop the kind; accept: confirm it.
+    action: Literal["change", "remove", "accept"]
+    tag: str | None = Field(default=None, max_length=40)
+
+
+class FactTagDetail(BaseModel):
+    fact_id: str
+    scope: str
+    # Rank order: [0] is active, the rest are the tagger's alternatives.
+    nodes: list[TagRef]
+    goals: list[TagRef]
+
+
+class CoverageCount(BaseModel):
+    id: str
+    facts: int
+
+
+class CoverageCell(BaseModel):
+    domain_id: str
+    section_id: str
+    # How many map nodes sit in this cell, and how many facts they carry.
+    nodes: int
+    facts: int
+
+
+class VctCoverage(BaseModel):
+    scopes: list[str]
+    tagged_facts: int
+    without_goal: int
+    nodes: list[CoverageCount]
+    goals: list[CoverageCount]
+    cells: list[CoverageCell]
 
 
 def tag_ref(tag: FactTag, vmap: VctMap) -> TagRef | None:

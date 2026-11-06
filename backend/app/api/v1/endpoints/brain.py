@@ -10,9 +10,17 @@ from typing import Annotated
 
 from fastapi import APIRouter, HTTPException, Query, Request, status
 
-from app.api.deps import AccessServiceDep, CurrentUserDep, MemoryBrainDep, is_admin
+from app.api.deps import (
+    AccessServiceDep,
+    CurrentUserDep,
+    FactTagRepositoryDep,
+    MemoryBrainDep,
+    VctMapDep,
+    is_admin,
+)
 from app.domain.errors import MemoryNotConfiguredError, MemoryUnavailableError
 from app.domain.ports.memory_brain import BrainReplaced, BrainSource, BrainTurns
+from app.domain.vct import VctMap
 from app.schemas.brain import (
     BrainActionOut,
     BrainChunkOut,
@@ -25,7 +33,9 @@ from app.schemas.brain import (
     BrainSourceOut,
     BrainUnknownOut,
 )
+from app.schemas.vct_tags import fact_tags_out
 from app.services import brain, logger
+from app.services.vct_tags import HitTags, active_tags
 
 router = APIRouter(prefix="/brain")
 
@@ -40,6 +50,8 @@ async def list_brain(
     user: CurrentUserDep,
     access: AccessServiceDep,
     memory: MemoryBrainDep,
+    tag_store: FactTagRepositoryDep,
+    vmap: VctMapDep,
     scope: Annotated[list[str] | None, Query()] = None,
     subscopes: bool = False,
     chunks: bool = True,
@@ -86,7 +98,14 @@ async def list_brain(
         ) from exc
 
     found = brain.view(snapshot, scope_filter)
-    entities = [_entity_out(e, found.names) for e in found.entities]
+    fact_ids = [f.id for e in found.entities for f in e.facts]
+    stored = await tag_store.tags_for(fact_ids)
+    vct = _Vct(
+        tags={fid: active_tags(rows) for fid, rows in stored.items()},
+        processed=await tag_store.processed(fact_ids),
+        vmap=vmap,
+    )
+    entities = [_entity_out(e, found.names, vct) for e in found.entities]
     chunk_views = brain.chunks(snapshot, turns.turns, scope_filter)
     response = BrainResponse(
         entities=entities,
@@ -177,7 +196,16 @@ async def list_brain(
     return response
 
 
-def _entity_out(entity: brain.EntityView, names: dict[str, str]) -> BrainEntityOut:
+class _Vct:
+    """The VCT tags of the listed facts, looked up once per request."""
+
+    def __init__(self, tags: dict[str, HitTags], processed: set[str], vmap: VctMap) -> None:
+        self.tags = tags
+        self.processed = processed
+        self.vmap = vmap
+
+
+def _entity_out(entity: brain.EntityView, names: dict[str, str], vct: _Vct) -> BrainEntityOut:
     return BrainEntityOut(
         ref=entity.ref,
         name=entity.name,
@@ -204,6 +232,8 @@ def _entity_out(entity: brain.EntityView, names: dict[str, str]) -> BrainEntityO
                 valid_from=f.valid_from,
                 valid_until=f.valid_until,
                 source=_source_out(f.source),
+                vct=fact_tags_out(vct.tags.get(f.id), vct.vmap),
+                vct_tagged=f.id in vct.processed,
             )
             for f in entity.facts
         ],

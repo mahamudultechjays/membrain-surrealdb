@@ -163,6 +163,9 @@ async def test_counts_and_gaps_only_cover_the_given_scopes() -> None:
     assert await repo.without("goal", [ME], limit=10, offset=0) == ["f4"]
     assert await repo.without("goal", [OTHER], limit=10, offset=0) == []
     assert await repo.without("goal", [], limit=10, offset=0) == []
+    assert await repo.totals([ME]) == (3, 1)
+    assert await repo.totals([ME, OTHER]) == (4, 1)
+    assert await repo.totals([]) == (0, 0)
 
 
 async def test_feedback_stats_only_count_edits_in_the_window() -> None:
