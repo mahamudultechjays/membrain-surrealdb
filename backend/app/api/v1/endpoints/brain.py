@@ -16,8 +16,10 @@ from app.domain.ports.memory_brain import BrainReplaced, BrainSource, BrainTurns
 from app.schemas.brain import (
     BrainActionOut,
     BrainChunkOut,
+    BrainDocumentOut,
     BrainEntityOut,
     BrainFactOut,
+    BrainInstructionOut,
     BrainRelationOut,
     BrainResponse,
     BrainSourceOut,
@@ -139,6 +141,27 @@ async def list_brain(
             )
             for u in brain.unknowns(snapshot, scope_filter)
         ],
+        instructions=[
+            BrainInstructionOut(id=i.id, label=i.label, description=i.description)
+            for i in snapshot.instructions
+        ],
+        documents=[
+            BrainDocumentOut(
+                id=d.id,
+                title=d.title,
+                file_name=d.file_name,
+                mime_type=d.mime_type,
+                size_bytes=d.size_bytes,
+                status=d.status,
+                error=d.error,
+                created_at=d.created_at,
+                updated_at=d.updated_at,
+                processed_at=d.processed_at,
+            )
+            for d in sorted(snapshot.documents, key=lambda d: d.created_at, reverse=True)
+        ]
+        if is_admin(user.email)
+        else [],
         replaced_loaded=replaced,
         replaced_missing=old.missing,
     )

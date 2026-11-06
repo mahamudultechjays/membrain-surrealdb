@@ -99,6 +99,32 @@ export interface BrainResponse {
   replaced_loaded: boolean
   /** Entities whose history could not be read this time; 0 when all loaded. */
   replaced_missing: number
+  /** Standing rules memory follows; no scope, so the same for everyone. */
+  instructions?: BrainInstruction[]
+  /** Files uploaded to memory; empty for non-admins (no scope to check). */
+  documents?: BrainDocument[]
+}
+
+/** A standing rule memory follows, e.g. "Keep methodology descriptions short". */
+export interface BrainInstruction {
+  id: string
+  label: string
+  description: string
+}
+
+/** A file uploaded to memory, to be read and turned into memories. */
+export interface BrainDocument {
+  id: string
+  title: string
+  file_name: string
+  mime_type: string
+  size_bytes: number | null
+  /** Agent Memory's: queued, processing, done or failed. */
+  status: string
+  error: string | null
+  created_at: string
+  updated_at: string
+  processed_at: string | null
 }
 
 /** A dated event memory recorded: actor → verb → object. */

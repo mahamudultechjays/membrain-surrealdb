@@ -112,12 +112,47 @@ class BrainUnknown:
 
 
 @dataclass(frozen=True, slots=True)
+class BrainInstruction:
+    """A standing rule memory follows, e.g. "keep methodology descriptions short".
+
+    Agent Memory only lists these inside GET /state, with no scope and no date:
+    they apply everywhere.
+    """
+
+    id: str
+    label: str
+    description: str
+
+
+@dataclass(frozen=True, slots=True)
+class BrainDocument:
+    """A file uploaded to memory, to be read and turned into memories.
+
+    Documents carry no scope. `status` is Agent Memory's: queued, processing,
+    done or failed (with `error`).
+    """
+
+    id: str
+    title: str
+    file_name: str
+    mime_type: str
+    size_bytes: int | None
+    status: str
+    created_at: str
+    updated_at: str
+    processed_at: str | None = None
+    error: str | None = None
+
+
+@dataclass(frozen=True, slots=True)
 class BrainSnapshot:
     entities: list[BrainEntity] = field(default_factory=list)
     facts: list[BrainFact] = field(default_factory=list)
     relations: list[BrainRelation] = field(default_factory=list)
     actions: list[BrainAction] = field(default_factory=list)
     unknowns: list[BrainUnknown] = field(default_factory=list)
+    instructions: list[BrainInstruction] = field(default_factory=list)
+    documents: list[BrainDocument] = field(default_factory=list)
 
 
 @dataclass(frozen=True, slots=True)

@@ -268,7 +268,52 @@ async def test_reads_actions_and_unknowns_and_survives_their_absence() -> None:
     # Without those listings the page still loads, just without them.
     del routes["/actions"], routes["/uncertainty"]
     bare = await AgentMemoryBrain(Client(RouteTransport(routes))).snapshot()  # type: ignore[arg-type]
-    assert (bare.actions, bare.unknowns) == ([], [])
+    assert (bare.actions, bare.unknowns, bare.instructions, bare.documents) == ([], [], [], [])
+
+
+async def test_reads_instructions_from_state_and_documents_with_their_status() -> None:
+    routes = {
+        "/entities": {"entities": [], "page": {}},
+        "/attributes": {"attributes": [], "page": {}},
+        "/relations": {"relations": [], "page": {}},
+        "/state": {
+            "instructions": [
+                {"id": "i1", "label": "methodology_format", "description": "Keep it short."},
+                "not a rule",
+            ]
+        },
+        "/documents": {
+            "documents": [
+                {
+                    "id": "d1",
+                    "title": "Pricing notes",
+                    "mimeType": "text/markdown",
+                    "source": "pricing.md",
+                    "sizeBytes": 6772,
+                    "status": "queued",
+                    "error": None,
+                    "createdAt": "2026-11-03T12:35:44Z",
+                    "updatedAt": "2026-11-03T12:35:44Z",
+                    "processingCompletedAt": None,
+                }
+            ],
+            "page": {"hasMore": False},
+        },
+    }
+
+    snapshot = await AgentMemoryBrain(Client(RouteTransport(routes))).snapshot()  # type: ignore[arg-type]
+
+    assert [(i.id, i.label, i.description) for i in snapshot.instructions] == [
+        ("i1", "methodology_format", "Keep it short.")
+    ]
+    doc = snapshot.documents[0]
+    assert (doc.title, doc.file_name, doc.size_bytes, doc.status, doc.processed_at) == (
+        "Pricing notes",
+        "pricing.md",
+        6772,
+        "queued",
+        None,
+    )
 
 
 async def test_replaced_facts_come_from_entity_history_and_are_cached() -> None:

@@ -94,6 +94,8 @@ export const mockBrainApi: BrainApi = {
       chunks_missing: 0,
       actions: [],
       unknowns: [],
+      instructions: [],
+      documents: [],
       replaced_loaded: true,
       replaced_missing: 0,
     }

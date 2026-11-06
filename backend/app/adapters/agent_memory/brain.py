@@ -13,8 +13,10 @@ from surrealdb_memory import AsyncMemory, MemoryNotFoundError
 from app.domain.errors import MemoryNotConfiguredError, MemoryUnavailableError
 from app.domain.ports.memory_brain import (
     BrainAction,
+    BrainDocument,
     BrainEntity,
     BrainFact,
+    BrainInstruction,
     BrainRelation,
     BrainReplaced,
     BrainSnapshot,
@@ -129,12 +131,22 @@ class AgentMemoryBrain:
         return tuple(_turn(raw, session_id) for raw in items)
 
     async def snapshot(self) -> BrainSnapshot:
-        entities, facts, relations, actions, unknowns = await asyncio.gather(
+        (
+            entities,
+            facts,
+            relations,
+            actions,
+            unknowns,
+            instructions,
+            documents,
+        ) = await asyncio.gather(
             self._all("entities"),
             self._all("attributes"),
             self._all("relations"),
             self._optional("actions", "actions"),
             self._optional("uncertainty", "unknowns"),
+            self._instructions(),
+            self._optional("documents", "documents"),
         )
         return BrainSnapshot(
             entities=[e for e in map(_entity, entities) if e],
@@ -142,7 +154,21 @@ class AgentMemoryBrain:
             relations=[_relation(r) for r in relations],
             actions=[_action(a) for a in actions],
             unknowns=[_unknown(u) for u in unknowns],
+            instructions=[_instruction(i) for i in instructions],
+            documents=[_document(d) for d in documents],
         )
+
+    async def _instructions(self) -> list[dict[str, Any]]:
+        """Instructions have no listing route: they come only inside GET /state."""
+        try:
+            state: Any = await self._client.entities._transport.request(
+                "GET", f"{self._base}/state"
+            )
+        except Exception:
+            logger.warning("Agent Memory state read failed", exc_info=True)
+            return []
+        found = state.get("instructions") if isinstance(state, dict) else None
+        return [i for i in found or [] if isinstance(i, dict)]
 
     async def _optional(self, path: str, key: str) -> list[dict[str, Any]]:
         """A listing the page can do without: on failure, nothing rather than an error."""
@@ -311,6 +337,30 @@ def _action(raw: dict[str, Any]) -> BrainAction:
         occurred_at=_text(raw.get("occurredAt")),
         confidence=_number(raw.get("confidence")),
         source=_source(raw.get("source")),
+    )
+
+
+def _instruction(raw: dict[str, Any]) -> BrainInstruction:
+    return BrainInstruction(
+        id=str(raw.get("id", "")),
+        label=str(raw.get("label") or ""),
+        description=str(raw.get("description") or ""),
+    )
+
+
+def _document(raw: dict[str, Any]) -> BrainDocument:
+    size = raw.get("sizeBytes")
+    return BrainDocument(
+        id=str(raw.get("id", "")),
+        title=str(raw.get("title") or raw.get("source") or ""),
+        file_name=str(raw.get("source") or ""),
+        mime_type=str(raw.get("mimeType") or ""),
+        size_bytes=size if isinstance(size, int) else None,
+        status=str(raw.get("status") or ""),
+        created_at=str(raw.get("createdAt") or ""),
+        updated_at=str(raw.get("updatedAt") or ""),
+        processed_at=_text(raw.get("processingCompletedAt")),
+        error=_text(raw.get("error")),
     )
 
 

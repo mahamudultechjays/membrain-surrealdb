@@ -414,7 +414,9 @@ describe('BrainPage', () => {
         expect.any(AbortSignal),
       ),
     )
-    fireEvent.click(screen.getByLabelText('Include sub-spaces'))
+    // Sub-spaces show by default; ticking Exclude leaves them out.
+    expect(screen.getByLabelText('Exclude sub-spaces')).not.toBeChecked()
+    fireEvent.click(screen.getByLabelText('Exclude sub-spaces'))
     await waitFor(() =>
       expect(api.list).toHaveBeenLastCalledWith(
         { scopes: [MINE], subscopes: false, replaced: false },

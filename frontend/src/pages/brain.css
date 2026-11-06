@@ -947,7 +947,7 @@ fieldset.graph-pill {
   padding-right: 32px;
 }
 
-/* "Include sub-spaces": a spaces option, so it sits beside the Spaces menu. */
+/* "Exclude sub-spaces": a spaces option, so it sits beside the Spaces menu. */
 .brain-subspaces {
   display: inline-flex;
   align-items: center;

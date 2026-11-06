@@ -119,6 +119,30 @@ class BrainUnknownOut(BaseModel):
     created_at: str
 
 
+class BrainInstructionOut(BaseModel):
+    """A standing rule memory follows. No scope: it applies everywhere."""
+
+    id: str
+    label: str
+    description: str
+
+
+class BrainDocumentOut(BaseModel):
+    """A file uploaded to memory. No scope; listed for admins only."""
+
+    id: str
+    title: str
+    file_name: str
+    mime_type: str
+    size_bytes: int | None
+    # Agent Memory's: queued, processing, done or failed.
+    status: str
+    error: str | None
+    created_at: str
+    updated_at: str
+    processed_at: str | None
+
+
 class BrainResponse(BaseModel):
     entities: list[BrainEntityOut]
     # Every scope the caller may filter by that holds something.
@@ -131,6 +155,9 @@ class BrainResponse(BaseModel):
     chunks_missing: int
     actions: list[BrainActionOut]
     unknowns: list[BrainUnknownOut]
+    instructions: list[BrainInstructionOut] = []
+    # Empty for non-admins: documents carry no scope to check a grant against.
+    documents: list[BrainDocumentOut] = []
     # True when replaced facts (read from entity histories) are included.
     replaced_loaded: bool
     # Entities whose history could not be read this time; 0 when all loaded.

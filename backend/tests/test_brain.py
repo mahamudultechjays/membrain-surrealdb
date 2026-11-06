@@ -7,8 +7,10 @@ from app.composition import get_memory_brain, get_scope_registry
 from app.domain.errors import MemoryNotConfiguredError
 from app.domain.ports.memory_brain import (
     BrainAction,
+    BrainDocument,
     BrainEntity,
     BrainFact,
+    BrainInstruction,
     BrainRelation,
     BrainReplaced,
     BrainSnapshot,
@@ -132,6 +134,19 @@ SNAPSHOT = BrainSnapshot(
         BrainUnknown(
             "u2", "Fee", "Two sources disagree", True, True, (VIDYUL,), "2026-11-03T09:00:00"
         ),
+    ],
+    instructions=[BrainInstruction("i1", "methodology_format", "Keep it short.")],
+    documents=[
+        BrainDocument(
+            id="d1",
+            title="Pricing notes",
+            file_name="pricing.md",
+            mime_type="text/markdown",
+            size_bytes=6772,
+            status="queued",
+            created_at="2026-11-03T12:35:44Z",
+            updated_at="2026-11-03T12:35:44Z",
+        )
     ],
 )
 
@@ -329,6 +344,21 @@ def test_actions_take_the_space_of_their_capture_and_unknowns_their_own(
     assert [u["id"] for u in body["unknowns"]] == ["u1"]
     u1 = body["unknowns"][0]
     assert (u1["entity_name"], u1["key"], u1["resolved"]) == ("Acme Logistics", "lead_time", False)
+
+
+def test_instructions_for_everyone_documents_for_admins_only(client: TestClient) -> None:
+    sign_in(client, "priya.shah@x.com", "Priya Shah")
+    member = client.get("/api/v1/brain").json()
+    sign_in(client, "admin@x.com", "Ada Admin")
+    admin = client.get("/api/v1/brain").json()
+
+    # Instructions have no scope and apply to every answer: everyone sees them.
+    assert member["instructions"] == [
+        {"id": "i1", "label": "methodology_format", "description": "Keep it short."}
+    ]
+    # Documents have no scope to check a grant against: admins only.
+    assert member["documents"] == []
+    assert [(d["title"], d["status"]) for d in admin["documents"]] == [("Pricing notes", "queued")]
 
 
 def test_an_action_with_free_text_object_keeps_it(client: TestClient) -> None:

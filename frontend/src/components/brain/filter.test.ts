@@ -236,11 +236,22 @@ describe('memory chunks', () => {
       chunk: 2,
       action: 0,
       unknown: 0,
+      instruction: 0,
+      document: 0,
     })
     // The kind itself never narrows the counts.
     expect(
       countKinds(WITH_CHUNKS, { ...NO_FILTERS, kind: 'fact', query: 'acme' }, NOW),
-    ).toEqual({ all: 3, fact: 1, relation: 1, chunk: 1, action: 0, unknown: 0 })
+    ).toEqual({
+      all: 3,
+      fact: 1,
+      relation: 1,
+      chunk: 1,
+      action: 0,
+      unknown: 0,
+      instruction: 0,
+      document: 0,
+    })
   })
 })
 
@@ -318,5 +329,55 @@ describe('actions, unknowns and sources', () => {
     expect(from('stored')).toEqual(['lead_time'])
     // f1 has no source, so no origin; the action was captured; unknowns have none.
     expect(from('captured')).toEqual(['action:a1'])
+  })
+})
+
+describe('instructions and documents', () => {
+  const rows = toRows(
+    [],
+    [],
+    [],
+    [],
+    [{ id: 'i1', label: 'methodology_format', description: 'Keep methodology short.' }],
+    [
+      {
+        id: 'd1',
+        title: 'Pricing notes',
+        file_name: 'pricing%20doc.md',
+        mime_type: 'text/markdown',
+        size_bytes: 6772,
+        status: 'queued',
+        error: null,
+        created_at: '2026-11-02T12:35:44Z',
+        updated_at: '2026-11-02T12:35:44Z',
+        processed_at: null,
+      },
+    ],
+  )
+
+  it('belong to no space, so "All" leaves them out and their own kind lists them', () => {
+    expect(applyFilters(rows, NO_FILTERS, NOW)).toEqual([])
+    expect(countKinds(rows, NO_FILTERS, NOW)).toMatchObject({
+      all: 0,
+      instruction: 1,
+      document: 1,
+    })
+    expect(
+      applyFilters(rows, { ...NO_FILTERS, kind: 'instruction' }, NOW).map((r) => r.id),
+    ).toEqual(['instruction:i1'])
+    expect(
+      applyFilters(rows, { ...NO_FILTERS, kind: 'document' }, NOW).map((r) => r.id),
+    ).toEqual(['document:d1'])
+  })
+
+  it('search their text; an instruction has no date, so a date window hides it', () => {
+    const pick = (kind: 'instruction' | 'document', extra = {}) =>
+      applyFilters(rows, { ...NO_FILTERS, kind, ...extra }, NOW).length
+    expect(pick('instruction', { query: 'methodology' })).toBe(1)
+    // The upload name arrives URL-encoded; it is searched and shown decoded.
+    expect(pick('document', { query: 'pricing doc.md' })).toBe(1)
+    expect(pick('document', { query: 'queued' })).toBe(1)
+    expect(pick('instruction', { since: '7d' })).toBe(0)
+    expect(pick('document', { since: '7d' })).toBe(1)
   })
 })

@@ -1,14 +1,30 @@
 import type {
   BrainAction,
   BrainChunk,
+  BrainDocument,
   BrainEntity,
+  BrainInstruction,
   BrainSource,
   BrainUnknown,
 } from '@/api/brain'
 
 export type Since = 'any' | '1d' | '7d' | '30d'
 export type SortBy = 'latest' | 'oldest' | 'entity' | 'fact'
-export type Kind = 'all' | 'fact' | 'relation' | 'chunk' | 'action' | 'unknown'
+export type Kind =
+  | 'all'
+  | 'fact'
+  | 'relation'
+  | 'chunk'
+  | 'action'
+  | 'unknown'
+  | 'instruction'
+  | 'document'
+
+/**
+ * Kinds Agent Memory keeps with no scope: they belong to no space, so "All"
+ * (what is in the spaces picked) leaves them out; picking the kind lists them.
+ */
+export const UNSCOPED_KINDS: ReadonlySet<Kind> = new Set(['instruction', 'document'])
 
 /**
  * How a record came to be in memory, from its source kind: captured from what
@@ -125,7 +141,31 @@ export interface UnknownRow extends RowBase {
   record_id: string
 }
 
-export type BrainRow = RecordRow | ChunkRow | ActionRow | UnknownRow
+/** A standing rule memory follows. No scope and no date: it applies everywhere. */
+export interface InstructionRow extends RowBase {
+  kind: 'instruction'
+  label: string
+  description: string
+  record_id: string
+}
+
+/** A file uploaded to memory, with how far Agent Memory has got reading it. */
+export interface DocumentRow extends RowBase {
+  kind: 'document'
+  title: string
+  file_name: string
+  mime_type: string
+  size_bytes: number | null
+  /** queued, processing, done or failed. */
+  status: string
+  error: string | null
+  updated_at: string
+  processed_at: string | null
+  record_id: string
+}
+
+export type BrainRow =
+  RecordRow | ChunkRow | ActionRow | UnknownRow | InstructionRow | DocumentRow
 
 /** Facts and relations: the rows that belong to an entity. */
 export const isRecord = (row: BrainRow): row is RecordRow =>
@@ -175,12 +215,23 @@ export function parseDate(value: string): number {
   return Number.isNaN(time) ? 0 : time
 }
 
-/** Every fact, relation, memory chunk, action and unknown, as one flat list. */
+/** Upload names can arrive URL-encoded ("Membrain%20-%20WS.txt"); show them plainly. */
+function decodeName(name: string): string {
+  try {
+    return decodeURIComponent(name)
+  } catch {
+    return name
+  }
+}
+
+/** Every record memory holds, of every kind, as one flat list. */
 export function toRows(
   entities: readonly BrainEntity[],
   chunks: readonly BrainChunk[] = [],
   actions: readonly BrainAction[] = [],
   unknowns: readonly BrainUnknown[] = [],
+  instructions: readonly BrainInstruction[] = [],
+  documents: readonly BrainDocument[] = [],
 ): BrainRow[] {
   const turnIds = new Set(chunks.map((c) => c.id))
   const chunkOf = (source: BrainSource | undefined) => {
@@ -295,7 +346,40 @@ export function toRows(
     record_id: unknown.id,
     origin: null,
   }))
-  return [...records, ...chunkRows, ...actionRows, ...unknownRows]
+  const instructionRows = instructions.map((instruction): InstructionRow => ({
+    id: `instruction:${instruction.id}`,
+    kind: 'instruction',
+    label: instruction.label,
+    description: instruction.description,
+    record_id: instruction.id,
+    scopes: [],
+    created_at: '',
+    origin: null,
+  }))
+  const documentRows = documents.map((doc): DocumentRow => ({
+    id: `document:${doc.id}`,
+    kind: 'document',
+    title: doc.title,
+    file_name: decodeName(doc.file_name),
+    mime_type: doc.mime_type,
+    size_bytes: doc.size_bytes,
+    status: doc.status,
+    error: doc.error,
+    updated_at: doc.updated_at,
+    processed_at: doc.processed_at,
+    record_id: doc.id,
+    scopes: [],
+    created_at: doc.created_at,
+    origin: null,
+  }))
+  return [
+    ...records,
+    ...chunkRows,
+    ...actionRows,
+    ...unknownRows,
+    ...instructionRows,
+    ...documentRows,
+  ]
 }
 
 function searchable(row: BrainRow): string[] {
@@ -306,6 +390,10 @@ function searchable(row: BrainRow): string[] {
       return [row.actor, row.verb, row.object ?? '', row.summary ?? '']
     case 'unknown':
       return [row.about, row.reason, row.entity ?? '', row.key ?? '']
+    case 'instruction':
+      return [row.label, row.description]
+    case 'document':
+      return [row.title, row.file_name, row.status]
     default:
       return [row.entity, row.key, row.value, row.summary ?? '']
   }
@@ -318,6 +406,9 @@ function typesOf(row: BrainRow): string[] {
       return [row.actor_type]
     case 'unknown':
       return row.entity_type ? [row.entity_type] : []
+    case 'instruction':
+    case 'document':
+      return []
     default:
       return [row.entity_type]
   }
@@ -327,6 +418,8 @@ function categoriesOf(row: BrainRow): string[] {
     case 'chunk':
       return row.categories
     case 'unknown':
+    case 'instruction':
+    case 'document':
       return []
     default:
       return [row.category]
@@ -341,6 +434,10 @@ function entityOf(row: BrainRow): string {
       return row.actor
     case 'unknown':
       return row.entity ?? row.about
+    case 'instruction':
+      return row.label
+    case 'document':
+      return row.title
     default:
       return row.entity
   }
@@ -354,6 +451,10 @@ function keyOf(row: BrainRow): string {
       return row.verb
     case 'unknown':
       return row.key ?? row.about
+    case 'instruction':
+      return row.label
+    case 'document':
+      return row.title
     default:
       return row.key
   }
@@ -381,8 +482,9 @@ export function applyFilters(
   const cutoff = now - WINDOWS[filters.since]
   const shown = rows.filter(
     (row) =>
-      (filters.kind === 'all' || row.kind === filters.kind) &&
-      passes(row, filters, query, cutoff),
+      (filters.kind === 'all'
+        ? !UNSCOPED_KINDS.has(row.kind)
+        : row.kind === filters.kind) && passes(row, filters, query, cutoff),
   )
 
   const byDate = (a: BrainRow, b: BrainRow) =>
@@ -414,10 +516,12 @@ export function countKinds(
     chunk: 0,
     action: 0,
     unknown: 0,
+    instruction: 0,
+    document: 0,
   }
   for (const row of rows) {
     if (!passes(row, filters, query, cutoff)) continue
-    counts.all += 1
+    if (!UNSCOPED_KINDS.has(row.kind)) counts.all += 1
     counts[row.kind] += 1
   }
   return counts

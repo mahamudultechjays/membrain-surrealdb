@@ -20,8 +20,11 @@ import {
   facets,
   parseDate,
   isRecord,
+  UNSCOPED_KINDS,
   toRows,
   type ActionRow,
+  type DocumentRow,
+  type InstructionRow,
   type BrainFilters,
   type BrainRow,
   type ChunkRow,
@@ -107,6 +110,8 @@ const KINDS: readonly KindOption[] = [
   { kind: 'chunk', label: 'Memory chunks', one: 'memory chunk' },
   { kind: 'action', label: 'Actions', one: 'action' },
   { kind: 'unknown', label: 'Unknowns', one: 'unknown' },
+  { kind: 'instruction', label: 'Instructions', one: 'instruction' },
+  { kind: 'document', label: 'Documents', one: 'document' },
 ]
 
 const SINCE: readonly { value: Since; label: string }[] = [
@@ -237,6 +242,8 @@ export default function BrainPage({ me, api = brainApi }: Props) {
             data.chunks ?? [],
             data.actions ?? [],
             data.unknowns ?? [],
+            data.instructions ?? [],
+            data.documents ?? [],
           )
         : [],
     [data],
@@ -329,7 +336,8 @@ export default function BrainPage({ me, api = brainApi }: Props) {
         <p>
           Everything memory holds in the spaces you can read: facts and relations, the
           memory chunks they came from, the actions it recorded and what it couldn’t
-          settle. Open a row to see where and when it was saved.
+          settle, plus the rules it follows and the documents it was given. Open a row to
+          see where and when it was saved.
         </p>
       </div>
 
@@ -347,16 +355,17 @@ export default function BrainPage({ me, api = brainApi }: Props) {
             }}
           />
           {narrowed.length > 0 && (
+            // Sub-spaces show by default; this box is for leaving them out.
             <label
               className="brain-subspaces"
-              title="Also show memory saved in spaces inside the ones picked, e.g. arun_das/demo"
+              title="Show only memory saved in the spaces picked, not in spaces inside them (e.g. arun_das/demo)"
             >
               <input
                 type="checkbox"
-                checked={subscopes}
-                onChange={(e) => setSubscopes(e.target.checked)}
+                checked={!subscopes}
+                onChange={(e) => setSubscopes(!e.target.checked)}
               />
-              Include sub-spaces
+              Exclude sub-spaces
             </label>
           )}
         </HeaderSlot>
@@ -477,6 +486,13 @@ export default function BrainPage({ me, api = brainApi }: Props) {
         </div>
       </section>
 
+      {data && UNSCOPED_KINDS.has(filters.kind) && (
+        <p className="note brain-note">
+          {filters.kind === 'instruction'
+            ? 'Instructions belong to no space: memory follows them in every answer, so they show whatever spaces are picked. Agent Memory keeps no date for them.'
+            : "Documents belong to no space, so they show whatever spaces are picked. Only admins see them, since there's no space to check access against."}
+        </p>
+      )}
       {data && data.replaced_missing > 0 && (
         <output className="note brain-note">
           The history of {plural(data.replaced_missing, 'entity', 'entities')} couldn't be
@@ -767,6 +783,10 @@ function BrainItem({ row, open, byId, onToggle, onReveal }: ItemProps) {
           <ActionLine row={row} />
         ) : row.kind === 'unknown' ? (
           <UnknownLine row={row} />
+        ) : row.kind === 'instruction' ? (
+          <InstructionLine row={row} />
+        ) : row.kind === 'document' ? (
+          <DocumentLine row={row} />
         ) : (
           <RecordLine row={row} />
         )}
@@ -780,6 +800,12 @@ function BrainItem({ row, open, byId, onToggle, onReveal }: ItemProps) {
           {row.kind === 'unknown' && (
             <span className="tag" data-tone={row.resolved ? undefined : 'note'}>
               {row.resolved ? 'resolved' : 'open'}
+            </span>
+          )}
+          {row.kind === 'instruction' && <span className="tag">instruction</span>}
+          {row.kind === 'document' && (
+            <span className="tag" data-tone={STATUS_TONE[row.status]}>
+              {row.status || 'document'}
             </span>
           )}
           {replaced && (
@@ -803,6 +829,10 @@ function BrainItem({ row, open, byId, onToggle, onReveal }: ItemProps) {
           <ActionDetail id={panelId} row={row} onReveal={onReveal} />
         ) : row.kind === 'unknown' ? (
           <UnknownDetail id={panelId} row={row} />
+        ) : row.kind === 'instruction' ? (
+          <InstructionDetail id={panelId} row={row} />
+        ) : row.kind === 'document' ? (
+          <DocumentDetail id={panelId} row={row} />
         ) : (
           <RecordDetail id={panelId} row={row} onReveal={onReveal} />
         ))}
@@ -837,6 +867,108 @@ function UnknownLine({ row }: { row: UnknownRow }) {
     <span className="brain-text">
       <span className="brain-chunk-line">{row.about}</span>
     </span>
+  )
+}
+
+/** "label · description", as a fact reads "key = value". */
+function InstructionLine({ row }: { row: InstructionRow }) {
+  return (
+    <span className="brain-text">
+      <span className="mono brain-key">{row.label}</span>
+      <span className="brain-sep" aria-hidden="true">
+        ·
+      </span>
+      <span className="brain-value">{row.description}</span>
+    </span>
+  )
+}
+
+/** The document's title, then its file name when that says something more. */
+function DocumentLine({ row }: { row: DocumentRow }) {
+  return (
+    <span className="brain-text">
+      <span className="brain-entity-name">{row.title || row.file_name}</span>
+      {row.file_name && row.file_name !== row.title && (
+        <>
+          <span className="brain-sep" aria-hidden="true">
+            ·
+          </span>
+          <span className="mono brain-key">{row.file_name}</span>
+        </>
+      )}
+    </span>
+  )
+}
+
+/** Tag tone per document status: done reads good, failed warns, the rest wait. */
+const STATUS_TONE: Record<string, string | undefined> = {
+  done: 'good',
+  completed: 'good',
+  failed: 'warn',
+  queued: 'note',
+  processing: 'note',
+}
+
+const STATUS_TEXT: Record<string, string> = {
+  queued:
+    'Queued: waiting for Agent Memory to read it. Nothing has been taken from it yet.',
+  processing: 'Being read now.',
+  done: 'Read: its memories are in.',
+  completed: 'Read: its memories are in.',
+  failed: 'Reading failed.',
+}
+
+function fileSize(bytes: number | null): string {
+  if (bytes === null) return '—'
+  if (bytes < 1024) return `${bytes} B`
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
+  return `${(bytes / 1024 / 1024).toFixed(1)} MB`
+}
+
+function InstructionDetail({ id, row }: { id: string; row: InstructionRow }) {
+  return (
+    <div id={id} className="brain-detail brain-record">
+      <dl className="brain-detail-grid">
+        <dt>Rule</dt>
+        <dd>{row.description || '—'}</dd>
+        <dt>Label</dt>
+        <dd className="mono">{row.label}</dd>
+        <dt>Applies to</dt>
+        <dd>Every answer, in every space</dd>
+        <dt>ID</dt>
+        <dd className="mono">{row.record_id}</dd>
+      </dl>
+    </div>
+  )
+}
+
+function DocumentDetail({ id, row }: { id: string; row: DocumentRow }) {
+  return (
+    <div id={id} className="brain-detail brain-record">
+      <dl className="brain-detail-grid">
+        <dt>Title</dt>
+        <dd>{row.title || '—'}</dd>
+        <dt>File</dt>
+        <dd>
+          <span className="mono">{row.file_name || '—'}</span>
+          <span className="brain-muted">
+            {' '}
+            ({[row.mime_type, fileSize(row.size_bytes)].filter(Boolean).join(', ')})
+          </span>
+        </dd>
+        <dt>Status</dt>
+        <dd>
+          {STATUS_TEXT[row.status] ?? row.status ?? '—'}
+          {row.error && <span className="brain-muted"> {row.error}</span>}
+        </dd>
+        <dt>Uploaded</dt>
+        <dd>{formatDate(row.created_at)}</dd>
+        <dt>Read</dt>
+        <dd>{row.processed_at ? formatDate(row.processed_at) : 'Not yet'}</dd>
+        <dt>ID</dt>
+        <dd className="mono">{row.record_id}</dd>
+      </dl>
+    </div>
   )
 }
 
