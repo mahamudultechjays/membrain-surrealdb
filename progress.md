@@ -53,6 +53,22 @@ VCT onboarding built (2026-11-05):
 - Checks: make test-backend 156 passed (98% coverage); make lint-backend clean; make check fails only on the untracked frontend prototype files.
 Next action: once Spreetail confirms domain -> team, add the mapping table and grant team read on confirm; Arun builds the onboarding screen (HANDOFF_ARUN.md).
 
+Decision (Mahamudul, 2026-11-05): no LLM for VCT matching of facts either. Agent Memory recall gives the best matches, the user picks from them, and if nothing fits they choose or enter it in the UI (UI to be built).
+Decisions (Mahamudul, 2026-11-05): tag facts with VCT nodes first (section and domain follow from the node); goals are layered on top, with UI filters so users can see goals change Ask results; goals later feed promotion. Tagging should be automatic (background job where needed), shown in the capture preview when latency allows, and editable or removable by the user. Whether goals get their own background job depends on the eval. A plan artifact covers design through implementation, including UI changes.
+VCT fact eval (2026-11-05), 15 facts in preview format, expected answers written by Claude (biased; needs real facts labelled by Spreetail):
+- Nodes (recall, lens org/spreetail/vct): top-1 11/15, top-3 13/15. Missed: "Dallas warehouse cycle_count_accuracy" (want sc4) and "Walmart payout_delay" (want fi4). Off-topic "Team lunch" still got mo5, so the user check stays.
+- Goals: 42 goals seeded as passages in org/spreetail/vct-goals (matcher-only). Direct recall top-1 8/15, top-3 13/15; the 6 goals of the top node's section 9/15; direct recall limited to the top-3 nodes' sections top-1 8/15, top-3 12/15. Direct recall is best.
+- Labels: must be key=value ("vct=sc4"; a bare "vct:sc4" is a 422). Labels set on remember(triples) filter facts on recall; entity hits are not filtered; several labels are AND (sc4 + fi4 gave no facts); recall hits do not return their labels. No SDK call was found to add labels to an already stored fact (not verified with SurrealDB).
+- Load: 16 recalls at once timed out (30 s client limit); 4 at a time worked, about 12 s per recall.
+Decision (Mahamudul, 2026-11-05): fact tagging runs as a background job and keeps the top 3 matches.
+Label test 2 (2026-11-05, throwaway scope, tombstoned):
+- A fact can carry several node labels (vct=sc4 + vct=sc6). Filtering by vct=sc6 alone, vct=sc4 alone, or both returns it; vct=fi4 does not. A filter list means "has all of these"; extra labels on the fact don't exclude it.
+- Labels can't be changed by writing the same fact again: Agent Memory de-duplicates the fact (attributes: []) and keeps the old label. The SDK has no label-update call; forget() works by text query with no scope, so it was not used.
+- inspect("attribute:<type>/<name>/<key>") returns a fact's labels and its id (the id matches the one remember returned).
+Supersede test (2026-11-05, throwaway scope, tombstoned): a new value for the same entity+key supersedes; the new version carries the labels written with it and the old version keeps its own and drops out of recall. Writing a different value and then the original value with a new label relabels it, but adds two history versions. Relations are not affected by attribute updates, two ships_to relations both stay, and relations are not returned as recall hits.
+Decisions (Mahamudul, 2026-11-05): tagger runs every 2 hours on untagged facts; plan has Approach A (tagger improves from user feedback) and Approach B (only fact id + tags in our database, users edit tags from Ask/search, backend filters recalled facts by tag). No fact text outside Agent Memory. Plan artifact v2: https://claude.ai/artifact/UvHDx6Bx326thaYNpXfj9f
+Re-rank of the eval's top 3 without new calls (15 facts): rank 1 = 11 right; prefer the node whose section matches the top goal = 11 (2 gained, 2 lost); prefer the node with most keyword/name overlap with the fact = 12. Too small a sample to call a winner.
+
 ### VCT tagging plan v3 (5 Nov 2026)
 - Single approach: the 3-hourly tagger (no LLM) writes top-3 nodes and goals to `fact_tags` (fact id + tags only); `tag_feedback` logs user edits; `tag_queue` holds ids from capture.
 - Agent Memory labels are not used (label changes need a double supersede with fake history).
