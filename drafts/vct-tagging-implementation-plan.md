@@ -12,6 +12,7 @@ Each phase ends with `make check` green, a commit and a push.
 - The tagger runs every 3 hours and reads the `GET /attributes` listing, newest first, so `tag_queue` is dropped.
 - A superseded fact gets a new id; the listing gives `supersedes`, so user tags carry over to the new version.
 - A tag fix applies to everyone who can read the fact's scope.
+- Pilot (Mahamudul, 6 Nov): the tagger first runs only on `org/spreetail/user/mahamudul_hasan`. We evaluate retrieval there, then widen to other scopes.
 
 ## Phase 1 · Tag storage
 
@@ -45,14 +46,20 @@ Goal: tag every untagged fact, on a schedule and on demand.
   - 4 recalls at a time.
   - One run at a time, guarded by a lock.
   - A fact that fails is skipped and retried next run.
-- The tagger skips the matcher scopes themselves and `org/spreetail/lab/*`.
+- Which scopes get tagged: setting `TAGGER_SCOPES`, a comma-separated allowlist, default `org/spreetail/user/mahamudul_hasan`.
+  - Only facts whose scope is in the list are tagged; sub-scopes are not included.
+  - The listing runs with a key minted for read on exactly those scopes (the existing `ScopedKeys` helper), so Agent Memory returns only their facts.
+  - Widening later is a settings change, with no code change.
+  - The matcher scopes and `org/spreetail/lab/*` are never tagged, even if listed.
 - Last run (start, end, read, tagged, failed) is kept in memory for the admin panel.
 - Schedule: an asyncio loop started in `main.py` lifespan, every `TAGGER_INTERVAL_HOURS` (3), off when `TAGGER_ENABLED=false`.
 - Admin endpoints:
   - `POST /api/v1/admin/vct/tagger/run`
   - `GET /api/v1/admin/vct/tagger`
   - `POST /api/v1/admin/vct/seed` also seeds goals.
-- Tests use a fake lister and a fake recall. One live run on the dev Context afterwards, with counts recorded in `progress.md`.
+- Tests use a fake lister and a fake recall.
+- Pilot run: tag `org/spreetail/user/mahamudul_hasan` live and record counts and timing in `progress.md`.
+- Pilot eval (after phase 3): ask real questions in Ask with and without goal and node filters, note wrong tags and fix them in the editor, and record the results before widening `TAGGER_SCOPES`.
 
 ## Phase 3 · Ask filter and tags on results
 
@@ -122,7 +129,7 @@ Phases 3 and 4 can start as soon as phase 1 lands.
 
 ## Risks
 
-- Large Contexts: the first run tags everything, at about 2 recalls of 12 s per fact with 4 in parallel, so 1,000 facts take about 100 minutes. The first run is capped per run (500 facts); the rest follow on later runs.
+- Tagging time: about 2 recalls of 12 s per fact with 4 in parallel, so 1,000 facts take about 100 minutes. The pilot keeps the first run to one personal scope, and each run is capped at 500 facts when we widen.
 - Recall always returns a match, so off-topic facts get tags; users remove them.
 - The listing order (newest first by `created_at`) was seen in one test. If it changes, the stop rule falls back to a full scan.
 - The scheduler runs in the API process, so restarts reset the timer and the last-run stats. That's fine for the POC; membrain would use its job runner.
