@@ -4,7 +4,8 @@ from collections.abc import Iterator
 import pytest
 from fastapi.testclient import TestClient
 
-from app.composition import get_memory_recall
+from app.adapters.sqlite import SqliteFactTags
+from app.composition import get_fact_tag_repository, get_memory_recall
 from app.domain.errors import MemoryNotConfiguredError, MemoryUnavailableError
 from app.domain.ports.memory_recall import RecallHit, RecallResult
 from app.main import app
@@ -38,8 +39,14 @@ def recall() -> FakeRecall:
 
 
 @pytest.fixture
-def client(recall: FakeRecall, access: AccessService) -> Iterator[TestClient]:
+def tags() -> SqliteFactTags:
+    return SqliteFactTags(":memory:")
+
+
+@pytest.fixture
+def client(recall: FakeRecall, access: AccessService, tags: SqliteFactTags) -> Iterator[TestClient]:
     app.dependency_overrides[get_memory_recall] = lambda: recall
+    app.dependency_overrides[get_fact_tag_repository] = lambda: tags
     with TestClient(app) as test_client:
         # Both users exist; the session ends up as Priya.
         sign_in(test_client, "arun.das@x.com", "Arun Das")
@@ -157,3 +164,107 @@ def test_signed_out_is_401(client: TestClient) -> None:
     client.post("/api/v1/auth/logout")
 
     assert client.get("/api/v1/ask", params={"q": "x"}).status_code == 401
+
+
+async def _tag(tags: SqliteFactTags, fact_id: str, node: str, goal: str | None, scope: str) -> None:
+    await tags.save_auto(
+        fact_id, scope, nodes=[node, "sc8"], goals=[goal] if goal else [], version="v1"
+    )
+
+
+def test_results_carry_their_vct_tags(
+    client: TestClient, recall: FakeRecall, tags: SqliteFactTags
+) -> None:
+    asyncio.run(_tag(tags, "f1", "sc6", "ff-mgmt5", PRIYA))
+    recall.by_lens = {PRIYA: [_hit("attribute:f1", "UPS rate up"), _hit("attribute:f2", "x")]}
+
+    body = _ask(client)
+
+    facts = next(layer for layer in body["layers"] if layer["area"] == PRIYA)["facts"]
+    assert facts[0]["tags"]["node"] == {
+        "kind": "node",
+        "id": "sc6",
+        "name": "Select Transport",
+        "section_id": facts[0]["tags"]["node"]["section_id"],
+        "section": facts[0]["tags"]["node"]["section"],
+        "domain_id": "supply-chain",
+        "domain": "Supply Chain",
+        "source": "auto",
+        "rank": 1,
+    }
+    assert facts[0]["tags"]["goal"]["name"] == "Carrier & Freight Cost Management"
+    assert facts[1]["tags"] is None
+    assert body["metadata"]["filter"] is None
+    assert all(k == 10 or k == 20 for _, k in recall.calls)  # no filter: usual sizes
+
+
+def test_goal_filter_keeps_matching_facts_and_reports_the_rest(
+    client: TestClient, recall: FakeRecall, tags: SqliteFactTags
+) -> None:
+    asyncio.run(_tag(tags, "f1", "sc6", "ff-mgmt5", PRIYA))
+    asyncio.run(_tag(tags, "f2", "sc4", "ff-mgmt1", PRIYA))
+    asyncio.run(_tag(tags, "f3", "fi4", "ff-mgmt5", ORG))
+    recall.by_lens = {
+        PRIYA: [
+            _hit("attribute:f1", "UPS"),
+            _hit("attribute:f2", "Dallas"),
+            _hit("e1", "Acme", "entity"),
+        ],
+        ORG: [_hit("attribute:f3", "Payout"), _hit("attribute:f9", "untagged")],
+    }
+
+    body = _ask(client, goal="ff-mgmt5")
+
+    by_area = {layer["area"]: layer for layer in body["layers"]}
+    assert [f["source"]["hit_id"] for f in by_area[PRIYA]["facts"]] == ["attribute:f1"]
+    assert [f["source"]["hit_id"] for f in by_area[PRIYA]["removed"]] == ["attribute:f2", "e1"]
+    assert [f["source"]["hit_id"] for f in by_area[ORG]["facts"]] == ["attribute:f3"]
+    assert body["metadata"]["filter"] == {
+        "goals": ["ff-mgmt5"],
+        "nodes": [],
+        "domains": [],
+        "removed": 3,
+    }
+    assert body["metadata"]["total_facts"] == 2
+    assert {k for _, k in recall.calls} == {30, 60}  # widened 3x
+
+
+def test_kinds_combine_and_domain_matches_through_the_node(
+    client: TestClient, recall: FakeRecall, tags: SqliteFactTags
+) -> None:
+    asyncio.run(_tag(tags, "f1", "sc6", "ff-mgmt5", PRIYA))
+    asyncio.run(_tag(tags, "f3", "fi4", "ff-mgmt5", PRIYA))
+    asyncio.run(_tag(tags, "f4", "sc4", None, PRIYA))
+    recall.by_lens = {
+        PRIYA: [_hit("attribute:f1", "a"), _hit("attribute:f3", "b"), _hit("attribute:f4", "c")]
+    }
+
+    def kept(**params: str | list[str]) -> list[str]:
+        body = _ask(client, **params)
+        layer = next(layer for layer in body["layers"] if layer["area"] == PRIYA)
+        return [f["source"]["hit_id"] for f in layer["facts"]]
+
+    assert kept(goal="ff-mgmt5", node="fi4") == ["attribute:f3"]
+    assert kept(node=["sc6", "sc4"]) == ["attribute:f1", "attribute:f4"]
+    assert kept(domain="supply-chain") == ["attribute:f1", "attribute:f4"]
+    assert kept(domain="finance,supply-chain", goal="ff-mgmt5") == ["attribute:f1", "attribute:f3"]
+
+
+def test_a_person_s_tag_wins_in_the_filter(
+    client: TestClient, recall: FakeRecall, tags: SqliteFactTags
+) -> None:
+    asyncio.run(_tag(tags, "f1", "mo1", "ff-mgmt5", PRIYA))
+    asyncio.run(tags.set_tag("f1", "node", "fi4", "priya.shah@x.com"))
+    recall.by_lens = {PRIYA: [_hit("attribute:f1", "Walmart payout delay")]}
+
+    body = _ask(client, node="fi4")
+
+    fact = next(layer for layer in body["layers"] if layer["area"] == PRIYA)["facts"][0]
+    assert fact["tags"]["node"]["id"] == "fi4"
+    assert fact["tags"]["node"]["source"] == "user"
+
+
+def test_unknown_filter_ids_are_422(client: TestClient) -> None:
+    response = client.get("/api/v1/ask", params={"q": "x", "goal": "zz-1", "node": "sc6,qq"})
+    assert response.status_code == 422
+    assert "qq, zz-1" in response.json()["detail"]

@@ -46,6 +46,7 @@ from app.domain.ports.passage_writer import PassageWriter
 from app.domain.ports.scope_registry import ScopeRegistry
 from app.domain.ports.text_reader import DocumentTextReader
 from app.domain.ports.user_scopes import UserScopeRepository
+from app.domain.vct import VctMap
 from app.services import vct_map
 from app.services.access import AccessService
 from app.services.capture_flow import PreviewCache
@@ -252,3 +253,7 @@ def get_tagger_service() -> TaggerService:
         goals_scope=settings.VCT_GOALS_SCOPE,
         max_facts=settings.TAGGER_MAX_FACTS,
     )
+
+
+def get_vct_map() -> VctMap:
+    return vct_map.load()

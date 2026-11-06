@@ -58,11 +58,12 @@ def plan_reads(grants: list[ScopeGrant]) -> list[LayerRead]:
     return sorted(reads.values(), key=lambda r: (LAYER_ORDER[r.layer], r.area))
 
 
-async def ask(recall: MemoryRecall, grants: list[ScopeGrant], *, q: str) -> Answer:
+async def ask(recall: MemoryRecall, grants: list[ScopeGrant], *, q: str, widen: int = 1) -> Answer:
+    """`widen` multiplies each layer's recall size, for callers that filter after."""
     reads = plan_reads(grants)
     started = time.perf_counter()
     results = await asyncio.gather(
-        *(recall.recall(q, lens=read.area, k=LAYER_LIMITS[read.layer]) for read in reads),
+        *(recall.recall(q, lens=read.area, k=LAYER_LIMITS[read.layer] * widen) for read in reads),
         return_exceptions=True,
     )
     latency_ms = round((time.perf_counter() - started) * 1000)

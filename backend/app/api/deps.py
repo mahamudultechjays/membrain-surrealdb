@@ -12,6 +12,7 @@ from app.composition import (
     get_access_service,
     get_chat_sessions,
     get_document_store,
+    get_fact_tag_repository,
     get_memory_brain,
     get_memory_capture,
     get_memory_chat,
@@ -26,9 +27,11 @@ from app.composition import (
     get_scope_registry,
     get_tagger_service,
     get_text_reader,
+    get_vct_map,
 )
 from app.core.config import settings
 from app.domain.ports.document_store import DocumentStore
+from app.domain.ports.fact_tags import FactTagRepository
 from app.domain.ports.memory_brain import MemoryBrain
 from app.domain.ports.memory_capture import MemoryCapture
 from app.domain.ports.memory_chat import MemoryChat, MemoryReflect
@@ -39,6 +42,7 @@ from app.domain.ports.memory_probe import MemoryProbe
 from app.domain.ports.memory_recall import MemoryRecall
 from app.domain.ports.scope_registry import ScopeRegistry
 from app.domain.ports.text_reader import DocumentTextReader
+from app.domain.vct import VctMap
 from app.schemas.auth import CurrentUser
 from app.services.access import AccessService
 from app.services.capture_flow import PreviewCache
@@ -63,6 +67,8 @@ MemoryLabDep = Annotated[MemoryLab, Depends(get_memory_lab)]
 MemoryPeopleDep = Annotated[MemoryPeople, Depends(get_memory_people)]
 OnboardingServiceDep = Annotated[OnboardingService, Depends(get_onboarding_service)]
 TaggerServiceDep = Annotated[TaggerService, Depends(get_tagger_service)]
+FactTagRepositoryDep = Annotated[FactTagRepository, Depends(get_fact_tag_repository)]
+VctMapDep = Annotated[VctMap, Depends(get_vct_map)]
 
 
 async def get_current_user(request: Request) -> CurrentUser:
