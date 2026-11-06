@@ -47,10 +47,13 @@ class Settings(BaseSettings):
     VCT_GOALS_SCOPE: str = "org/spreetail/vct/goals"
     # VCT tagger: tags facts with nodes and goals every TAGGER_INTERVAL_HOURS.
     # TAGGER_SCOPES is a comma-separated allowlist (exact scopes, no sub-scopes);
-    # the pilot tags one personal scope. TAGGER_MAX_FACTS caps one run.
+    # the pilot tags three personal scopes (mahamudul_hasan has no facts yet, so
+    # arun_das and vidyul were added for testing, 6 Nov). TAGGER_MAX_FACTS caps one run.
     TAGGER_ENABLED: bool = True
     TAGGER_INTERVAL_HOURS: float = 3.0
-    TAGGER_SCOPES: str = "org/spreetail/user/mahamudul_hasan"
+    TAGGER_SCOPES: str = (
+        "org/spreetail/user/mahamudul_hasan,org/spreetail/user/arun_das,org/spreetail/user/vidyul"
+    )
     TAGGER_MAX_FACTS: int = 500
 
     # Login: Entra ID SSO, as in membrain (Authlib + a signed session cookie).
