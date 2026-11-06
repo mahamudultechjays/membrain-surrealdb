@@ -41,9 +41,10 @@ class Settings(BaseSettings):
     USER_SCOPES_DB_PATH: str = "data/user_scopes.db"
     ORG_SCOPE: str = "org/spreetail"
     USER_SCOPE_ROOT: str = "org/spreetail/user"
-    # VCT onboarding: the metro-map nodes live here as passages for matching.
-    # No user is granted this scope.
-    VCT_SCOPE: str = "org/spreetail/vct"
+    # VCT matching: the 41 metro-map nodes and 42 goals live here as passages
+    # (onboarding and fact tagging recall against them). No user is granted them.
+    VCT_SCOPE: str = "org/spreetail/vct/nodes"
+    VCT_GOALS_SCOPE: str = "org/spreetail/vct/goals"
 
     # Login: Entra ID SSO, as in membrain (Authlib + a signed session cookie).
     # The app registration must allow <FRONTEND_URL>/api/v1/auth/callback.

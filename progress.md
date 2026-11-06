@@ -75,3 +75,9 @@ Re-rank of the eval's top 3 without new calls (15 facts): rank 1 = 11 right; pre
 - Plan artifact: https://claude.ai/artifact/UvHDx6Bx326thaYNpXfj9f (shared with the team, 5 Nov).
 - Decisions 6 Nov: a tag fix applies to everyone who can read the fact's scope; VCT work moves to branch feat/vct-mapping, built on feat/capture-admin-ux.
 - Next: gate (hit id = fact id; read fact text by id), then eval v1.
+VCT gate (2026-11-06, throwaway scopes, tombstoned):
+- Recall hit id equals the id remember returned, with an "attribute:" prefix (attribute:bot6enmr... vs bot6enmr...). The Ask tag lookup can key on it.
+- No read-by-id: GET /attributes/{id} is 404 (with or without the prefix) and the SDK has no such call; inspect needs entity/type/key refs. The GET /attributes listing returns id, value, summary and scope per fact, so the tagger can read text there.
+- Scopes: a lens on a parent does not include child scopes, and tombstoning a parent leaves the child usable.
+VCT scopes renamed (2026-11-06, Mahamudul): nodes now in org/spreetail/vct/nodes (41) and goals in org/spreetail/vct/goals (42), recall checked on both; org/spreetail/vct and org/spreetail/vct-goals tombstoned. Config: VCT_SCOPE=org/spreetail/vct/nodes, new VCT_GOALS_SCOPE=org/spreetail/vct/goals.
+Decision (Mahamudul, 2026-11-06): eval v1 waits for real user tests instead of a Spreetail-labelled set.

@@ -13,7 +13,7 @@ from app.services.access import AccessService
 from app.services.onboarding import OnboardingService, node_text, split_clauses
 from tests.conftest import FakeRegistry, sign_in
 
-SCOPE = "org/spreetail/vct"
+SCOPE = "org/spreetail/vct/nodes"
 EMAIL = "priya.shah@x.com"
 VMAP = vct_map.load()
 
