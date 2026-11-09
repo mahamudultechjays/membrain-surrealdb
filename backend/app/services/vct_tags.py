@@ -85,11 +85,35 @@ async def tags_for_hits(repo: FactTagRepository, hit_ids: list[str]) -> dict[str
     return {k: v for k, v in found.items() if v.node or v.goal}
 
 
+async def chunk_tags(repo: FactTagRepository, hits: list[RecallHit]) -> dict[str, list[HitTags]]:
+    """For each memory chunk hit: the active tags of the facts from its turn.
+    A chunk with no linked facts is absent (it never passes a value filter)."""
+    chunks = [h for h in hits if h.kind == "memory_chunk" and h.turn_id]
+    by_turn = await repo.facts_for_turns(list(dict.fromkeys(h.turn_id or "" for h in chunks)))
+    fact_ids = list(dict.fromkeys(f for ids in by_turn.values() for f in ids))
+    stored = await repo.tags_for(fact_ids)
+    found: dict[str, list[HitTags]] = {}
+    for hit in chunks:
+        tags = [active_tags(stored.get(f, [])) for f in by_turn.get(hit.turn_id or "", [])]
+        tags = [t for t in tags if t.node or t.goal]
+        if tags:
+            found[hit.id] = tags
+    return found
+
+
 async def tag_answer(
     answer: Answer, repo: FactTagRepository, vmap: VctMap, flt: TagFilter
 ) -> TaggedAnswer:
-    """Attach active tags to every hit and, with a filter, keep only matches."""
-    tags = await tags_for_hits(repo, [h.id for layer in answer.layers for h in layer.hits])
+    """Attach active tags to every hit and, with a filter, keep only matches.
+
+    A memory chunk passes when any fact extracted from (or captured with) its
+    text matches, and shows that fact's tags; other untagged hits never pass.
+    """
+    hits = [h for layer in answer.layers for h in layer.hits]
+    tags = await tags_for_hits(repo, [h.id for h in hits])
+    via_facts = await chunk_tags(repo, hits)
+    for hit_id, options in via_facts.items():
+        tags[hit_id] = next((t for t in options if flt.matches(t, vmap)), options[0])
     if not flt.active:
         return TaggedAnswer(answer, tags)
 

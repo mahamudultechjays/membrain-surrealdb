@@ -17,6 +17,9 @@ class ListedFact:
     scopes: tuple[str, ...]
     # The older fact this one superseded, if any.
     supersedes: str | None = None
+    # The captured turn the fact was extracted from; None for facts written
+    # directly as triples.
+    turn_id: str | None = None
 
 
 @dataclass(frozen=True, slots=True)

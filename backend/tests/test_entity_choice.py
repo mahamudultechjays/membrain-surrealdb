@@ -38,6 +38,9 @@ class TwoEntityCapture:
         self.stored = facts
         return CaptureResult(mode="stored", session_id="s2")
 
+    async def store_passage(self, text: str, scope: str) -> str | None:
+        return "t-passage"
+
 
 async def _preview(capture: TwoEntityCapture) -> capture_flow.Preview:
     return await capture_flow.preview(

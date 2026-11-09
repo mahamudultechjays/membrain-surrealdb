@@ -11,6 +11,9 @@ class RecallHit:
     # What the hit is: entity, attribute, memory_chunk, chunk or section.
     kind: str
     score: float
+    # For a memory chunk: the captured turn it is part of; facts extracted
+    # from that turn point to it too.
+    turn_id: str | None = None
 
 
 @dataclass(frozen=True, slots=True)

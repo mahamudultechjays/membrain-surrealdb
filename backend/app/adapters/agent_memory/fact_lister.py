@@ -68,7 +68,13 @@ def _fact(raw: Any) -> ListedFact | None:
         text=_text(raw),
         scopes=_scopes(raw.get("scope")),
         supersedes=_id(raw.get("supersedes")) or None,
+        turn_id=_turn(raw.get("source")),
     )
+
+
+def _turn(source: Any) -> str | None:
+    ref = str(source.get("ref") or "") if isinstance(source, dict) else ""
+    return ref.removeprefix("turn:") if ref.startswith("turn:") else None
 
 
 def _id(raw: Any) -> str:

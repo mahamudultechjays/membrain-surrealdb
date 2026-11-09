@@ -6,6 +6,8 @@ Four tables, none holding fact text:
 - fact_tags: the tags, one row per fact, kind and tag;
 - fact_guesses: the tagger's best nodes and goals for a not-business fact,
   kept apart so they never act as tags, for "Tag it" in review;
+- fact_turns: the captured turn (text) each fact came from, so a memory
+  chunk of that turn can share its facts' tags;
 - tag_feedback: every edit a person makes, insert only.
 Each user edit changes fact_tags and writes tag_feedback in one transaction.
 """
@@ -61,6 +63,12 @@ CREATE TABLE IF NOT EXISTS tag_feedback (
     at             TEXT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS tag_feedback_at ON tag_feedback (at);
+CREATE TABLE IF NOT EXISTS fact_turns (
+    fact_id        TEXT PRIMARY KEY,
+    turn_id        TEXT NOT NULL,
+    scope          TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS fact_turns_turn ON fact_turns (turn_id);
 CREATE TABLE IF NOT EXISTS fact_guesses (
     fact_id        TEXT NOT NULL,
     kind           TEXT NOT NULL CHECK (kind IN ('node', 'goal')),
@@ -354,6 +362,33 @@ class SqliteFactTags(SqliteStore):
         found: dict[TagKind, list[str]] = {}
         for kind, tag in rows:
             found.setdefault(kind, []).append(tag)
+        return found
+
+    async def link_turns(self, links: list[tuple[str, str, str]]) -> None:
+        if not links:
+            return
+
+        def work(db: sqlite3.Connection) -> None:
+            db.executemany(
+                "INSERT INTO fact_turns (fact_id, turn_id, scope) VALUES (?, ?, ?) "
+                "ON CONFLICT (fact_id) DO UPDATE SET turn_id = excluded.turn_id, "
+                "scope = excluded.scope",
+                links,
+            )
+
+        await self._write(work)
+
+    async def facts_for_turns(self, turn_ids: list[str]) -> dict[str, list[str]]:
+        if not turn_ids:
+            return {}
+        rows = await self._query(
+            "SELECT turn_id, fact_id FROM fact_turns "
+            f"WHERE turn_id IN ({_marks(turn_ids)}) ORDER BY turn_id, fact_id",
+            tuple(turn_ids),
+        )
+        found: dict[str, list[str]] = {}
+        for turn_id, fact_id in rows:
+            found.setdefault(turn_id, []).append(fact_id)
         return found
 
     async def review_state(self, fact_ids: list[str]) -> dict[str, ReviewState]:

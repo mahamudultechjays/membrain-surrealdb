@@ -120,3 +120,10 @@ Chunk-to-fact link tests (2026-11-09, throwaway lab scopes, all tombstoned):
 - Capture "triples" (the UI default, store kept facts): facts are source "upsert" with no turn and no chunk. Sending the text with infer=triples changes nothing (text ignored).
 - Text stored with infer=none: one memory_chunk with a turnId, no facts extracted; kept facts stored as triples alongside, so the link can be recorded on our side (fact id -> turn id) at capture.
 - Documents: a test upload stayed "queued" for 4+ minutes, like the older uploads, so document passages could not be checked.
+Chunks inherit fact tags, built (2026-11-09):
+- Capture "store kept facts" (triples) now writes the kept facts, then the original text as a passage (infer none: one memory chunk, no extraction, no duplicates), and records fact id -> turn id in a new fact_turns table. A failed passage store keeps the facts and skips the link. Capture "full" records the links Agent Memory already makes.
+- The tagger records every listed fact's turn (source.ref "turn:<id>") on each run, which backfills chat- and full-mode facts at no extra cost.
+- Recall reads the raw /query response (the SDK drops `resource`), so memory_chunk hits carry turn_id. In Ask, a chunk takes the tags of the facts linked to its turn; with a value filter it passes if any of them matches and shows that fact's tags. Chunks with no linked facts, document passages and entities never pass (Normal view only).
+- Live end-to-end (throwaway sub-scope, tombstoned): triples capture stored 2 facts + 1 chunk; tagged; Normal Ask returned 2 facts + the chunk; goal ff-mgmt3 and ff-mgmt5 filters each kept the matching fact and the chunk and removed the other fact. Extraction kept 2 of 3 facts in the preview (the "ground rate 6.2%" sentence dropped again).
+- Not covered: older triples captures (no text was stored), document uploads (processing stuck in "queued").
+- Checks: make check green, 322 backend + 183 frontend tests.

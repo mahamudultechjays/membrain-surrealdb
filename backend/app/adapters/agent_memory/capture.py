@@ -52,6 +52,12 @@ class AgentMemoryCapture:
         ]
         return await self._call("triples", "stored", text=None, scopes=[scope], triples=triples)
 
+    async def store_passage(self, text: str, scope: str) -> str | None:
+        """infer "none": the text becomes a memory chunk and nothing is extracted,
+        so kept facts stored as triples are not duplicated."""
+        result = await self._call("none", "stored", text=text, scopes=[scope])
+        return result.turn_id
+
     async def _remember(
         self, text: str, scope: str | None, *, infer: str, mode: CaptureMode
     ) -> CaptureResult:
@@ -76,7 +82,9 @@ class AgentMemoryCapture:
 
         extraction = response.extraction
         if extraction is None:
-            return CaptureResult(mode=mode, session_id=response.session_id)
+            return CaptureResult(
+                mode=mode, session_id=response.session_id, turn_id=response.turn_id or None
+            )
 
         names = {e.get("id"): e.get("name", "") for e in extraction.entities if e.get("id")}
         return CaptureResult(
@@ -99,6 +107,9 @@ class NotConfiguredCapture:
         raise MemoryNotConfiguredError
 
     async def store(self, text: str, scope: str | None = None) -> CaptureResult:
+        raise MemoryNotConfiguredError
+
+    async def store_passage(self, text: str, scope: str) -> str | None:
         raise MemoryNotConfiguredError
 
     async def store_facts(self, facts: list[FactTriple], scope: str) -> CaptureResult:

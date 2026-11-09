@@ -18,6 +18,7 @@ from app.api.deps import (
     AccessServiceDep,
     CurrentUserDep,
     DocumentStoreDep,
+    FactTagRepositoryDep,
     MemoryCaptureDep,
     PreviewCacheDep,
     TextReaderDep,
@@ -142,6 +143,7 @@ async def store(
     user: CurrentUserDep,
     access: AccessServiceDep,
     capture: MemoryCaptureDep,
+    tags: FactTagRepositoryDep,
     cache: PreviewCacheDep,
 ) -> CaptureStoreResponse:
     """Write the kept facts (mode triples) or a fresh full extraction (mode full) to memory."""
@@ -163,6 +165,7 @@ async def store(
                 mode=body.config.mode,
                 memory_category=body.config.memory_category,
                 entity_choices=body.entity_choices,
+                links=tags,
             )
         )
     except capture_flow.CaptureFlowError as exc:
@@ -200,6 +203,7 @@ async def extract(
     user: CurrentUserDep,
     access: AccessServiceDep,
     capture: MemoryCaptureDep,
+    tags: FactTagRepositoryDep,
     documents: DocumentStoreDep,
     reader: TextReaderDep,
     cache: PreviewCacheDep,
@@ -211,7 +215,7 @@ async def extract(
     if source.doc_id:
         # Lets the uploader poll the document's status, as after a preview.
         cache.remember_document(source.doc_id, user.email)
-    outcome = await _call(capture_flow.extract(capture, scope=scope, text=source.text))
+    outcome = await _call(capture_flow.extract(capture, scope=scope, text=source.text, links=tags))
 
     trace_id = getattr(request.state, "trace_id", None)
     logger.log(

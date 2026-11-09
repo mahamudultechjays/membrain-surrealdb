@@ -270,6 +270,7 @@ class TaggerService:
             page = await self._lister.page(self.scopes, limit=self._page_size, cursor=cursor)
             mine = [(f, s) for f in page.facts if (s := self._scope_of(f))]
             run.listed += len(mine)
+            await self._tags.link_turns([(f.id, f.turn_id, s) for f, s in mine if f.turn_id])
             done = set() if retag else await self._tags.processed([f.id for f, _ in mine])
             for fact, scope in mine:
                 if fact.id in done:

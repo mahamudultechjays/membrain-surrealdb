@@ -84,3 +84,7 @@ class MemoryCapture(Protocol):
     async def store_facts(self, facts: list[FactTriple], scope: str) -> CaptureResult:
         """Save exactly these facts in `scope`, without running extraction."""
         ...
+
+    async def store_passage(self, text: str, scope: str) -> str | None:
+        """Save the text as a passage only (no extraction); returns its turn id."""
+        ...

@@ -61,6 +61,10 @@ class FakeCapture:
             attributes=[ExtractedAttribute("lead_time_days", "18", "knowledge", "Acme", "a1")],
         )
 
+    async def store_passage(self, text: str, scope: str) -> str | None:
+        self._record("store_passage", text, scope)
+        return "t-passage"
+
     async def store_facts(self, facts: list[FactTriple], scope: str) -> CaptureResult:
         self._record("store_facts", facts, scope)
         return CaptureResult(
@@ -228,9 +232,12 @@ def test_store_writes_only_kept_facts_as_triples(client: TestClient, capture: Fa
     assert body["history"][0]["old_value"] == "10"
     assert body["history"][0]["new_value"] == "18"
     assert body["trace_id"].startswith("t-")
-    op, facts, scope = capture.calls[-1]
+    op, facts, scope = capture.calls[-2]
     assert (op, scope) == ("store_facts", PRIYA)
     assert facts == [FactTriple("Acme", "organisation", "lead_time_days", "18", "identity")]
+    # Then the original text as a passage, so its chunk can share these facts' tags.
+    assert capture.calls[-1][0] == "store_passage"
+    assert capture.calls[-1][2] == PRIYA
 
 
 def test_store_full_reextracts_source_text(client: TestClient, capture: FakeCapture) -> None:

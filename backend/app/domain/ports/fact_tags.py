@@ -126,6 +126,14 @@ class FactTagRepository(Protocol):
         """The tagger's best nodes and goals for a not-business fact, ranked."""
         ...
 
+    async def link_turns(self, links: list[tuple[str, str, str]]) -> None:
+        """Record (fact id, turn id, scope): the captured text each fact came from."""
+        ...
+
+    async def facts_for_turns(self, turn_ids: list[str]) -> dict[str, list[str]]:
+        """The fact ids linked to each of these turns."""
+        ...
+
     async def review_state(self, fact_ids: list[str]) -> dict[str, ReviewState]:
         """When each processed fact was tagged, and reviewed if it was."""
         ...

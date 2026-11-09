@@ -12,18 +12,23 @@ be stored with mode full.
 """
 
 import json
+import logging
 import uuid
 from collections import OrderedDict
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from typing import Literal
 
+from app.domain.errors import MemoryNotConfiguredError, MemoryUnavailableError
+from app.domain.ports.fact_tags import FactTagRepository
 from app.domain.ports.memory_capture import (
     CaptureResult,
     ExtractedAttribute,
     FactTriple,
     MemoryCapture,
 )
+
+logger = logging.getLogger(__name__)
 
 StoreMode = Literal["triples", "full"]
 
@@ -216,7 +221,11 @@ async def store(
     mode: StoreMode,
     memory_category: str | None,
     entity_choices: dict[str, str] | None = None,
+    links: FactTagRepository | None = None,
 ) -> StoreOutcome:
+    """Mode triples writes the kept facts as they are, then the original text as
+    a passage (no extraction), so a VCT value filter can keep the text's chunk
+    when its facts match; `links` records which facts came from that text."""
     by_id = {f.id: f for f in stored.facts}
     unknown = [fact_id for fact_id in kept if fact_id not in by_id]
     if unknown:
@@ -224,7 +233,7 @@ async def store(
     linked = _link_entities(stored, entity_choices or {})
 
     if mode == "full":
-        return await extract(capture, scope=stored.scope, text=stored.text)
+        return await extract(capture, scope=stored.scope, text=stored.text, links=links)
 
     triples = [
         _recategorised(triple, memory_category)
@@ -234,16 +243,41 @@ async def store(
     if not triples:
         raise CaptureFlowError("None of the kept facts can be stored as triples; use mode full.")
     result = await capture.store_facts(triples, stored.scope)
+    turn = await _store_passage(capture, stored.text, stored.scope)
+    await _link(links, result, turn, stored.scope)
     return _outcome(result, len(triples), triples)
 
 
-async def extract(capture: MemoryCapture, *, scope: str, text: str) -> StoreOutcome:
+async def _store_passage(capture: MemoryCapture, text: str, scope: str) -> str | None:
+    """Best effort: the facts are already saved, so a failure here only loses
+    the link from the text's chunk to them."""
+    if not text.strip():
+        return None
+    try:
+        return await capture.store_passage(text, scope)
+    except (MemoryNotConfiguredError, MemoryUnavailableError):
+        logger.warning("Storing the captured text as a passage failed", exc_info=True)
+        return None
+
+
+async def _link(
+    links: FactTagRepository | None, result: CaptureResult, turn: str | None, scope: str
+) -> None:
+    ids = [a.id for a in result.attributes if a.id]
+    if links is not None and turn and ids:
+        await links.link_turns([(fact_id, turn, scope) for fact_id in ids])
+
+
+async def extract(
+    capture: MemoryCapture, *, scope: str, text: str, links: FactTagRepository | None = None
+) -> StoreOutcome:
     """Mode full with no preview: Agent Memory extracts from the text and saves all it finds.
 
     A preview would be thrown away here anyway, since full extraction runs the
     model again; skipping it saves one model run.
     """
     result = await capture.store(text, scope)
+    await _link(links, result, result.turn_id, scope)
     return _outcome(result, len(result.attributes) + len(result.relations), [])
 
 
