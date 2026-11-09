@@ -15,7 +15,7 @@ from app.main import app
 from app.services import vct_map
 from app.services.access import AccessService
 from app.services.onboarding import node_text
-from app.services.tagger import TaggerService, decoy_text, goal_text, taggable
+from app.services.tagger import DECOYS, TaggerService, decoy_text, goal_text, taggable
 from tests.conftest import FakeRegistry, sign_in
 
 ME = "org/spreetail/user/mahamudul_hasan"
@@ -65,7 +65,7 @@ class FakeRecall:
         nodes, goals = next((v for w, v in self.ROUTES.items() if w in query), ([], []))
         if lens == NODES:
             texts = [
-                decoy_text(i[5:], "decoy")
+                decoy_text(i[5:], DECOYS[i[5:]])
                 if i.startswith("none:")
                 else node_text(n)
                 if (n := VMAP.node(i))
@@ -195,7 +195,7 @@ async def test_decoys_are_seeded_into_the_node_scope() -> None:
         goals_scope=GOALS,
     )
 
-    assert await service.seed_decoys() == 7
+    assert await service.seed_decoys() == 8
     assert {scope for _, scope in passages.written} == {NODES}
     assert all(text.startswith("VCT none [") for text, _ in passages.written)
 
@@ -403,3 +403,44 @@ def test_tagger_routes_refuse_non_admins(client: TestClient) -> None:
 
     assert client.get("/api/v1/admin/vct/tagger").status_code == 403
     assert client.post("/api/v1/admin/vct/tagger/run").status_code == 403
+
+
+async def test_a_passage_from_an_older_wording_no_longer_counts() -> None:
+    class StaleRecall(FakeRecall):
+        async def recall(self, query: str, *, lens: str, k: int) -> RecallResult:
+            if lens != NODES:
+                return await super().recall(query, lens=lens, k=k)
+            old_mo1 = "VCT node [mo1] Administer Sales Channels. Configure and manage channels."
+            texts = [old_mo1, node_text(VMAP.node("sc6"))]  # type: ignore[arg-type]
+            return RecallResult(
+                hits=[RecallHit(f"p{i}", t, "chunk", 0.38) for i, t in enumerate(texts)]
+            )
+
+    tags = SqliteFactTags(":memory:")
+    await _service(FakeLister([[_fact("f1", "promotion job interval")]]), StaleRecall(), tags).run()
+
+    nodes = [t.tag for t in (await tags.tags_for(["f1"]))["f1"] if t.kind == "node"]
+    assert nodes == ["sc6"]
+
+
+def test_mo1_carries_marketplace_keywords_and_refresh_writes_it() -> None:
+    mo1 = VMAP.node("mo1")
+    assert mo1 is not None
+    assert "Amazon Seller Central" in node_text(mo1)
+    passages = FakePassages()
+    service = TaggerService(
+        SqliteFactTags(":memory:"),
+        FakeLister([]),
+        FakeRecall(),
+        passages,
+        FakeRegistry(),
+        VMAP,
+        scopes=[ME],
+        nodes_scope=NODES,
+        goals_scope=GOALS,
+    )
+
+    assert asyncio.run(service.refresh_nodes(["mo1", "zz9"])) == 1
+    assert asyncio.run(service.seed_decoys(only=["projects"])) == 1
+    assert passages.written[0] == (node_text(mo1), NODES)
+    assert passages.written[1][0].startswith("VCT none [projects]")

@@ -32,6 +32,7 @@ from app.domain.ports.memory_recall import MemoryRecall
 from app.domain.ports.passage_writer import PassageWriter
 from app.domain.ports.scope_registry import ScopeRegistry
 from app.domain.vct import VctGoal, VctMap
+from app.services.onboarding import node_text
 
 logger = logging.getLogger(__name__)
 
@@ -65,6 +66,10 @@ DECOYS: dict[str, str] = {
     "meetings, proposals and opinions about the project, preferences of a person.",
     "personal": "Personal life and small talk: lunch, work from home days, favourite "
     "things, hobbies, weather, travel, sports, news, birthdays, holidays.",
+    # Added 9 Nov: project notes the others missed fell on mo1.
+    "projects": "Project notes and tests: test runs, test profiles, question counts, "
+    "findings, write-ups, design options, app locations, jobs and intervals, settings "
+    "and configuration of internal tools.",
 }
 
 
@@ -145,6 +150,13 @@ class TaggerService:
         self._max_pages = max_pages
         self._lock = asyncio.Lock()
         self._gate = asyncio.Semaphore(_RECALL_CONCURRENCY)
+        # The exact passage texts that count; older wordings stored in Agent
+        # Memory are ignored, since passages there can't be edited.
+        self._current = (
+            {node_text(n) for n in vct_map.nodes}
+            | {goal_text(g) for g in vct_map.goals}
+            | {decoy_text(k, d) for k, d in DECOYS.items()}
+        )
         self._task: asyncio.Task[TaggerRun | None] | None = None
         self.current: TaggerRun | None = None
         self.last: TaggerRun | None = None
@@ -200,14 +212,24 @@ class TaggerService:
             await asyncio.sleep(interval_seconds)
             await self._quiet_run()
 
-    async def seed_decoys(self) -> int:
-        """Store the "not business" decoys in the node scope. Writing them twice
-        is harmless: matching keeps each id once."""
+    async def seed_decoys(self, only: list[str] | None = None) -> int:
+        """Store the "not business" decoys (or just `only`) in the node scope.
+        Writing one twice is harmless: matching keeps each id once."""
         await self._registry.ensure(self._nodes_scope)
+        keys = [k for k in DECOYS if only is None or k in only]
         await asyncio.gather(
-            *(self._passages.write(decoy_text(k, d), self._nodes_scope) for k, d in DECOYS.items())
+            *(self._passages.write(decoy_text(k, DECOYS[k]), self._nodes_scope) for k in keys)
         )
-        return len(DECOYS)
+        return len(keys)
+
+    async def refresh_nodes(self, node_ids: list[str]) -> int:
+        """Store the current passage of these nodes after a wording change; the
+        old passage stays in Agent Memory but no longer counts."""
+        nodes = [n for i in node_ids if (n := self.map.node(i))]
+        await asyncio.gather(
+            *(self._passages.write(node_text(n), self._nodes_scope) for n in nodes)
+        )
+        return len(nodes)
 
     async def seed_goals(self, *, force: bool = False) -> int:
         """Store every goal as a passage in the goals scope, once."""
@@ -299,7 +321,7 @@ class TaggerService:
         decoy_first = False
         for hit in result.hits:
             found = pattern.search(hit.text or "")
-            if not found:
+            if not found or (hit.text or "").strip() not in self._current:
                 continue
             if found.group(1) == "none":
                 # A decoy only matters when it ranks above every real match; the

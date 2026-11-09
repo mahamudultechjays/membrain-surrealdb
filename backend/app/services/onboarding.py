@@ -38,9 +38,36 @@ class ClauseMatch:
     candidates: list[VctNode]
 
 
+# Extra matcher keywords, on top of the metro map's own (the map file stays a
+# copy of membrain's). mo1's own keywords ("promotion", "configure ... channels")
+# pulled in vague project notes (9 Nov), so it gets marketplace-specific words.
+EXTRA_KEYWORDS: dict[str, tuple[str, ...]] = {
+    "mo1": (
+        "Amazon Seller Central",
+        "Walmart Seller Center",
+        "marketplace listing",
+        "channel listing",
+        "seller account",
+        "marketplace fees",
+        "referral fee",
+        "Buy Box win rate",
+        "marketplace pricing",
+        "eBay",
+        "Target Plus",
+        "Wayfair",
+        "Shopify store",
+    ),
+}
+
+
 def node_text(node: VctNode) -> str:
-    """The passage stored for a node; the [id] tag maps a recall hit back to it."""
-    keywords = f" Keywords: {', '.join(node.keywords)}." if node.keywords else ""
+    """The passage stored for a node; the [id] tag maps a recall hit back to it.
+
+    Matchers only count a hit whose text equals this, so a passage written
+    before a wording change is ignored once the new one is stored.
+    """
+    words = (*node.keywords, *EXTRA_KEYWORDS.get(node.id, ()))
+    keywords = f" Keywords: {', '.join(words)}." if words else ""
     return f"VCT node [{node.id}] {node.name}. {node.description}.{keywords}"
 
 
@@ -147,7 +174,9 @@ class OnboardingService:
         ids: dict[str, None] = {}
         for hit in result.hits:
             tag = _NODE_TAG.search(hit.text or "")
-            if tag and self.map.node(tag.group(1)):
-                ids.setdefault(tag.group(1))
+            node = self.map.node(tag.group(1)) if tag else None
+            # A passage from before a wording change no longer counts.
+            if node and (hit.text or "").strip() == node_text(node):
+                ids.setdefault(node.id)
         nodes = [n for i in list(ids)[:CANDIDATES_PER_CLAUSE] if (n := self.map.node(i))]
         return ClauseMatch(clause=clause, candidates=nodes)
