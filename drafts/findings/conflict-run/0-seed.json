@@ -1,0 +1,51 @@
+{
+ "org": {
+  "scope": "org/spreetail/lab/conflict",
+  "note": "Company returns policy for Cobalt Ridge: customers can return Cobalt Ridge products within 30 days of delivery for a full refund. Cobalt Ridge is sold on Amazon and Walmart, and this policy applies on every channel.",
+  "seconds": 17.2,
+  "entities": [
+   "Cobalt Ridge",
+   "Cobalt Ridge return policy",
+   "Amazon",
+   "Walmart"
+  ],
+  "attributes": [
+   "Cobalt Ridge return policy · return_window = within 30 days of delivery [knowledge]",
+   "Cobalt Ridge return policy · refund_type = full refund [knowledge]",
+   "Cobalt Ridge return policy · channel_applicability = applies on every channel [knowledge]"
+  ],
+  "relations": 3
+ },
+ "team": {
+  "scope": "org/spreetail/lab/conflict/team/ops",
+  "note": "Ops team note: for Cobalt Ridge we accept returns within 45 days of delivery for a full refund. Cobalt Ridge is sold on Amazon and Walmart; returns come back through the Reno warehouse.",
+  "seconds": 8.9,
+  "entities": [
+   "Cobalt Ridge",
+   "Amazon",
+   "Walmart",
+   "Reno warehouse"
+  ],
+  "attributes": [
+   "Cobalt Ridge · return_window = within 45 days of delivery [knowledge]",
+   "Cobalt Ridge · return_refund_type = full refund [knowledge]"
+  ],
+  "relations": 3
+ },
+ "personal": {
+  "scope": "org/spreetail/lab/conflict/user/vidyul",
+  "note": "My working note: Cobalt Ridge's returns window is 60 days from delivery for a full refund. Cobalt Ridge is sold on Amazon and Walmart, and I handle its return requests.",
+  "seconds": 8.6,
+  "entities": [
+   "Cobalt Ridge",
+   "Amazon",
+   "Walmart",
+   "vidyul.narayanan@spreetail.com"
+  ],
+  "attributes": [
+   "Cobalt Ridge · return_window = 60 days from delivery for a full refund [knowledge]",
+   "vidyul.narayanan@spreetail.com · job_responsibility = handle return requests for Cobalt Ridge [identity]"
+  ],
+  "relations": 3
+ }
+}

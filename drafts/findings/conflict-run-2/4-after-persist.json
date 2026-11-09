@@ -1,0 +1,750 @@
+{
+ "label": "4-after-persist",
+ "taken_at": "2026-11-06T06:29:01+00:00",
+ "scopes": {
+  "org": {
+   "scope": "org/spreetail/lab/conflict-2",
+   "entities": [
+    {
+     "id": "['event', 'prime_day']",
+     "name": "Prime Day",
+     "type": "event"
+    },
+    {
+     "id": "['location', 'dallas']",
+     "name": "Dallas",
+     "type": "location"
+    },
+    {
+     "id": "['location', 'reno']",
+     "name": "Reno",
+     "type": "location"
+    },
+    {
+     "id": "['organisation', 'northwind_outdoor']",
+     "name": "Northwind Outdoor",
+     "type": "organisation"
+    },
+    {
+     "id": "['person', 'dana_whitfield']",
+     "name": "Dana Whitfield",
+     "type": "person"
+    }
+   ],
+   "attributes": [
+    {
+     "id": "y9t9gmzen3nluh6w31g5",
+     "entity": "organisation/northwind_outdoor",
+     "key": "purchase_order_cadence",
+     "value": "every Monday",
+     "category": "knowledge",
+     "source": "turn",
+     "trust": 0.5,
+     "scope": [
+      [
+       "org/spreetail/lab/conflict-2/"
+      ]
+     ],
+     "created_at": "2026-11-06T06:21:19.745883911+00:00",
+     "supersedes": null
+    },
+    {
+     "id": "dvsnagx80t9byl3mw8m3",
+     "entity": "organisation/northwind_outdoor",
+     "key": "defective_chargeback_policy",
+     "value": "can be charged back at full cost within 90 days of receipt",
+     "category": "knowledge",
+     "source": "turn",
+     "trust": 0.5,
+     "scope": [
+      [
+       "org/spreetail/lab/conflict-2/"
+      ]
+     ],
+     "created_at": "2026-11-06T06:21:19.508644054+00:00",
+     "supersedes": null
+    },
+    {
+     "id": "hs3zjegrkd4e4jkpa0of",
+     "entity": "organisation/northwind_outdoor",
+     "key": "freight_terms",
+     "value": "Northwind pays freight on purchase orders above $5,000; below that we pay it",
+     "category": "knowledge",
+     "source": "turn",
+     "trust": 0.5,
+     "scope": [
+      [
+       "org/spreetail/lab/conflict-2/"
+      ]
+     ],
+     "created_at": "2026-11-06T06:21:19.283486470+00:00",
+     "supersedes": null
+    },
+    {
+     "id": "id2g56ycry3mha0v44og",
+     "entity": "organisation/northwind_outdoor",
+     "key": "promotional_discount_cap",
+     "value": "15% maximum discount on every channel, including Prime Day",
+     "category": "knowledge",
+     "source": "turn",
+     "trust": 0.5,
+     "scope": [
+      [
+       "org/spreetail/lab/conflict-2/"
+      ]
+     ],
+     "created_at": "2026-11-06T06:21:19.050649675+00:00",
+     "supersedes": null
+    },
+    {
+     "id": "h56c1ysl7my8vtej2ooo",
+     "entity": "organisation/northwind_outdoor",
+     "key": "lead_time",
+     "value": "21 days from purchase order to warehouse arrival",
+     "category": "knowledge",
+     "source": "turn",
+     "trust": 0.5,
+     "scope": [
+      [
+       "org/spreetail/lab/conflict-2/"
+      ]
+     ],
+     "created_at": "2026-11-06T06:21:18.788953291+00:00",
+     "supersedes": null
+    },
+    {
+     "id": "ja2bcrdbsirf2cl78pk7",
+     "entity": "organisation/northwind_outdoor",
+     "key": "supplied_products",
+     "value": "patio furniture and fire pits",
+     "category": "knowledge",
+     "source": "turn",
+     "trust": 0.5,
+     "scope": [
+      [
+       "org/spreetail/lab/conflict-2/"
+      ]
+     ],
+     "created_at": "2026-11-06T06:21:18.557195246+00:00",
+     "supersedes": null
+    }
+   ],
+   "relations": [
+    {
+     "id": "7ggnyxn62t63yazrapyp",
+     "subject": "event/prime_day",
+     "label": "impacts_logistics_in",
+     "object": "location/reno",
+     "source": "elaboration",
+     "trust": 0.3,
+     "scope": [
+      [
+       "org/spreetail/lab/conflict-2/"
+      ]
+     ]
+    },
+    {
+     "id": "kq2ftkxk6tvk6ppnrmga",
+     "subject": "event/prime_day",
+     "label": "impacts_logistics_in",
+     "object": "location/dallas",
+     "source": "elaboration",
+     "trust": 0.3,
+     "scope": [
+      [
+       "org/spreetail/lab/conflict-2/"
+      ]
+     ]
+    },
+    {
+     "id": "1rqkm512cvuzwxfnhafa",
+     "subject": "organisation/northwind_outdoor",
+     "label": "participates_in",
+     "object": "event/prime_day",
+     "source": "elaboration",
+     "trust": 0.3,
+     "scope": [
+      [
+       "org/spreetail/lab/conflict-2/"
+      ]
+     ]
+    },
+    {
+     "id": "t7hfhtyxod5119fhslja",
+     "subject": "location/dallas",
+     "label": "connected_to",
+     "object": "location/reno",
+     "source": "elaboration",
+     "trust": 0.3,
+     "scope": [
+      [
+       "org/spreetail/lab/conflict-2/"
+      ]
+     ]
+    },
+    {
+     "id": "wvf051ie49q0cbz5fnah",
+     "subject": "person/dana_whitfield",
+     "label": "participated_in",
+     "object": "event/prime_day",
+     "source": "elaboration",
+     "trust": 0.3,
+     "scope": [
+      [
+       "org/spreetail/lab/conflict-2/"
+      ]
+     ]
+    },
+    {
+     "id": "owamlrku6z66o9pq388g",
+     "subject": "person/dana_whitfield",
+     "label": "visited",
+     "object": "location/reno",
+     "source": "elaboration",
+     "trust": 0.3,
+     "scope": [
+      [
+       "org/spreetail/lab/conflict-2/"
+      ]
+     ]
+    },
+    {
+     "id": "6i10025o2x6ym3d39khi",
+     "subject": "person/dana_whitfield",
+     "label": "lives_in",
+     "object": "location/dallas",
+     "source": "elaboration",
+     "trust": 0.3,
+     "scope": [
+      [
+       "org/spreetail/lab/conflict-2/"
+      ]
+     ]
+    },
+    {
+     "id": "qmdr2p0h1afncpfyamkw",
+     "subject": "person/dana_whitfield",
+     "label": "contact_for",
+     "object": "organisation/northwind_outdoor",
+     "source": "turn",
+     "trust": 0.5,
+     "scope": [
+      [
+       "org/spreetail/lab/conflict-2/"
+      ]
+     ]
+    },
+    {
+     "id": "1v87cv4aj2n5k4an5g6y",
+     "subject": "organisation/northwind_outdoor",
+     "label": "ships_to",
+     "object": "location/dallas",
+     "source": "turn",
+     "trust": 0.5,
+     "scope": [
+      [
+       "org/spreetail/lab/conflict-2/"
+      ]
+     ]
+    },
+    {
+     "id": "flfk0fd3djfaul7g7amw",
+     "subject": "organisation/northwind_outdoor",
+     "label": "ships_to",
+     "object": "location/reno",
+     "source": "turn",
+     "trust": 0.5,
+     "scope": [
+      [
+       "org/spreetail/lab/conflict-2/"
+      ]
+     ]
+    }
+   ]
+  },
+  "team": {
+   "scope": "org/spreetail/lab/conflict-2/team/ops",
+   "entities": [
+    {
+     "id": "['location', 'dallas']",
+     "name": "Dallas",
+     "type": "location"
+    },
+    {
+     "id": "['location', 'reno']",
+     "name": "Reno",
+     "type": "location"
+    },
+    {
+     "id": "['organisation', 'northwind_outdoor']",
+     "name": "Northwind Outdoor",
+     "type": "organisation"
+    },
+    {
+     "id": "['person', 'dana_whitfield']",
+     "name": "Dana Whitfield",
+     "type": "person"
+    }
+   ],
+   "attributes": [
+    {
+     "id": "ds4aurfptmx3pn7sgwdm",
+     "entity": "organisation/northwind_outdoor",
+     "key": "promotional_discount_terms",
+     "value": "Up to 20% discount applicable for Prime Day and holiday events",
+     "category": "knowledge",
+     "source": "consolidation",
+     "trust": 0.35,
+     "scope": [
+      [
+       "org/spreetail/lab/conflict-2/team/ops/"
+      ]
+     ],
+     "created_at": "2026-11-06T06:24:47.567636485+00:00",
+     "supersedes": null
+    },
+    {
+     "id": "z4bknrzo0whrc8ytbuf0",
+     "entity": "organisation/northwind_outdoor",
+     "key": "purchase_order_schedule",
+     "value": "Mondays",
+     "category": "knowledge",
+     "source": "turn",
+     "trust": 0.5,
+     "scope": [
+      [
+       "org/spreetail/lab/conflict-2/team/ops/"
+      ]
+     ],
+     "created_at": "2026-11-06T06:21:35.579674099+00:00",
+     "supersedes": null
+    },
+    {
+     "id": "h8uerjt9deldjdhigsnc",
+     "entity": "organisation/northwind_outdoor",
+     "key": "shipped_products",
+     "value": "patio furniture and fire pits",
+     "category": "knowledge",
+     "source": "turn",
+     "trust": 0.5,
+     "scope": [
+      [
+       "org/spreetail/lab/conflict-2/team/ops/"
+      ]
+     ],
+     "created_at": "2026-11-06T06:21:35.345870690+00:00",
+     "supersedes": null
+    },
+    {
+     "id": "u0413qztlqvb8mdmpwzr",
+     "entity": "organisation/northwind_outdoor",
+     "key": "defective_chargeback_window",
+     "value": "within 60 days of receipt",
+     "category": "knowledge",
+     "source": "turn",
+     "trust": 0.5,
+     "scope": [
+      [
+       "org/spreetail/lab/conflict-2/team/ops/"
+      ]
+     ],
+     "created_at": "2026-11-06T06:21:35.105420342+00:00",
+     "supersedes": null
+    },
+    {
+     "id": "x3yngl1ytc9qit5q52cj",
+     "entity": "organisation/northwind_outdoor",
+     "key": "free_freight_threshold",
+     "value": "$7,500 per purchase order",
+     "category": "knowledge",
+     "source": "turn",
+     "trust": 0.5,
+     "scope": [
+      [
+       "org/spreetail/lab/conflict-2/team/ops/"
+      ]
+     ],
+     "created_at": "2026-11-06T06:21:34.874807275+00:00",
+     "supersedes": null
+    },
+    {
+     "id": "kmvl6g5m9tc67duo1oi5",
+     "entity": "organisation/northwind_outdoor",
+     "key": "promotional_discount_usage",
+     "value": "Prime Day and holiday events",
+     "category": "knowledge",
+     "source": "turn",
+     "trust": 0.5,
+     "scope": [
+      [
+       "org/spreetail/lab/conflict-2/team/ops/"
+      ]
+     ],
+     "created_at": "2026-11-06T06:21:34.647086867+00:00",
+     "supersedes": null
+    },
+    {
+     "id": "hupijbd1g41v84p3ncyq",
+     "entity": "organisation/northwind_outdoor",
+     "key": "max_promotional_discount",
+     "value": "20%",
+     "category": "knowledge",
+     "source": "turn",
+     "trust": 0.5,
+     "scope": [
+      [
+       "org/spreetail/lab/conflict-2/team/ops/"
+      ]
+     ],
+     "created_at": "2026-11-06T06:21:34.410120039+00:00",
+     "supersedes": null
+    },
+    {
+     "id": "kh9a04uxtwxhdg5kb1r8",
+     "entity": "organisation/northwind_outdoor",
+     "key": "lead_time",
+     "value": "28 days from purchase order to arrival",
+     "category": "knowledge",
+     "source": "turn",
+     "trust": 0.5,
+     "scope": [
+      [
+       "org/spreetail/lab/conflict-2/team/ops/"
+      ]
+     ],
+     "created_at": "2026-11-06T06:21:34.182002591+00:00",
+     "supersedes": null
+    }
+   ],
+   "relations": [
+    {
+     "id": "kp4m30b1zh3tpvypuolm",
+     "subject": "person/dana_whitfield",
+     "label": "contact_for",
+     "object": "organisation/northwind_outdoor",
+     "source": "turn",
+     "trust": 0.5,
+     "scope": [
+      [
+       "org/spreetail/lab/conflict-2/team/ops/"
+      ]
+     ]
+    },
+    {
+     "id": "5c9f7xsf6rajwsvmvvk4",
+     "subject": "organisation/northwind_outdoor",
+     "label": "ships_to",
+     "object": "location/dallas",
+     "source": "turn",
+     "trust": 0.5,
+     "scope": [
+      [
+       "org/spreetail/lab/conflict-2/team/ops/"
+      ]
+     ]
+    },
+    {
+     "id": "24c3uzjmpseucaq67oko",
+     "subject": "organisation/northwind_outdoor",
+     "label": "ships_to",
+     "object": "location/reno",
+     "source": "turn",
+     "trust": 0.5,
+     "scope": [
+      [
+       "org/spreetail/lab/conflict-2/team/ops/"
+      ]
+     ]
+    }
+   ]
+  },
+  "personal": {
+   "scope": "org/spreetail/lab/conflict-2/user/vidyul",
+   "entities": [
+    {
+     "id": "['location', 'dallas']",
+     "name": "Dallas",
+     "type": "location"
+    },
+    {
+     "id": "['location', 'reno']",
+     "name": "Reno",
+     "type": "location"
+    },
+    {
+     "id": "['location', 'texas']",
+     "name": "Texas",
+     "type": "location"
+    },
+    {
+     "id": "['organisation', 'amazon']",
+     "name": "Amazon",
+     "type": "organisation"
+    },
+    {
+     "id": "['organisation', 'northwind_outdoor']",
+     "name": "Northwind Outdoor",
+     "type": "organisation"
+    },
+    {
+     "id": "['person', 'dana_whitfield']",
+     "name": "Dana Whitfield",
+     "type": "person"
+    }
+   ],
+   "attributes": [
+    {
+     "id": "nmrxbn312hf1crbyaaea",
+     "entity": "organisation/northwind_outdoor",
+     "key": "purchase_order_schedule",
+     "value": "every Monday",
+     "category": "knowledge",
+     "source": "turn",
+     "trust": 0.5,
+     "scope": [
+      [
+       "org/spreetail/lab/conflict-2/user/vidyul/"
+      ]
+     ],
+     "created_at": "2026-11-06T06:21:52.023575931+00:00",
+     "supersedes": null
+    },
+    {
+     "id": "d3c7cqxixof8f1d7063h",
+     "entity": "organisation/northwind_outdoor",
+     "key": "supplied_products",
+     "value": "patio furniture and fire pits",
+     "category": "knowledge",
+     "source": "turn",
+     "trust": 0.5,
+     "scope": [
+      [
+       "org/spreetail/lab/conflict-2/user/vidyul/"
+      ]
+     ],
+     "created_at": "2026-11-06T06:21:51.778807249+00:00",
+     "supersedes": null
+    },
+    {
+     "id": "t3iqbv9yiq1tkqfqg2i2",
+     "entity": "organisation/northwind_outdoor",
+     "key": "defect_chargeback_window",
+     "value": "within 90 days",
+     "category": "knowledge",
+     "source": "turn",
+     "trust": 0.5,
+     "scope": [
+      [
+       "org/spreetail/lab/conflict-2/user/vidyul/"
+      ]
+     ],
+     "created_at": "2026-11-06T06:21:51.543141048+00:00",
+     "supersedes": null
+    },
+    {
+     "id": "pyo2jah9u262u0z8vrqo",
+     "entity": "organisation/northwind_outdoor",
+     "key": "freight_policy",
+     "value": "free above $5,000",
+     "category": "knowledge",
+     "source": "turn",
+     "trust": 0.5,
+     "scope": [
+      [
+       "org/spreetail/lab/conflict-2/user/vidyul/"
+      ]
+     ],
+     "created_at": "2026-11-06T06:21:51.299547541+00:00",
+     "supersedes": null
+    },
+    {
+     "id": "ml58drp67df23rnural3",
+     "entity": "organisation/northwind_outdoor",
+     "key": "lead_time",
+     "value": "about 14 days",
+     "category": "knowledge",
+     "source": "turn",
+     "trust": 0.5,
+     "scope": [
+      [
+       "org/spreetail/lab/conflict-2/user/vidyul/"
+      ]
+     ],
+     "created_at": "2026-11-06T06:21:51.069976121+00:00",
+     "supersedes": null
+    }
+   ],
+   "relations": [
+    {
+     "id": "qyfuu3il9pk6kgqeg0rl",
+     "subject": "organisation/amazon",
+     "label": "operates_in",
+     "object": "location/texas",
+     "source": "elaboration",
+     "trust": 0.3,
+     "scope": [
+      [
+       "org/spreetail/lab/conflict-2/user/vidyul/"
+      ]
+     ]
+    },
+    {
+     "id": "7i5wctcpx1x6ypoqo18p",
+     "subject": "location/reno",
+     "label": "located_in",
+     "object": "location/texas",
+     "source": "elaboration",
+     "trust": 0.3,
+     "scope": [
+      [
+       "org/spreetail/lab/conflict-2/user/vidyul/"
+      ]
+     ]
+    },
+    {
+     "id": "pfp83grea7n7lo2fw9df",
+     "subject": "person/dana_whitfield",
+     "label": "lives_in",
+     "object": "location/texas",
+     "source": "elaboration",
+     "trust": 0.3,
+     "scope": [
+      [
+       "org/spreetail/lab/conflict-2/user/vidyul/"
+      ]
+     ]
+    },
+    {
+     "id": "bv1ql04cih7xfefkf36l",
+     "subject": "person/dana_whitfield",
+     "label": "works_at",
+     "object": "organisation/amazon",
+     "source": "elaboration",
+     "trust": 0.3,
+     "scope": [
+      [
+       "org/spreetail/lab/conflict-2/user/vidyul/"
+      ]
+     ]
+    },
+    {
+     "id": "8udygy2il2agj8gcxxgv",
+     "subject": "organisation/northwind_outdoor",
+     "label": "sells_on",
+     "object": "organisation/amazon",
+     "source": "elaboration",
+     "trust": 0.3,
+     "scope": [
+      [
+       "org/spreetail/lab/conflict-2/user/vidyul/"
+      ]
+     ]
+    },
+    {
+     "id": "x0q1pjhkphxwey94hgfq",
+     "subject": "organisation/amazon",
+     "label": "operates_in",
+     "object": "location/reno",
+     "source": "elaboration",
+     "trust": 0.3,
+     "scope": [
+      [
+       "org/spreetail/lab/conflict-2/user/vidyul/"
+      ]
+     ]
+    },
+    {
+     "id": "00hy0er02ffcwvva7c0s",
+     "subject": "organisation/amazon",
+     "label": "operates_in",
+     "object": "location/dallas",
+     "source": "elaboration",
+     "trust": 0.3,
+     "scope": [
+      [
+       "org/spreetail/lab/conflict-2/user/vidyul/"
+      ]
+     ]
+    },
+    {
+     "id": "t1j9mijj8jfqhm9r7it2",
+     "subject": "location/dallas",
+     "label": "located_in",
+     "object": "location/texas",
+     "source": "elaboration",
+     "trust": 0.3,
+     "scope": [
+      [
+       "org/spreetail/lab/conflict-2/user/vidyul/"
+      ]
+     ]
+    },
+    {
+     "id": "vns5lrpb7nddq7kpi1ru",
+     "subject": "person/principal:GHr42XnIGtK5",
+     "label": "deals_with",
+     "object": "person/dana_whitfield",
+     "source": "turn",
+     "trust": 0.5,
+     "scope": [
+      [
+       "org/spreetail/lab/conflict-2/user/vidyul/"
+      ]
+     ]
+    },
+    {
+     "id": "ym1c7fpto6faevhz3ou0",
+     "subject": "person/dana_whitfield",
+     "label": "contact_for",
+     "object": "organisation/northwind_outdoor",
+     "source": "turn",
+     "trust": 0.5,
+     "scope": [
+      [
+       "org/spreetail/lab/conflict-2/user/vidyul/"
+      ]
+     ]
+    },
+    {
+     "id": "hy9e5wmm6msm99m61q7f",
+     "subject": "organisation/northwind_outdoor",
+     "label": "supplies_location",
+     "object": "location/dallas",
+     "source": "turn",
+     "trust": 0.5,
+     "scope": [
+      [
+       "org/spreetail/lab/conflict-2/user/vidyul/"
+      ]
+     ]
+    },
+    {
+     "id": "nwgvizmcuwrgpmu08f4t",
+     "subject": "organisation/northwind_outdoor",
+     "label": "supplies_location",
+     "object": "location/reno",
+     "source": "turn",
+     "trust": 0.5,
+     "scope": [
+      [
+       "org/spreetail/lab/conflict-2/user/vidyul/"
+      ]
+     ]
+    },
+    {
+     "id": "pizpe4n2gbnvitbuqtu9",
+     "subject": "organisation/northwind_outdoor",
+     "label": "production_location",
+     "object": "location/texas",
+     "source": "turn",
+     "trust": 0.5,
+     "scope": [
+      [
+       "org/spreetail/lab/conflict-2/user/vidyul/"
+      ]
+     ]
+    }
+   ]
+  }
+ }
+}

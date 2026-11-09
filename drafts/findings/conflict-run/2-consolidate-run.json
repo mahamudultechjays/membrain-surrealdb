@@ -1,0 +1,50 @@
+{
+ "org": {
+  "scope": "org/spreetail/lab/conflict",
+  "summary": {
+   "created": 3,
+   "updated": 0,
+   "superseded": 0
+  },
+  "items": [
+   "create · Cobalt Ridge return policy · return_window = within 30 days of delivery (proof 1) · Directly stated return window policy.",
+   "create · Cobalt Ridge return policy · refund_type = full refund (proof 1) · Directly stated refund type for returns.",
+   "create · Cobalt Ridge return policy · channel_applicability = applies on every channel (proof 1) · Channel applicability of the return policy."
+  ],
+  "trace_ids": [
+   "yag10fvz1s1k3oqxmb9v"
+  ],
+  "seconds": 9.7
+ },
+ "team": {
+  "scope": "org/spreetail/lab/conflict/team/ops",
+  "summary": {
+   "created": 2,
+   "updated": 0,
+   "superseded": 0
+  },
+  "items": [
+   "create · Cobalt Ridge · return_window = within 45 days of delivery (proof 1) · Directly stated return window policy for product Cobalt Ridge.",
+   "create · Cobalt Ridge · return_refund_type = full refund (proof 1) · Directly stated return refund type for product Cobalt Ridge."
+  ],
+  "trace_ids": [
+   "ipvm5rg3fd75exe6l6rw"
+  ],
+  "seconds": 9.3
+ },
+ "personal": {
+  "scope": "org/spreetail/lab/conflict/user/vidyul",
+  "summary": {
+   "created": 1,
+   "updated": 0,
+   "superseded": 0
+  },
+  "items": [
+   "create · Cobalt Ridge · return_window = 60 days from delivery for a full refund (proof 1) · Initial consolidation of return window policy for Cobalt Ridge."
+  ],
+  "trace_ids": [
+   "mbyznh9oa2etjbr5tgut"
+  ],
+  "seconds": 7.0
+ }
+}
