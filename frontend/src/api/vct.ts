@@ -29,12 +29,19 @@ export interface FactTagDetail {
   scope: string
   /** False when the tagger judged it not business; adding a tag makes it business. */
   business: boolean
+  tagged_at: string | null
+  reviewed_at: string | null
+  reviewed_by: string | null
+  /** A not-business fact's best matches, for "Tag it". */
+  guess_nodes: TagRef[]
+  guess_goals: TagRef[]
   /** Rank order: the first is active, the rest are the tagger's alternatives. */
   nodes: TagRef[]
   goals: TagRef[]
 }
 
-export type TagAction = 'change' | 'remove' | 'accept'
+export type TagAction =
+  'change' | 'remove' | 'accept' | 'confirm' | 'not_business' | 'keep' | 'tag_guesses'
 
 export interface VctNode {
   id: string
@@ -125,10 +132,16 @@ export interface OnboardingStatus {
 export interface VctApi {
   map(signal?: AbortSignal): Promise<VctMap>
   factTags(factId: string, signal?: AbortSignal): Promise<FactTagDetail>
+  /** change/remove/accept need a kind; the review actions do not. */
   editTag(
     factId: string,
-    edit: { kind: TagKind; action: TagAction; tag?: string },
+    edit: { kind?: TagKind; action: TagAction; tag?: string },
   ): Promise<FactTagDetail>
+  /** Review many facts at once, e.g. "Confirm all" on a group. */
+  reviewFacts(
+    factIds: string[],
+    action: 'confirm' | 'keep',
+  ): Promise<{ done: string[]; skipped: string[] }>
   coverage(signal?: AbortSignal): Promise<VctCoverage>
   tagger(signal?: AbortSignal): Promise<TaggerStatus>
   /** `retag` re-tags every fact in the tagged spaces; a person's tags stay. */
@@ -146,6 +159,11 @@ export const vctApi: VctApi = {
   map: (signal) => apiGet<VctMap>('/api/v1/vct/map', { signal }),
   factTags: (factId, signal) => apiGet<FactTagDetail>(fact(factId), { signal }),
   editTag: (factId, edit) => apiPut<FactTagDetail>(fact(factId), edit),
+  reviewFacts: (factIds, action) =>
+    apiPost<{ done: string[]; skipped: string[] }>('/api/v1/facts/review', {
+      fact_ids: factIds,
+      action,
+    }),
   coverage: (signal) => apiGet<VctCoverage>('/api/v1/vct/coverage', { signal }),
   tagger: (signal) => apiGet<TaggerStatus>('/api/v1/admin/vct/tagger', { signal }),
   runTagger: (retag = false) =>

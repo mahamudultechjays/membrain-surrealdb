@@ -38,7 +38,9 @@ import {
 import { isAbort, messageOf } from '@/components/capture/format'
 import HeaderSlot from '@/components/HeaderSlot'
 import ScopePicker from '@/components/ScopePicker'
+import { ReviewBanner, ReviewView, type ReviewFact } from '@/components/vct/Review'
 import { TagEditor, VctCoverageView, VctTags } from '@/components/vct/Vct'
+import { inReview } from '@/components/vct/vctState'
 import type { VctApi } from '@/api/vct'
 import { useHashSubRoute } from '@/hooks/useHashRoute'
 import '@/pages/brain.css'
@@ -47,15 +49,17 @@ import '@/pages/brain.css'
 const BrainGraph = lazy(() => import('@/components/brain/graph/BrainGraph'))
 
 /**
- * Views of the same memory: #/brain/list (default), #/brain/graph, and
- * #/brain/vct for value-chain coverage and facts without a goal.
+ * Views of the same memory: #/brain/list (default), #/brain/graph,
+ * #/brain/vct for value-chain coverage and facts without a goal, and
+ * #/brain/review for new tags waiting for people to check them.
  */
-const VIEWS = ['list', 'graph', 'vct'] as const
+const VIEWS = ['list', 'graph', 'vct', 'review'] as const
 type View = (typeof VIEWS)[number]
 const VIEW_LABELS: Record<View, string> = {
   list: 'List',
   graph: 'Graph',
   vct: 'Value chain',
+  review: 'Review',
 }
 
 /** The answer to one request, tagged with that request's key. */
@@ -259,6 +263,25 @@ export default function BrainPage({ me, api = brainApi, vctApi }: Props) {
     [data],
   )
   const shown = useMemo(() => applyFilters(rows, filters), [rows, filters])
+  // Current facts with their VCT review state, for the Review view and its count.
+  const reviewFacts = useMemo(
+    () =>
+      rows
+        .filter((r): r is RecordRow => r.kind === 'fact' && !r.replaced)
+        .map((r): ReviewFact => ({
+          id: r.record_id,
+          entity: r.entity,
+          key: r.key,
+          value: r.value,
+          space: r.scopes[0] ?? '',
+          tags: r.vct,
+          business: r.vct_business ?? true,
+          taggedAt: r.vct_tagged_at ?? null,
+          reviewedAt: r.vct_reviewed_at ?? null,
+        })),
+    [rows],
+  )
+  const toReview = inReview(reviewFacts).length
   const counts = countKinds(rows, filters)
   const { types, categories } = facets(rows)
   const kind = KINDS.find((k) => k.kind === filters.kind) ?? ALL_KINDS
@@ -341,10 +364,17 @@ export default function BrainPage({ me, api = brainApi, vctApi }: Props) {
                   <ListIcon />
                 ) : v === 'graph' ? (
                   <GraphIcon />
-                ) : (
+                ) : v === 'vct' ? (
                   <ChainIcon />
+                ) : (
+                  <ReviewIcon />
                 )}
                 {VIEW_LABELS[v]}
+                {v === 'review' && toReview > 0 && (
+                  <span className="brain-badge" aria-label={`${toReview} to review`}>
+                    {toReview}
+                  </span>
+                )}
               </a>
             ))}
           </nav>
@@ -533,6 +563,12 @@ export default function BrainPage({ me, api = brainApi, vctApi }: Props) {
         <p className="error" role="alert">
           Could not load memory: {load.message}
         </p>
+      )}
+      {!none && load.status === 'ready' && view !== 'review' && (
+        <ReviewBanner count={toReview} />
+      )}
+      {!none && load.status === 'ready' && view === 'review' && (
+        <ReviewView facts={reviewFacts} api={vctApi} />
       )}
       {!none && load.status === 'ready' && view === 'vct' && (
         <VctCoverageView
@@ -742,6 +778,24 @@ function GraphIcon() {
       <circle cx="4" cy="4.5" r="2" fill="currentColor" />
       <circle cx="12" cy="6.5" r="2" fill="currentColor" />
       <circle cx="6.5" cy="12" r="2" fill="currentColor" />
+    </svg>
+  )
+}
+
+/** A tick in a box: things to review. */
+function ReviewIcon() {
+  return (
+    <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" fill="none">
+      <rect
+        x="2"
+        y="2"
+        width="12"
+        height="12"
+        rx="3"
+        stroke="currentColor"
+        strokeWidth="1.3"
+      />
+      <path d="M5 8.2l2 2 4-4.4" stroke="currentColor" strokeWidth="1.5" />
     </svg>
   )
 }

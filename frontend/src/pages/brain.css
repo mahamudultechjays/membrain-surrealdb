@@ -1073,3 +1073,14 @@ fieldset.graph-pill {
   margin: 0 0 4px;
   font-size: 14px;
 }
+
+/* The count of new tags waiting for review, on the Review view link. */
+.brain-badge {
+  margin-left: 6px;
+  padding: 0 7px;
+  border-radius: 999px;
+  background: var(--mb-accent);
+  color: var(--mb-on-accent);
+  font-size: 12px;
+  font-weight: 700;
+}

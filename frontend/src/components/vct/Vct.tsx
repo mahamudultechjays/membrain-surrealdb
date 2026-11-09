@@ -271,7 +271,7 @@ function KindEditor({
 }
 
 /** Every node by domain, every goal by section with its EBITDA weight, or every domain. */
-function MapOptions({ kind, map }: { kind: TagKind | 'domain'; map: VctMap }) {
+export function MapOptions({ kind, map }: { kind: TagKind | 'domain'; map: VctMap }) {
   if (kind === 'domain')
     return (
       <>

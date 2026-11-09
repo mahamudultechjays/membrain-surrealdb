@@ -47,6 +47,9 @@ export interface BrainFact extends BrainExtras {
   vct_tagged?: boolean
   /** False when the tagger judged the fact not business. */
   vct_business?: boolean
+  /** When the tagger last tagged it, and when a person reviewed it. */
+  vct_tagged_at?: string | null
+  vct_reviewed_at?: string | null
 }
 
 export interface BrainRelation extends BrainExtras {

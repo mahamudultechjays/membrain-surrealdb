@@ -50,3 +50,33 @@ export const NO_VCT_FILTER: VctFilterValue = { goals: [], nodes: [], domains: []
 
 export const hasVctFilter = (value: VctFilterValue) =>
   value.goals.length + value.nodes.length + value.domains.length > 0
+
+/** How long new tags stay in review, in hours. */
+export const REVIEW_HOURS = 48
+
+export interface ReviewTimes {
+  taggedAt: string | null | undefined
+  reviewedAt: string | null | undefined
+}
+
+/** Facts tagged in the last REVIEW_HOURS that nobody has reviewed yet. */
+export function inReview<T extends ReviewTimes>(facts: T[], now = Date.now()): T[] {
+  return facts.filter((f) => {
+    if (!f.taggedAt || f.reviewedAt) return false
+    const age = now - Date.parse(f.taggedAt)
+    return age >= 0 && age < REVIEW_HOURS * 3600_000
+  })
+}
+
+/** "1 day 21 h", "6 h", "under 1 h" left in review. */
+export function timeLeft(taggedAt: string, now = Date.now()): string {
+  const hours = Math.floor(
+    (Date.parse(taggedAt) + REVIEW_HOURS * 3600_000 - now) / 3600_000,
+  )
+  if (hours < 1) return 'under 1 h'
+  const days = Math.floor(hours / 24)
+  const rest = hours % 24
+  return days
+    ? `${days} day${days > 1 ? 's' : ''}${rest ? ` ${rest} h` : ''}`
+    : `${rest} h`
+}

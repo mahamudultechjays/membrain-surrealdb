@@ -74,6 +74,11 @@ const DETAIL: FactTagDetail = {
   fact_id: 'f1',
   scope: 'org/spreetail/user/mahamudul_hasan',
   business: true,
+  tagged_at: '2026-11-09T06:00:00+00:00',
+  reviewed_at: null,
+  reviewed_by: null,
+  guess_nodes: [],
+  guess_goals: [],
   nodes: [TRANSPORT, ref('node', 'fi4', 'Manage Cash & Payouts', 2)],
   goals: [FREIGHT],
 }
@@ -123,6 +128,9 @@ function fakeApi(overrides: Partial<VctApi> = {}): VctApi {
             : DETAIL.nodes,
       }),
     ),
+    reviewFacts: vi
+      .fn<VctApi['reviewFacts']>()
+      .mockImplementation((ids) => Promise.resolve({ done: ids, skipped: [] })),
     coverage: vi.fn<VctApi['coverage']>().mockResolvedValue({
       scopes: ['org/spreetail'],
       tagged_facts: 3,
