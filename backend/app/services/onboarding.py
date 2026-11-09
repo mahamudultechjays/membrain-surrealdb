@@ -170,7 +170,7 @@ class OnboardingService:
         return len(self.map.nodes)
 
     async def _match(self, clause: str) -> ClauseMatch:
-        result = await self._recall.recall(clause, lens=self._scope, k=_RECALL_K)
+        result = await self._recall.recall(clause, lenses=[self._scope], k=_RECALL_K)
         ids: dict[str, None] = {}
         for hit in result.hits:
             tag = _NODE_TAG.search(hit.text or "")

@@ -152,6 +152,13 @@ function fakeApi(overrides: Partial<VctApi> = {}): VctApi {
       suggested: ['sc6'],
       domains: [{ id: 'supply-chain', name: 'Supply Chain' }],
     }),
+    myOnboarding: vi.fn<VctApi['myOnboarding']>().mockResolvedValue({
+      email: 'priya@x.com',
+      onboarded: true,
+      primary_work: 'I pick carriers',
+      nodes: [{ ...SC6, rank: 1, is_primary: true, confirmed_by: 'user' }],
+      domains: [{ id: 'supply-chain', name: 'Supply Chain' }],
+    }),
     userOnboarding: vi
       .fn<VctApi['userOnboarding']>()
       .mockRejectedValue(new ApiError(404, 'none')),
@@ -250,24 +257,17 @@ describe('TagEditor', () => {
 })
 
 describe('VctFilterBar', () => {
-  it('adds and removes goals, and offers compare once something is chosen', async () => {
+  it('adds and removes values, and offers the user their own domains or nodes', async () => {
     const onChange = vi.fn<(value: unknown) => void>()
-    const onCompare = vi.fn<(compare: boolean) => void>()
     const api = fakeApi()
+    const mine = await api.myOnboarding()
     const { rerender } = render(
-      <VctFilterBar
-        value={NO_VCT_FILTER}
-        onChange={onChange}
-        compare={false}
-        onCompare={onCompare}
-        api={api}
-      />,
+      <VctFilterBar value={NO_VCT_FILTER} onChange={onChange} api={api} />,
     )
     const goal = screen.getByLabelText('Goal')
     await waitFor(() => expect(goal).not.toBeDisabled())
-    expect(
-      screen.queryByLabelText('Show what the filter removed'),
-    ).not.toBeInTheDocument()
+    expect(screen.getByText(/no value chain nodes yet/)).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'My domains' })).not.toBeInTheDocument()
 
     fireEvent.change(goal, { target: { value: 'ff-mgmt5' } })
     expect(onChange).toHaveBeenCalledWith({ goals: ['ff-mgmt5'], nodes: [], domains: [] })
@@ -276,8 +276,7 @@ describe('VctFilterBar', () => {
       <VctFilterBar
         value={{ goals: ['ff-mgmt5'], nodes: [], domains: ['finance'] }}
         onChange={onChange}
-        compare={false}
-        onCompare={onCompare}
+        mine={mine}
         api={api}
       />,
     )
@@ -289,65 +288,86 @@ describe('VctFilterBar', () => {
       nodes: [],
       domains: ['finance'],
     })
-    fireEvent.click(screen.getByLabelText('Show what the filter removed'))
-    expect(onCompare).toHaveBeenCalledWith(true)
+    fireEvent.click(screen.getByRole('button', { name: 'My domains' }))
+    expect(onChange).toHaveBeenLastCalledWith({
+      goals: [],
+      nodes: [],
+      domains: ['supply-chain'],
+    })
+    fireEvent.click(screen.getByRole('button', { name: 'Only my nodes' }))
+    expect(onChange).toHaveBeenLastCalledWith({ goals: [], nodes: ['sc6'], domains: [] })
+    fireEvent.click(screen.getByRole('button', { name: 'Clear' }))
+    expect(onChange).toHaveBeenLastCalledWith(NO_VCT_FILTER)
   })
 })
 
-describe('AskAnswer with a value-chain filter', () => {
-  it('shows tags, the filter summary, and the removed facts only when comparing', () => {
-    const fact = (id: string, text: string) => ({
-      fact: text,
-      source: {
-        kind: 'memory' as const,
-        hit_kind: 'attribute',
-        hit_id: id,
-        title: null,
-        date: null,
-        text,
-        score: 0.3,
-      },
-      tags: { node: TRANSPORT, goal: FREIGHT },
-    })
-    const answer: AskResponse = {
-      q: 'Why is freight up?',
-      scopes: ['org/spreetail'],
-      answered_at: 'now',
-      layers: [
-        {
-          layer: 'org',
-          area: 'org/spreetail',
-          owner: null,
-          error: null,
-          facts: [fact('attribute:f1', 'UPS rate up 5.9%')],
-          removed: [{ ...fact('attribute:f2', 'Northwind ships to Dallas'), tags: null }],
-        },
-      ],
-      metadata: {
-        total_facts: 1,
-        resolution_tier: 'hybrid',
-        latency_ms: 10,
-        include_inferred: false,
-        trace_ids: [],
-        filter: { goals: ['ff-mgmt5'], nodes: [], domains: [], removed: 1 },
-      },
-      trace_id: null,
-    }
+describe('AskAnswer', () => {
+  const fact = (id: string, text: string) => ({
+    fact: text,
+    source: {
+      kind: 'memory' as const,
+      hit_kind: 'attribute',
+      hit_id: id,
+      title: null,
+      date: null,
+      text,
+      score: 0.3,
+    },
+    tags: { node: TRANSPORT, goal: FREIGHT },
+  })
+  const answer: AskResponse = {
+    q: 'Why is freight up?',
+    scopes: ['org/spreetail'],
+    answered_at: 'now',
+    facts: [
+      fact('attribute:f1', 'UPS rate up 5.9%'),
+      { ...fact('attribute:f2', 'Team lunch is Friday'), tags: null },
+    ],
+    value_facts: [fact('attribute:f1', 'UPS rate up 5.9%')],
+    metadata: {
+      total_facts: 2,
+      resolution_tier: 'hybrid',
+      latency_ms: 10,
+      include_inferred: false,
+      trace_ids: [],
+      filter: { goals: [], nodes: [], domains: ['supply-chain'], removed: 1 },
+    },
+    trace_id: null,
+  }
 
-    const { rerender } = render(<AskAnswer answer={answer} who="Priya" />)
-    expect(
-      screen.getByText(/value chain filter ff-mgmt5 · 1 result removed/),
-    ).toBeInTheDocument()
-    expect(screen.getByText('Select Transport')).toBeInTheDocument()
-    expect(screen.queryByText('Northwind ships to Dallas')).not.toBeInTheDocument()
+  it('shows every result in Normal and only the matches in Value-driven', () => {
+    render(<AskAnswer answer={answer} who="Priya" />)
 
-    rerender(<AskAnswer answer={answer} who="Priya" compare />)
-    const removed = screen.getByText(/Removed by the filter \(1\)/).parentElement!
-    expect(within(removed).getByText('Northwind ships to Dallas')).toBeInTheDocument()
+    const normal = screen.getByRole('region', { name: 'Normal' })
+    const valueDriven = screen.getByRole('region', { name: 'Value-driven' })
+    expect(within(normal).getByText('UPS rate up 5.9%')).toBeInTheDocument()
+    expect(within(normal).getByText('Team lunch is Friday')).toBeInTheDocument()
+    expect(within(valueDriven).getByText('UPS rate up 5.9%')).toBeInTheDocument()
     expect(
-      within(removed).queryByRole('button', { name: 'Edit tags' }),
+      within(valueDriven).queryByText('Team lunch is Friday'),
     ).not.toBeInTheDocument()
-    expect(screen.getAllByRole('button', { name: 'Edit tags' })).toHaveLength(1)
+    expect(
+      within(valueDriven).getByText(/supply-chain · 1 result left out/),
+    ).toBeInTheDocument()
+    expect(within(valueDriven).getByText('Select Transport')).toBeInTheDocument()
+  })
+
+  it('asks for a filter when there is none', () => {
+    render(
+      <AskAnswer
+        answer={{
+          ...answer,
+          value_facts: null,
+          metadata: { ...answer.metadata, filter: null },
+        }}
+        who="Priya"
+      />,
+    )
+
+    const valueDriven = screen.getByRole('region', { name: 'Value-driven' })
+    expect(
+      within(valueDriven).getByText(/Pick a domain, node or goal/),
+    ).toBeInTheDocument()
   })
 })
 

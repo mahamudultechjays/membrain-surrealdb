@@ -31,30 +31,17 @@ export interface AskFact {
   tags?: FactTags | null
 }
 
-export interface AskLayer {
-  layer: LayerName
-  /** The scope path read, e.g. org/spreetail, org/spreetail/team/ops. */
-  area: string
-  /** The user's name for a personal layer, else null. */
-  owner: string | null
-  facts: AskFact[]
-  /** Set when this layer's recall failed; the other layers still answer. */
-  error: string | null
-  /** Facts a VCT filter dropped from this layer, for comparing with no filter. */
-  removed?: AskFact[]
-}
-
 export interface AskFilter {
   goals: string[]
   nodes: string[]
   domains: string[]
-  /** Hits the filter dropped across all layers. */
+  /** Hits the filter dropped from the recall. */
   removed: number
 }
 
 export interface AskMetadata {
   total_facts: number
-  /** Agent Memory's tiers, comma-joined, e.g. "direct,hybrid". */
+  /** How Agent Memory resolved the recall, e.g. "hybrid" or "escalated". */
   resolution_tier: string | null
   latency_ms: number
   /** Echoed back, but not applied: recall has no matching option. */
@@ -66,9 +53,16 @@ export interface AskMetadata {
 
 export interface AskResponse {
   q: string
+  /** The scopes the one recall read, org first, then team, then personal. */
   scopes: string[]
   answered_at: string
-  layers: AskLayer[]
+  /** Agent Memory's ranking across all those scopes. Hits carry no scope. */
+  facts: AskFact[]
+  /**
+   * With a VCT filter: the same hits, keeping only those that match, in the same
+   * order (the value-driven column). Null or absent when no filter was given.
+   */
+  value_facts?: AskFact[] | null
   metadata: AskMetadata
   trace_id: string | null
 }
@@ -83,7 +77,7 @@ export interface AskRequest {
   /** Narrows the search to some of the readable scopes (403 if any is not readable). */
   scopes?: string[]
   include_inferred?: boolean
-  /** VCT ids: keep only facts whose active tag matches (any within a kind, every kind). */
+  /** VCT ids: fill value_facts with the hits whose active tag matches (any within a kind, every kind). */
   goals?: string[]
   nodes?: string[]
   domains?: string[]

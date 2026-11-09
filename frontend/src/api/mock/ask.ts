@@ -1,4 +1,4 @@
-import type { AskApi, AskLayer } from '@/api/ask'
+import type { AskApi } from '@/api/ask'
 import { ApiError } from '@/api/client'
 import {
   MOCK_ADMINS,
@@ -11,7 +11,8 @@ import {
   type MockLayerName,
 } from '@/api/mock/backend'
 
-const LAYER_LIMITS = { org: 20, team: 10, personal: 10 } as const
+/** Hits for the whole recall, like the backend's RECALL_K. */
+const RECALL_K = 20
 const LAYER_ORDER = { org: 0, team: 1, personal: 2 } as const
 const STOP_WORDS = new Set([
   'what',
@@ -96,46 +97,38 @@ export const mockAskApi: AskApi = {
       .toLowerCase()
       .split(/[^a-z0-9%]+/)
       .filter((w) => w.length > 1 && !STOP_WORDS.has(w))
-    const layers: AskLayer[] = ordered.map((layer) => {
-      const facts = records
-        .filter((r) => r.area === layer.path)
-        .map((r) => ({ r, s: score(words, r.text) }))
-        .filter(({ s }) => s > 0)
-        .sort((a, b) => b.s - a.s)
-        .slice(0, LAYER_LIMITS[layer.name])
-        .map(({ r, s }) => ({
-          fact: r.text,
-          source: {
-            kind: r.kind === 'chunk' ? ('document' as const) : ('memory' as const),
-            hit_kind: r.kind,
-            hit_id: r.id,
-            title: null,
-            date: null,
-            text: r.text,
-            score: Math.round((0.35 + s * 0.6) * 1000) / 1000,
-          },
-        }))
-      return {
-        layer: layer.name,
-        area: layer.path,
-        owner: layer.owner,
-        facts,
-        error: null,
-      }
-    })
+    // One recall across every scope read, ranked as a single list.
+    const paths = new Set(ordered.map((layer) => layer.path))
+    const facts = records
+      .filter((r) => paths.has(r.area))
+      .map((r) => ({ r, s: score(words, r.text) }))
+      .filter(({ s }) => s > 0)
+      .sort((a, b) => b.s - a.s)
+      .slice(0, RECALL_K)
+      .map(({ r, s }) => ({
+        fact: r.text,
+        source: {
+          kind: r.kind === 'chunk' ? ('document' as const) : ('memory' as const),
+          hit_kind: r.kind,
+          hit_id: r.id,
+          title: null,
+          date: null,
+          text: r.text,
+          score: Math.round((0.35 + s * 0.6) * 1000) / 1000,
+        },
+      }))
 
-    const total = layers.reduce((n, layer) => n + layer.facts.length, 0)
     return {
       q,
       scopes: ordered.map((layer) => layer.path),
       answered_at: new Date().toISOString().replace(/\.\d+Z$/, '+00:00'),
-      layers,
+      facts,
       metadata: {
-        total_facts: total,
-        resolution_tier: total ? 'hybrid' : 'full_context',
+        total_facts: facts.length,
+        resolution_tier: facts.length ? 'hybrid' : 'escalated',
         latency_ms: latency,
         include_inferred,
-        trace_ids: ordered.map(() => traceId()),
+        trace_ids: [traceId()],
       },
       trace_id: traceId(),
     }

@@ -6,6 +6,7 @@ import { userByEmail } from '@/api/mock/backend'
 import AskChat from '@/components/ask/AskChat'
 import { ownScope } from '@/components/ask/layers'
 import { clearChats } from '@/components/ask/chatStore'
+import { PageActiveContext } from '@/components/pageActiveContext'
 
 /** Priya, as the mock signs her in: org, her team (ops) and her own space. */
 const PRIYA = meOf(userByEmail('priya@example.com')!)
@@ -131,7 +132,7 @@ describe('AskChat', () => {
     expect(requests[1]).toMatchObject({ session_id: null })
   })
 
-  it('an expired session says so and the next message starts over', async () => {
+  it('a session that has gone resets to a new, clean chat with no error', async () => {
     const { api, requests } = fakeApi(
       reply(),
       new ApiError(404, 'No such chat session for this user.'),
@@ -141,10 +142,14 @@ describe('AskChat', () => {
     await lastAnswer()
 
     send('And its lead time?')
-    expect(await screen.findByRole('alert')).toHaveTextContent(/start a new chat/i)
-    send('Try again')
-    await screen.findAllByRole('article', { name: /^Answer/ })
 
+    await waitFor(() =>
+      expect(screen.queryByText('Where does Acme ship?')).not.toBeInTheDocument(),
+    )
+    expect(screen.queryByText('And its lead time?')).not.toBeInTheDocument()
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+    send('Try again')
+    await lastAnswer()
     expect(requests[2]).toMatchObject({ session_id: null })
   })
 
@@ -259,5 +264,36 @@ describe('AskChat formats replies', () => {
 
     expect(answer.querySelector('img')).toBeNull()
     expect(answer).toHaveTextContent('<img src=x onerror=alert(1)>')
+  })
+})
+
+describe('AskChat on opening the tab', () => {
+  it('scrolls down to the message box and puts the cursor in it', () => {
+    const scrolled: Element[] = []
+    // jsdom has no scrollIntoView; stand one in that records what was scrolled to.
+    const original = Element.prototype.scrollIntoView
+    Element.prototype.scrollIntoView = function (this: Element) {
+      scrolled.push(this)
+    }
+    try {
+      const { rerender } = render(
+        <PageActiveContext.Provider value={false}>
+          <AskChat me={PRIYA} api={fakeApi().api} />
+        </PageActiveContext.Provider>,
+      )
+      const box = screen.getByLabelText('Message')
+      expect(scrolled).not.toContain(box)
+
+      rerender(
+        <PageActiveContext.Provider value={true}>
+          <AskChat me={PRIYA} api={fakeApi().api} />
+        </PageActiveContext.Provider>,
+      )
+
+      expect(scrolled).toContain(box)
+      expect(box).toHaveFocus()
+    } finally {
+      Element.prototype.scrollIntoView = original
+    }
   })
 })

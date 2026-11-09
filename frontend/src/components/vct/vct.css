@@ -132,21 +132,14 @@
   font-size: 13px;
 }
 
-.vct-compare {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  min-height: 36px;
+.vct-filter-intro {
+  flex-basis: 100%;
+  margin: 0;
   font-size: 14px;
 }
 
-.vct-removed {
-  margin-top: 8px;
-}
-
-.vct-removed .ask-fact-text {
-  color: var(--mb-muted);
-  text-decoration: line-through;
+.vct-filter-mine {
+  flex-basis: 100%;
 }
 
 /* Coverage */

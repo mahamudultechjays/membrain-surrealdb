@@ -1,0 +1,49 @@
+{
+ "org": {
+  "scope": "org/spreetail/lab/conflict",
+  "summary": {
+   "entities": 4,
+   "relations": 5
+  },
+  "items": [
+   "self works_at Amazon",
+   "self works_at Amazon",
+   "Amazon uses project/hierarchical Bayesian model",
+   "Walmart associated_with Category Probe Nov4",
+   "Walmart operates Reno warehouse",
+   "Cobalt Ridge featured_in weekend flash sale",
+   "customer purchases Cobalt Ridge",
+   "Cobalt Ridge related_to Harbor Basics commodity line"
+  ],
+  "seconds": 29.3
+ },
+ "team": {
+  "scope": "org/spreetail/lab/conflict/team/ops",
+  "summary": {
+   "entities": 4,
+   "relations": 2
+  },
+  "items": [
+   "Acme Logistics operates Reno warehouse",
+   "Reno warehouse queried_via POST /query",
+   "Probe Gadget Nov4 stored_at Reno warehouse",
+   "self customer_of Amazon",
+   "self works_at Amazon",
+   "Walmart associated_with Category Probe Nov4"
+  ],
+  "seconds": 32.0
+ },
+ "personal": {
+  "scope": "org/spreetail/lab/conflict/user/vidyul",
+  "summary": {
+   "entities": 3,
+   "relations": 1
+  },
+  "items": [
+   "self shops_at Amazon",
+   "self works_at Amazon",
+   "Walmart associated_with Category Probe Nov4"
+  ],
+  "seconds": 25.1
+ }
+}

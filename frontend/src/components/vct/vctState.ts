@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { vctApi, type VctApi, type VctMap } from '@/api/vct'
+import { vctApi, type OnboardingStatus, type VctApi, type VctMap } from '@/api/vct'
 
 /** Shared VCT state for the components in Vct.tsx: the map, and Ask's filter value. */
 
@@ -50,6 +50,17 @@ export const NO_VCT_FILTER: VctFilterValue = { goals: [], nodes: [], domains: []
 
 export const hasVctFilter = (value: VctFilterValue) =>
   value.goals.length + value.nodes.length + value.domains.length > 0
+
+/**
+ * The value-driven column's starting filter: the user's onboarded domains.
+ * Their nodes sit inside those domains, so adding the nodes too would only
+ * narrow it to the nodes; "Only my nodes" in the filter bar does that.
+ */
+export function filterFromOnboarding(
+  status: Pick<OnboardingStatus, 'domains'> | null,
+): VctFilterValue {
+  return { ...NO_VCT_FILTER, domains: (status?.domains ?? []).map((d) => d.id) }
+}
 
 /** How long new tags stay in review, in hours. */
 export const REVIEW_HOURS = 48

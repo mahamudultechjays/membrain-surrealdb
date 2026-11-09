@@ -17,10 +17,7 @@ export const mockChatApi: ChatApi = {
       throw new ApiError(404, 'No such chat session for this user.')
     }
     const answer = await mockAskApi.ask({ q: message, scopes }, signal)
-    const hits = answer.layers
-      .flatMap((layer) => layer.facts)
-      .sort((a, b) => b.source.score - a.source.score)
-      .slice(0, 3)
+    const hits = answer.facts.slice(0, 3)
     const citations: ChatCitation[] = hits.map((hit, i) => ({
       marker: `S${i + 1}`,
       id: hit.source.hit_id,

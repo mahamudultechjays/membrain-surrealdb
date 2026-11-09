@@ -13,7 +13,13 @@ import {
   type VctCoverage,
   type VctMap,
 } from '@/api/vct'
-import { hasVctFilter, useVctMap, type VctFilterValue } from '@/components/vct/vctState'
+import {
+  NO_VCT_FILTER,
+  filterFromOnboarding,
+  hasVctFilter,
+  useVctMap,
+  type VctFilterValue,
+} from '@/components/vct/vctState'
 import '@/components/vct/vct.css'
 
 /*
@@ -317,18 +323,21 @@ const FILTER_KINDS = [
   { key: 'domains', kind: 'domain', label: 'Domain' },
 ] as const
 
-/** Ask's VCT filter: goals, nodes and domains as removable chips, plus compare. */
+/**
+ * The value-driven column's filter. It starts on the user's onboarded domains
+ * (`mine`); any goal, node or domain can be added or removed, and the two
+ * shortcuts put the user's own domains or nodes back.
+ */
 export function VctFilterBar({
   value,
   onChange,
-  compare,
-  onCompare,
+  mine = null,
   api = vctApi,
 }: {
   value: VctFilterValue
   onChange: (value: VctFilterValue) => void
-  compare: boolean
-  onCompare: (compare: boolean) => void
+  /** The user's onboarding; null while loading or when they have none. */
+  mine?: OnboardingStatus | null
   api?: VctApi
 }) {
   const map = useVctMap(api)
@@ -339,8 +348,46 @@ export function VctFilterBar({
       return map.domains.flatMap((d) => d.nodes).find((n) => n.id === id)?.name ?? id
     return map.sections.flatMap((s) => s.goals).find((g) => g.id === id)?.name ?? id
   }
+  const onboarded = Boolean(mine?.onboarded && mine.nodes.length)
   return (
-    <section className="vct-filter" aria-label="Value chain filter">
+    <section className="vct-filter" aria-label="Value-driven filter">
+      <p className="vct-filter-intro">
+        <strong>Value-driven filter</strong>{' '}
+        <span className="ask-muted">
+          {onboarded
+            ? 'Starts on your value chain domains. Change it to look at any part of the value chain.'
+            : 'You have no value chain nodes yet, so pick a domain, node or goal.'}
+        </span>
+      </p>
+      {onboarded && mine && (
+        <div className="ask-chips vct-filter-mine">
+          <button
+            type="button"
+            className="ask-chip"
+            onClick={() => onChange(filterFromOnboarding(mine))}
+          >
+            My domains
+          </button>
+          <button
+            type="button"
+            className="ask-chip"
+            onClick={() =>
+              onChange({ ...NO_VCT_FILTER, nodes: mine.nodes.map((n) => n.id) })
+            }
+          >
+            Only my nodes
+          </button>
+          {hasVctFilter(value) && (
+            <button
+              type="button"
+              className="ask-chip"
+              onClick={() => onChange(NO_VCT_FILTER)}
+            >
+              Clear
+            </button>
+          )}
+        </div>
+      )}
       {FILTER_KINDS.map(({ key, kind, label }) => (
         <div key={key} className="vct-filter-kind">
           <label className="vct-filter-label">
@@ -377,16 +424,6 @@ export function VctFilterBar({
           ))}
         </div>
       ))}
-      {hasVctFilter(value) && (
-        <label className="vct-compare">
-          <input
-            type="checkbox"
-            checked={compare}
-            onChange={(e) => onCompare(e.target.checked)}
-          />
-          Show what the filter removed
-        </label>
-      )}
     </section>
   )
 }

@@ -9,19 +9,10 @@ import { TagEditor, VctTags } from '@/components/vct/Vct'
  * a disclosure rather than a modal, so it reads well at 375px and keeps the
  * fact in view. Focus moves into the panel on open and back on Escape.
  */
-export default function FactRow({
-  fact,
-  vctApi,
-  removed = false,
-}: {
-  fact: AskFact
-  vctApi?: VctApi
-  /** A fact the VCT filter dropped, shown only to compare: no editing. */
-  removed?: boolean
-}) {
+export default function FactRow({ fact, vctApi }: { fact: AskFact; vctApi?: VctApi }) {
   const [open, setOpen] = useState(false)
   // Only facts (attribute hits) carry VCT tags; edits update the chips at once.
-  const taggable = fact.source.hit_kind === 'attribute' && !removed
+  const taggable = fact.source.hit_kind === 'attribute'
   const [tags, setTags] = useState<FactTags | null | undefined>(fact.tags)
   const [editing, setEditing] = useState(false)
   const triggerRef = useRef<HTMLButtonElement>(null)

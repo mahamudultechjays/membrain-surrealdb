@@ -8,17 +8,14 @@ must match (a chosen goal and a chosen node). A domain matches through the
 node's own domain.
 """
 
-from dataclasses import dataclass, field, replace
+from dataclasses import dataclass, field
 
 from app.domain.ports.fact_tags import FactTag, FactTagRepository
 from app.domain.ports.memory_recall import RecallHit
 from app.domain.vct import VctMap
-from app.services.ask_flow import LAYER_LIMITS, Answer
+from app.services.ask_flow import Answer
 
 FACT_PREFIX = "attribute:"
-# With a filter on, recall fetches this many times the usual number of hits,
-# so enough survive the filter.
-FILTER_WIDEN = 3
 
 
 def fact_id_of(hit_id: str) -> str | None:
@@ -69,12 +66,12 @@ class TaggedAnswer:
     answer: Answer
     # Active tags per recall hit id; hits without tags are absent.
     tags: dict[str, HitTags] = field(default_factory=dict)
-    # Hits the filter dropped, per layer area, for the "compare" view.
-    removed: dict[str, list[RecallHit]] = field(default_factory=dict)
+    # The hits that pass the filter, in Agent Memory's order; None with no filter.
+    kept: list[RecallHit] | None = None
 
     @property
     def removed_total(self) -> int:
-        return sum(len(hits) for hits in self.removed.values())
+        return 0 if self.kept is None else len(self.answer.hits) - len(self.kept)
 
 
 async def tags_for_hits(repo: FactTagRepository, hit_ids: list[str]) -> dict[str, HitTags]:
@@ -104,28 +101,22 @@ async def chunk_tags(repo: FactTagRepository, hits: list[RecallHit]) -> dict[str
 async def tag_answer(
     answer: Answer, repo: FactTagRepository, vmap: VctMap, flt: TagFilter
 ) -> TaggedAnswer:
-    """Attach active tags to every hit and, with a filter, keep only matches.
+    """Attach active tags to every hit and, with a filter, pick out the matches.
+
+    The same recall feeds both Ask columns: every hit (normal) and the hits
+    that pass the filter (value-driven), so a filter costs no extra recall.
 
     A memory chunk passes when any fact extracted from (or captured with) its
     text matches, and shows that fact's tags; other untagged hits never pass.
     """
-    hits = [h for layer in answer.layers for h in layer.hits]
-    tags = await tags_for_hits(repo, [h.id for h in hits])
-    via_facts = await chunk_tags(repo, hits)
+    tags = await tags_for_hits(repo, [h.id for h in answer.hits])
+    via_facts = await chunk_tags(repo, answer.hits)
     for hit_id, options in via_facts.items():
         tags[hit_id] = next((t for t in options if flt.matches(t, vmap)), options[0])
     if not flt.active:
         return TaggedAnswer(answer, tags)
-
-    layers = []
-    removed: dict[str, list[RecallHit]] = {}
-    for layer in answer.layers:
-        kept = [h for h in layer.hits if flt.matches(tags.get(h.id), vmap)]
-        dropped = [h for h in layer.hits if h not in kept]
-        if dropped:
-            removed[layer.area] = dropped
-        layers.append(replace(layer, hits=kept[: LAYER_LIMITS[layer.layer]]))
-    return TaggedAnswer(replace(answer, layers=layers), tags, removed)
+    kept = [h for h in answer.hits if flt.matches(tags.get(h.id), vmap)]
+    return TaggedAnswer(answer, tags, kept)
 
 
 def active_tags(rows: list[FactTag]) -> HitTags:

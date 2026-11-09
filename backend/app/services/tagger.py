@@ -317,7 +317,7 @@ class TaggerService:
         if not text.strip():
             return []
         async with self._gate:
-            result = await self._recall.recall(text, lens=scope, k=_RECALL_K)
+            result = await self._recall.recall(text, lenses=[scope], k=_RECALL_K)
         ids: dict[str, None] = {}
         decoy_first = False
         for hit in result.hits:

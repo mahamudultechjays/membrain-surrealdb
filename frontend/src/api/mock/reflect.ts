@@ -9,11 +9,7 @@ import type { ReflectApi } from '@/api/reflect'
 export const mockReflectApi: ReflectApi = {
   async ask({ question, scopes = [] }, signal) {
     const answer = await mockAskApi.ask({ q: question, scopes }, signal)
-    const evidence = answer.layers
-      .flatMap((layer) => layer.facts)
-      .sort((a, b) => b.source.score - a.source.score)
-      .slice(0, 4)
-      .map((fact) => fact.fact)
+    const evidence = answer.facts.slice(0, 4).map((fact) => fact.fact)
     return {
       answer: evidence.length
         ? `Across your spaces, the clearest pattern is: ${evidence[0]}. ${

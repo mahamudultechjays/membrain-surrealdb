@@ -1,0 +1,343 @@
+{
+ "label": "2-consolidated",
+ "taken_at": "2026-11-06T06:09:03+00:00",
+ "scopes": {
+  "org": {
+   "scope": "org/spreetail/lab/conflict",
+   "entities": [
+    {
+     "id": "['organisation', 'amazon']",
+     "name": "Amazon",
+     "type": "organisation"
+    },
+    {
+     "id": "['organisation', 'walmart']",
+     "name": "Walmart",
+     "type": "organisation"
+    },
+    {
+     "id": "['policy', 'cobalt_ridge_return_policy']",
+     "name": "Cobalt Ridge return policy",
+     "type": "policy"
+    },
+    {
+     "id": "['product', 'cobalt_ridge']",
+     "name": "Cobalt Ridge",
+     "type": "product"
+    }
+   ],
+   "attributes": [
+    {
+     "id": "daqvab58e7k4qvm4hlfm",
+     "entity": "policy/cobalt_ridge_return_policy",
+     "key": "channel_applicability",
+     "value": "applies on every channel",
+     "category": "knowledge",
+     "source": "turn",
+     "trust": 0.5,
+     "scope": [
+      [
+       "org/spreetail/lab/conflict/"
+      ]
+     ],
+     "created_at": "2026-11-06T06:05:34.955406716+00:00",
+     "supersedes": null
+    },
+    {
+     "id": "o3rpo69kgm9fmkgv7k9a",
+     "entity": "policy/cobalt_ridge_return_policy",
+     "key": "refund_type",
+     "value": "full refund",
+     "category": "knowledge",
+     "source": "turn",
+     "trust": 0.5,
+     "scope": [
+      [
+       "org/spreetail/lab/conflict/"
+      ]
+     ],
+     "created_at": "2026-11-06T06:05:34.725091638+00:00",
+     "supersedes": null
+    },
+    {
+     "id": "lp5pxvjetdy5915aa6is",
+     "entity": "policy/cobalt_ridge_return_policy",
+     "key": "return_window",
+     "value": "within 30 days of delivery",
+     "category": "knowledge",
+     "source": "turn",
+     "trust": 0.5,
+     "scope": [
+      [
+       "org/spreetail/lab/conflict/"
+      ]
+     ],
+     "created_at": "2026-11-06T06:05:34.497103947+00:00",
+     "supersedes": null
+    }
+   ],
+   "relations": [
+    {
+     "id": "nbtyhkpf2tqkwa54cav6",
+     "subject": "policy/cobalt_ridge_return_policy",
+     "label": "applies_to_purchases_from",
+     "object": "organisation/walmart",
+     "source": "elaboration",
+     "trust": 0.3,
+     "scope": [
+      [
+       "org/spreetail/lab/conflict/"
+      ]
+     ]
+    },
+    {
+     "id": "9xsl1disrzyz9wti360b",
+     "subject": "policy/cobalt_ridge_return_policy",
+     "label": "applies_to_purchases_from",
+     "object": "organisation/amazon",
+     "source": "elaboration",
+     "trust": 0.3,
+     "scope": [
+      [
+       "org/spreetail/lab/conflict/"
+      ]
+     ]
+    },
+    {
+     "id": "q8u14k55hb3xp85bgmuj",
+     "subject": "product/cobalt_ridge",
+     "label": "sold_on",
+     "object": "organisation/walmart",
+     "source": "turn",
+     "trust": 0.5,
+     "scope": [
+      [
+       "org/spreetail/lab/conflict/"
+      ]
+     ]
+    },
+    {
+     "id": "juzbdq8mx4qarhtl0sq2",
+     "subject": "product/cobalt_ridge",
+     "label": "sold_on",
+     "object": "organisation/amazon",
+     "source": "turn",
+     "trust": 0.5,
+     "scope": [
+      [
+       "org/spreetail/lab/conflict/"
+      ]
+     ]
+    },
+    {
+     "id": "omuc9p1vbqlyqho18oxs",
+     "subject": "product/cobalt_ridge",
+     "label": "governed_by_policy",
+     "object": "policy/cobalt_ridge_return_policy",
+     "source": "turn",
+     "trust": 0.5,
+     "scope": [
+      [
+       "org/spreetail/lab/conflict/"
+      ]
+     ]
+    }
+   ]
+  },
+  "team": {
+   "scope": "org/spreetail/lab/conflict/team/ops",
+   "entities": [
+    {
+     "id": "['location', 'reno_warehouse']",
+     "name": "Reno warehouse",
+     "type": "location"
+    },
+    {
+     "id": "['organisation', 'amazon']",
+     "name": "Amazon",
+     "type": "organisation"
+    },
+    {
+     "id": "['organisation', 'walmart']",
+     "name": "Walmart",
+     "type": "organisation"
+    },
+    {
+     "id": "['product', 'cobalt_ridge']",
+     "name": "Cobalt Ridge",
+     "type": "product"
+    }
+   ],
+   "attributes": [
+    {
+     "id": "uq9715w5izcxdhcz6aya",
+     "entity": "product/cobalt_ridge",
+     "key": "return_refund_type",
+     "value": "full refund",
+     "category": "knowledge",
+     "source": "turn",
+     "trust": 0.5,
+     "scope": [
+      [
+       "org/spreetail/lab/conflict/team/ops/"
+      ]
+     ],
+     "created_at": "2026-11-06T06:05:46.312921973+00:00",
+     "supersedes": null
+    },
+    {
+     "id": "njb39qlhcum4gv8kvnmf",
+     "entity": "product/cobalt_ridge",
+     "key": "return_window",
+     "value": "within 45 days of delivery",
+     "category": "knowledge",
+     "source": "turn",
+     "trust": 0.5,
+     "scope": [
+      [
+       "org/spreetail/lab/conflict/team/ops/"
+      ]
+     ],
+     "created_at": "2026-11-06T06:05:46.074942657+00:00",
+     "supersedes": null
+    }
+   ],
+   "relations": [
+    {
+     "id": "09cmiauanggd5951qr5c",
+     "subject": "product/cobalt_ridge",
+     "label": "returns_processed_at",
+     "object": "location/reno_warehouse",
+     "source": "turn",
+     "trust": 0.5,
+     "scope": [
+      [
+       "org/spreetail/lab/conflict/team/ops/"
+      ]
+     ]
+    },
+    {
+     "id": "6zu63udcej4063bq673g",
+     "subject": "product/cobalt_ridge",
+     "label": "sold_on",
+     "object": "organisation/walmart",
+     "source": "turn",
+     "trust": 0.5,
+     "scope": [
+      [
+       "org/spreetail/lab/conflict/team/ops/"
+      ]
+     ]
+    },
+    {
+     "id": "124cluwlt2nxjxh2uidj",
+     "subject": "product/cobalt_ridge",
+     "label": "sold_on",
+     "object": "organisation/amazon",
+     "source": "turn",
+     "trust": 0.5,
+     "scope": [
+      [
+       "org/spreetail/lab/conflict/team/ops/"
+      ]
+     ]
+    }
+   ]
+  },
+  "personal": {
+   "scope": "org/spreetail/lab/conflict/user/vidyul",
+   "entities": [
+    {
+     "id": "['organisation', 'amazon']",
+     "name": "Amazon",
+     "type": "organisation"
+    },
+    {
+     "id": "['organisation', 'walmart']",
+     "name": "Walmart",
+     "type": "organisation"
+    },
+    {
+     "id": "['product', 'cobalt_ridge']",
+     "name": "Cobalt Ridge",
+     "type": "product"
+    }
+   ],
+   "attributes": [
+    {
+     "id": "gvppnxy7twk6716qc7hc",
+     "entity": "person/principal:GHr42XnIGtK5",
+     "key": "job_responsibility",
+     "value": "handle return requests for Cobalt Ridge",
+     "category": "identity",
+     "source": "turn",
+     "trust": 0.5,
+     "scope": [
+      [
+       "org/spreetail/lab/conflict/user/vidyul/"
+      ]
+     ],
+     "created_at": "2026-11-06T06:05:58.680326050+00:00",
+     "supersedes": null
+    },
+    {
+     "id": "kielaf1e7e894wdebf7m",
+     "entity": "product/cobalt_ridge",
+     "key": "return_window",
+     "value": "60 days from delivery for a full refund",
+     "category": "knowledge",
+     "source": "turn",
+     "trust": 0.5,
+     "scope": [
+      [
+       "org/spreetail/lab/conflict/user/vidyul/"
+      ]
+     ],
+     "created_at": "2026-11-06T06:05:58.436805511+00:00",
+     "supersedes": null
+    }
+   ],
+   "relations": [
+    {
+     "id": "zfm8ubp1yuohzh0w3xho",
+     "subject": "person/principal:GHr42XnIGtK5",
+     "label": "handles_returns_for",
+     "object": "product/cobalt_ridge",
+     "source": "turn",
+     "trust": 0.5,
+     "scope": [
+      [
+       "org/spreetail/lab/conflict/user/vidyul/"
+      ]
+     ]
+    },
+    {
+     "id": "eali2cy1b471hsk0lhc2",
+     "subject": "product/cobalt_ridge",
+     "label": "sold_on",
+     "object": "organisation/walmart",
+     "source": "turn",
+     "trust": 0.5,
+     "scope": [
+      [
+       "org/spreetail/lab/conflict/user/vidyul/"
+      ]
+     ]
+    },
+    {
+     "id": "l0j01arf20ge2wcxathr",
+     "subject": "product/cobalt_ridge",
+     "label": "sold_on",
+     "object": "organisation/amazon",
+     "source": "turn",
+     "trust": 0.5,
+     "scope": [
+      [
+       "org/spreetail/lab/conflict/user/vidyul/"
+      ]
+     ]
+    }
+   ]
+  }
+ }
+}

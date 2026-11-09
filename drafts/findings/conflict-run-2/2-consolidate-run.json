@@ -1,0 +1,61 @@
+{
+ "org": {
+  "scope": "org/spreetail/lab/conflict-2",
+  "summary": {
+   "created": 6,
+   "updated": 0,
+   "superseded": 0
+  },
+  "items": [
+   "create · Northwind Outdoor · supplied_products = patio furniture and fire pits (proof 1) · Initial consolidation of supplied products for Northwind Outdoor.",
+   "create · Northwind Outdoor · lead_time = 21 days from purchase order to warehouse arrival (proof 1) · Initial consolidation of lead time terms.",
+   "create · Northwind Outdoor · promotional_discount_cap = 15% maximum discount on every channel, including Prime Day (proof 1) · Initial consolidation of promotional discount limit policy.",
+   "create · Northwind Outdoor · freight_terms = Northwind pays freight on purchase orders above $5,000; below that we pay it (proof 1) · Initial consolidation of freight terms policy.",
+   "create · Northwind Outdoor · defective_chargeback_policy = can be charged back at full cost within 90 days of receipt (proof 1) · Initial consolidation of defective chargeback policy.",
+   "create · Northwind Outdoor · purchase_order_cadence = every Monday (proof 1) · Initial consolidation of purchase order schedule."
+  ],
+  "trace_ids": [
+   "vmaus3kx6arwm0vightw"
+  ],
+  "seconds": 10.6
+ },
+ "team": {
+  "scope": "org/spreetail/lab/conflict-2/team/ops",
+  "summary": {
+   "created": 6,
+   "updated": 0,
+   "superseded": 0
+  },
+  "items": [
+   "create · Northwind Outdoor · lead_time = 28 days from purchase order to arrival (proof 1) · Consolidating operational lead time details for Northwind Outdoor.",
+   "create · Northwind Outdoor · promotional_discount_terms = Up to 20% discount applicable for Prime Day and holiday events (proof 2) · Combining promotional discount threshold and applicable events.",
+   "create · Northwind Outdoor · free_freight_threshold = $7,500 per purchase order (proof 1) · Consolidating free freight policy threshold.",
+   "create · Northwind Outdoor · defective_chargeback_window = Within 60 days of receipt (proof 1) · Consolidating policy regarding defective chargeback timeframes.",
+   "create · Northwind Outdoor · shipped_products = Patio furniture and fire pits (proof 1) · Consolidating the product catalog/offerings.",
+   "create · Northwind Outdoor · purchase_order_schedule = Mondays (proof 1) · Consolidating purchasing schedule."
+  ],
+  "trace_ids": [
+   "yucalfpouv4eu36fvif4"
+  ],
+  "seconds": 11.8
+ },
+ "personal": {
+  "scope": "org/spreetail/lab/conflict-2/user/vidyul",
+  "summary": {
+   "created": 5,
+   "updated": 0,
+   "superseded": 0
+  },
+  "items": [
+   "create · Northwind Outdoor · lead_time = about 14 days (proof 1) · Consolidating reported lead time for Northwind Outdoor.",
+   "create · Northwind Outdoor · freight_policy = free above $5,000 (proof 1) · Consolidating freight policy terms.",
+   "create · Northwind Outdoor · defect_chargeback_window = within 90 days (proof 1) · Consolidating defect chargeback terms.",
+   "create · Northwind Outdoor · supplied_products = patio furniture and fire pits (proof 1) · Consolidating Northwind Outdoor supplied product range.",
+   "create · Northwind Outdoor · purchase_order_schedule = every Monday (proof 1) · Consolidating regular purchase order cadence."
+  ],
+  "trace_ids": [
+   "q6r8t30satjkzy30n1rt"
+  ],
+  "seconds": 10.3
+ }
+}

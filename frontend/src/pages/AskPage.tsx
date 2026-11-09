@@ -14,10 +14,11 @@ import KeepAlive from '@/components/KeepAlive'
 import { useHashSubRoute } from '@/hooks/useHashRoute'
 import { useVisited } from '@/hooks/useVisited'
 import ScopePicker from '@/components/ScopePicker'
-import type { VctApi } from '@/api/vct'
+import { vctApi as defaultVctApi, type OnboardingStatus, type VctApi } from '@/api/vct'
 import { VctFilterBar } from '@/components/vct/Vct'
 import {
   NO_VCT_FILTER,
+  filterFromOnboarding,
   hasVctFilter,
   type VctFilterValue,
 } from '@/components/vct/vctState'
@@ -55,7 +56,7 @@ const MODE_LABELS: Record<Mode, string> = {
 }
 const MODE_INTROS: Record<Mode, string> = {
   search:
-    'Answers come from every scope you can read: org first, then team, then personal. Asking never writes.',
+    'One search across every scope you can read, shown twice: everything found, and only what ties to your part of the value chain. Asking never writes.',
   chat: 'A written answer from every scope you can read, citing its sources. Follow-ups keep the context.',
   reflect:
     'A synthesis across every scope you can read, with the evidence it drew on. Each question stands alone.',
@@ -100,10 +101,27 @@ export default function AskPage({
   )
 }
 
-function AskSearch({ me, api = askApi, vctApi }: Props) {
-  // Value-chain filter: keep only facts tagged with these goals, nodes or domains.
+function AskSearch({ me, api = askApi, vctApi = defaultVctApi }: Props) {
+  // The value-driven column's filter. It starts on the user's onboarded
+  // domains once those load, unless they already changed it.
   const [vct, setVct] = useState<VctFilterValue>(NO_VCT_FILTER)
-  const [compare, setCompare] = useState(false)
+  const [mine, setMine] = useState<OnboardingStatus | null>(null)
+  const touched = useRef(false)
+  const lastQuestion = useRef('')
+
+  useEffect(() => {
+    const controller = new AbortController()
+    vctApi
+      .myOnboarding(controller.signal)
+      .then((status) => {
+        if (controller.signal.aborted) return
+        setMine(status)
+        if (!touched.current) setVct(filterFromOnboarding(status))
+      })
+      // No onboarding (or no access) just means the filter starts empty.
+      .catch(() => undefined)
+    return () => controller.abort()
+  }, [vctApi])
   // Spaces left out of the search. It starts on the user's own space; once
   // they pick "all", a newly granted space is included straight away.
   const [excluded, setExcluded] = useState<string[]>(() => startExcluded(me.grants))
@@ -129,7 +147,7 @@ function AskSearch({ me, api = askApi, vctApi }: Props) {
   const narrowed = areas.length < readable.length ? areas : []
   const who = me.name
 
-  const ask = (q: string) => {
+  const ask = (q: string, filter: VctFilterValue = vct) => {
     const text = q.trim()
     // No scopes would mean "read everything" to the backend, so never send that.
     if (!text || !areas.length) return
@@ -138,10 +156,11 @@ function AskSearch({ me, api = askApi, vctApi }: Props) {
     const controller = new AbortController()
     inFlight.current = controller
     setRun({ status: 'loading', id: ++runCount.current })
+    lastQuestion.current = text
     const askedAs = who
     api
       .ask(
-        { q: text, scopes: narrowed, ...(hasVctFilter(vct) ? vct : {}) },
+        { q: text, scopes: narrowed, ...(hasVctFilter(filter) ? filter : {}) },
         controller.signal,
       )
       .then((answer) => {
@@ -155,6 +174,13 @@ function AskSearch({ me, api = askApi, vctApi }: Props) {
           error: error instanceof Error ? error : new Error(String(error)),
         })
       })
+  }
+
+  // A new filter re-asks the last question, so the columns always match it.
+  const changeFilter = (next: VctFilterValue) => {
+    touched.current = true
+    setVct(next)
+    if (lastQuestion.current && run.status !== 'idle') ask(lastQuestion.current, next)
   }
 
   const cancel = () => {
@@ -190,7 +216,7 @@ function AskSearch({ me, api = askApi, vctApi }: Props) {
           </HeaderSlot>
         )}
         <p className="mono ask-muted ask-reads">
-          Reads {areas.length ? areas.join(' → ') : 'nothing: tick at least one space'}
+          Reads {areas.length ? areas.join(', ') : 'nothing: tick at least one space'}
         </p>
       </section>
 
@@ -229,13 +255,7 @@ function AskSearch({ me, api = askApi, vctApi }: Props) {
             </button>
           ))}
         </fieldset>
-        <VctFilterBar
-          value={vct}
-          onChange={setVct}
-          compare={compare}
-          onCompare={setCompare}
-          api={vctApi}
-        />
+        <VctFilterBar value={vct} onChange={changeFilter} mine={mine} api={vctApi} />
       </form>
 
       <div className="ask-result">
@@ -250,12 +270,7 @@ function AskSearch({ me, api = askApi, vctApi }: Props) {
         {run.status === 'loading' && <AskLoading key={run.id} onCancel={cancel} />}
         {run.status === 'error' && <AskFailure error={run.error} />}
         {run.status === 'success' && (
-          <AskAnswer
-            answer={run.answer}
-            who={run.who}
-            compare={compare && hasVctFilter(vct)}
-            vctApi={vctApi}
-          />
+          <AskAnswer answer={run.answer} who={run.who} vctApi={vctApi} />
         )}
       </div>
     </>
@@ -269,7 +284,7 @@ function AskFailure({ error }: { error: Error }) {
     status === 403
       ? 'One of the chosen spaces is not one you can read.'
       : status === 503
-        ? 'Every layer failed to answer. Agent Memory may be down; try again shortly.'
+        ? 'Agent Memory did not answer. It may be down; try again shortly.'
         : null
   return (
     <div className="error" role="alert">

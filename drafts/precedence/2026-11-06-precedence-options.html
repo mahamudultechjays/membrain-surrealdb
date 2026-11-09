@@ -1,0 +1,334 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Layer Precedence Options</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@75..100,500..700&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: a decision paper. Sticky contents rail beside one reading column; options are the only cards, each stamped with its letter and a verdict on the trust rule. */
+:root {
+  --bg: #f5f7f8; --surface: #ffffff; --sunk: #eaeef1; --line: #d3dbe0;
+  --fg: #16212b; --muted: #556470; --accent: #1f5f8b; --accent-soft: #e2edf5;
+  --no: #a8321f; --no-bg: #f8e4df; --part: #8a5a00; --part-bg: #f8edd6;
+  --yes: #1f6e45; --yes-bg: #e0f0e6; --ppl: #3a4db0; --ppl-bg: #e5e8f8;
+  --neutral-bg: #edf0f2;
+  --display: "Archivo", "Arial Narrow", system-ui, sans-serif;
+  --body: "Source Serif 4", Georgia, "Times New Roman", serif;
+  --ui: "Archivo", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "JetBrains Mono", Consolas, "Courier New", monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #10171d; --surface: #172129; --sunk: #1d2932; --line: #2c3a45;
+  --fg: #e3e9ee; --muted: #9aa9b5; --accent: #79b4df; --accent-soft: #1b3346;
+  --no: #ff9a87; --no-bg: #3b1f1a; --part: #f0bd5f; --part-bg: #392c13;
+  --yes: #7fd3a1; --yes-bg: #183324; --ppl: #a9b5ff; --ppl-bg: #232a4d;
+  --neutral-bg: #1f2a33; color-scheme: dark; } }
+:root[data-theme="dark"] {
+  --bg: #10171d; --surface: #172129; --sunk: #1d2932; --line: #2c3a45;
+  --fg: #e3e9ee; --muted: #9aa9b5; --accent: #79b4df; --accent-soft: #1b3346;
+  --no: #ff9a87; --no-bg: #3b1f1a; --part: #f0bd5f; --part-bg: #392c13;
+  --yes: #7fd3a1; --yes-bg: #183324; --ppl: #a9b5ff; --ppl-bg: #232a4d;
+  --neutral-bg: #1f2a33; color-scheme: dark; }
+
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body { margin: 0; background: var(--bg); color: var(--fg); font: 17px/1.62 var(--body); }
+.wrap { max-width: 1120px; margin: 0 auto; padding-block: 40px 80px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: grid; grid-template-columns: 200px minmax(0, 1fr); gap: 56px; }
+main { min-width: 0; max-width: 760px; }
+p, li { max-width: 68ch; }
+p { margin: 0 0 12px; }
+ul, ol { margin: 0 0 16px; padding-left: 22px; display: grid; gap: 6px; }
+a { color: var(--accent); }
+b, strong { font-weight: 600; }
+code { font: .8em var(--mono); background: var(--sunk); border: 1px solid var(--line); border-radius: 4px; padding: 0 4px; overflow-wrap: anywhere; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* contents rail */
+nav.toc { position: sticky; top: calc(28px + env(safe-area-inset-top, 0px)); align-self: start; font: 500 .84rem/1.4 var(--ui); }
+nav.toc .lbl { font-weight: 600; font-size: .72rem; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); margin-bottom: 12px; }
+nav.toc ol { list-style: none; padding: 0; margin: 0; gap: 2px; }
+nav.toc a { display: block; padding: 5px 10px; border-left: 2px solid var(--line); color: var(--muted); text-decoration: none; }
+nav.toc a:hover, nav.toc a:focus-visible { color: var(--fg); border-left-color: var(--accent); }
+
+/* header */
+header.doc { border-bottom: 1px solid var(--line); padding-bottom: 24px; margin-bottom: 8px; }
+.eyebrow { font: 600 .74rem/1 var(--ui); letter-spacing: .14em; text-transform: uppercase; color: var(--accent); }
+h1 { font: 700 clamp(2rem, 4.4vw, 2.9rem)/1.08 var(--display); font-stretch: 85%; letter-spacing: -.01em; margin: 12px 0 14px; text-wrap: balance; }
+.meta { display: flex; flex-wrap: wrap; gap: 6px 22px; font: 500 .86rem/1.4 var(--ui); color: var(--muted); }
+.meta b { color: var(--fg); font-weight: 600; }
+
+/* sections */
+h2 { font: 700 1.6rem/1.2 var(--display); font-stretch: 85%; margin: 56px 0 14px; text-wrap: balance; scroll-margin-top: 24px; display: flex; align-items: baseline; gap: 12px; }
+h2 .n { font: 600 .95rem/1 var(--mono); color: var(--accent); }
+h3 { font: 600 1.08rem/1.3 var(--ui); margin: 30px 0 10px; text-wrap: balance; scroll-margin-top: 24px; }
+.lead { font-size: 1.05rem; color: var(--muted); }
+
+/* summary */
+.summary { display: grid; gap: 14px; margin: 26px 0 4px; }
+.summary div { display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: 16px; }
+.summary dt { font: 600 .74rem/1.9 var(--ui); letter-spacing: .1em; text-transform: uppercase; color: var(--accent); }
+.summary dd { margin: 0; font-size: 1.05rem; }
+
+/* tables */
+.tw { overflow-x: auto; margin: 6px 0 20px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); }
+table { width: 100%; border-collapse: collapse; font: 400 .9rem/1.45 var(--ui); }
+th, td { text-align: left; vertical-align: top; padding: 10px 14px; border-bottom: 1px solid var(--line); }
+thead th { font-weight: 600; font-size: .72rem; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); background: var(--sunk); }
+tbody tr:last-child td { border-bottom: 0; }
+td:first-child { font-weight: 600; }
+td.num { font-family: var(--mono); font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+/* verdict pills */
+.v { display: inline-flex; align-items: center; gap: 6px; font: 600 .7rem/1.6 var(--ui); letter-spacing: .06em; text-transform: uppercase; padding: 1px 9px; border-radius: 999px; white-space: nowrap; }
+.v::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+.v-no { color: var(--no); background: var(--no-bg); }
+.v-part { color: var(--part); background: var(--part-bg); }
+.v-yes { color: var(--yes); background: var(--yes-bg); }
+.v-ppl { color: var(--ppl); background: var(--ppl-bg); }
+.v-neutral { color: var(--muted); background: var(--neutral-bg); }
+.cell-no { color: var(--no); font-weight: 600; }
+.cell-part { color: var(--part); font-weight: 600; }
+.cell-yes { color: var(--yes); font-weight: 600; }
+
+/* option cards */
+.opts { display: grid; gap: 14px; margin: 16px 0 8px; }
+.opt { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 18px 20px; display: grid; grid-template-columns: 44px minmax(0, 1fr); gap: 4px 16px; }
+.opt .letter { grid-row: span 3; font: 700 2.2rem/1 var(--display); font-stretch: 75%; color: var(--accent); }
+.opt h3 { margin: 0; font-size: 1.1rem; }
+.opt .what { font-size: .98rem; margin: 6px 0 4px; }
+.opt .what p { margin: 0 0 6px; }
+.opt .head { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; }
+.opt .pc { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 8px; font: 400 .9rem/1.5 var(--ui); }
+.opt .pc h4 { margin: 0 0 4px; font: 600 .7rem/1.4 var(--ui); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+.opt .pc ul { margin: 0; padding-left: 18px; gap: 3px; }
+.variant { border-left: 3px solid var(--accent); background: var(--accent-soft); padding: 8px 12px; border-radius: 0 6px 6px 0; font-size: .94rem; }
+
+.premise { border: 1px solid var(--accent); border-radius: 8px; padding: 14px 18px; margin: 4px 0 14px; background: var(--surface); }
+.premise p { max-width: none; }
+.premise p:last-child { margin: 0; color: var(--muted); font-size: .96rem; }
+.proposal { border: 1px solid var(--line); border-left: 4px solid var(--yes); border-radius: 0 8px 8px 0; background: var(--surface); padding: 14px 18px 2px; }
+.aside { max-width: none; background: var(--sunk); border-radius: 6px; padding: 12px 16px; font-size: .96rem; }
+.direction { list-style: none; padding: 0; counter-reset: d; gap: 10px; }
+.direction li { counter-increment: d; display: grid; grid-template-columns: 30px minmax(0, 1fr); gap: 10px; }
+.direction li::before { content: counter(d); font: 600 .9rem/1.7 var(--mono); color: var(--accent); }
+
+/* promotion ladder */
+.ladder { display: grid; margin: 10px 0 20px; max-width: 620px; }
+.rung { display: grid; grid-template-columns: 120px minmax(0, 1fr); gap: 14px; align-items: center; background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 11px 14px; font-size: .95rem; }
+.rung .lv { font: 600 .74rem/1.3 var(--ui); letter-spacing: .1em; text-transform: uppercase; color: var(--accent); }
+.gate { display: flex; align-items: center; gap: 10px; padding: 6px 0 6px 48px; font: 500 .84rem/1.4 var(--ui); color: var(--muted); }
+.gate::before { content: "▲"; color: var(--accent); font-size: .72rem; }
+.gate b { color: var(--fg); font-family: var(--mono); font-weight: 500; }
+
+.qs { counter-reset: q; list-style: none; padding: 0; }
+.qs li { counter-increment: q; display: grid; grid-template-columns: 30px minmax(0, 1fr); gap: 10px; }
+.qs li::before { content: "Q" counter(q); font: 600 .82rem/1.9 var(--mono); color: var(--accent); }
+.src { font: 400 .86rem/1.6 var(--ui); color: var(--muted); }
+.src a { white-space: nowrap; }
+
+@media (max-width: 880px) {
+  .wrap { grid-template-columns: minmax(0, 1fr); gap: 16px; padding-block: 24px 56px; }
+  nav.toc { position: static; }
+  nav.toc ol { display: flex; flex-wrap: wrap; gap: 4px 6px; }
+  nav.toc a { border: 1px solid var(--line); border-radius: 999px; padding: 3px 10px; }
+}
+@media (max-width: 560px) {
+  body { font-size: 16px; }
+  .summary div { grid-template-columns: minmax(0, 1fr); gap: 2px; }
+  .opt { grid-template-columns: minmax(0, 1fr); padding: 16px; }
+  .opt .letter { grid-row: auto; font-size: 1.8rem; }
+  .opt .pc { grid-template-columns: minmax(0, 1fr); }
+  .rung { grid-template-columns: minmax(0, 1fr); gap: 2px; }
+  .gate { padding-left: 14px; }
+}
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+@media print {
+  body { background: #fff; color: #000; font-size: 11pt; }
+  .wrap { display: block; padding: 0; }
+  nav.toc { display: none; }
+  .opt, .tw, .ladder { break-inside: avoid; }
+  h2 { margin-top: 28px; }
+}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+<nav class="toc" aria-label="Contents">
+  <div class="lbl">Contents</div>
+  <ol>
+    <li><a href="#testing">1 What testing showed</a></li>
+    <li><a href="#options">2 Precedence options</a></li>
+    <li><a href="#compare">Side by side</a></li>
+    <li><a href="#proposal">Our proposal</a></li>
+    <li><a href="#promotion">3 Promotion</a></li>
+    <li><a href="#unextracted">Not yet a fact</a></li>
+  </ol>
+</nav>
+
+<main>
+<header class="doc">
+  <div class="eyebrow">Decision paper · Draft for discussion</div>
+  <h1>Layer precedence and promotion on Agent Memory</h1>
+  <div class="meta"><span>Proof of concept</span><span>Date <b>6 November 2026</b></span><span>Layers <b>org · team · personal</b></span></div>
+  <dl class="summary">
+    <div><dt>The question</dt><dd>When org, team and personal scopes hold different values for the same thing, which one should an answer use?</dd></div>
+    <div><dt>What we found</dt><dd>In our tests Agent Memory never compared facts across scopes, and it has no setting to rank one scope above another. Any order we add on top must not hold trust outside Agent Memory, which we agreed not to do.</dd></div>
+  </dl>
+</header>
+
+<h2 id="testing"><span class="n">1</span>What testing showed</h2>
+<p class="lead">We ran two tests on fresh scopes: three scopes, one note each, with conflicting values in each layer.</p>
+<div class="tw"><table>
+  <thead><tr><th>Finding</th><th>Evidence</th></tr></thead>
+  <tbody>
+    <tr><td>Reflect on one scope does not see the other layers.</td><td>Asked whether the records disagree, every single-scope Reflect said they agree, in both tests.</td></tr>
+    <tr><td>Reflect across scopes finds the conflict, but picks no winner.</td><td>It named every conflicting value, and said the answer “hinges on which guideline takes precedence”.</td></tr>
+    <tr><td>Reflect cannot tell which layer holds which value.</td><td>Its evidence carries no scope. When the notes did not name their layer, it invented a timeline (“lead time dropped from 28 to 21 to 14 days”) for notes stored the same day.</td></tr>
+    <tr><td>Consolidate and Elaborate never compare across scopes.</td><td>Both run inside one scope. Consolidate stored only facts with proof 2 or more (1 of 23 reported across both tests).</td></tr>
+  </tbody>
+</table></div>
+
+<h3>What Agent Memory offers natively</h3>
+<ul>
+  <li><b>No scope weighting.</b> Recall (<code>/query</code>) takes <code>lens</code>, <code>labels</code>, <code>mode</code>, <code>k</code> and <code>asOf</code>. A lens narrows what is read; nothing ranks one scope above another.</li>
+  <li><b>Decay by category.</b> A daily pass multiplies importance by 0.95 for context, 0.995 for knowledge and 1 for identity. Context expires after 7 days.</li>
+</ul>
+
+<h2 id="options"><span class="n">2</span>Precedence options</h2>
+<p class="lead">Each option is judged against one agreed rule: we may build layers on top, but we must not represent or manage trust in our own system.</p>
+<div class="premise">
+  <p><b>Design premise.</b> Team and org layers hold only promoted rules, each verified before it got there. Personal layers hold everything a person captures. So the real question is when a verified rule should outrank a person’s own note.</p>
+  <p><b>What our tests cover.</b> Both tests stored raw notes in org and team, not promoted rules. They show how Agent Memory treats conflicting facts across scopes, not how a verified rule meets a personal note.</p>
+</div>
+<p class="aside">The fair-search variant of C comes from the earlier layers-and-promotion spec (28 October). That spec ranked answers org first (option A); it was written before the rule above was agreed.</p>
+
+<div class="opts">
+  <article class="opt">
+    <span class="letter">A</span>
+    <div class="head"><h3>Fixed layer order: org, then team, then personal</h3><span class="v v-part">Partly crosses the line</span></div>
+    <div class="what"><p>Read each layer, and when values differ, the broader layer wins.</p></div>
+    <div class="pc">
+      <div><h4>For</h4><ul><li>Simple to explain and predictable.</li><li>Team and org hold only verified rules, so the broader layer wins for a reason people agreed on.</li></ul></div>
+      <div><h4>Against</h4><ul><li>A rule still wins when a personal note is far more relevant to the question.</li><li>Re-ranks after Agent Memory has already fused and ranked results.</li><li>The order itself lives in our code.</li></ul></div>
+    </div>
+  </article>
+
+  <article class="opt">
+    <span class="letter">B</span>
+    <div class="head"><h3>Relevance first, layer order only to break ties</h3><span class="v v-part">Partly crosses the line</span></div>
+    <div class="what"><p>Keep Agent Memory’s ranking. Apply the layer order only when two layers answer the same point and both match well.</p></div>
+    <div class="pc">
+      <div><h4>For</h4><ul><li>A 90% personal match is not overruled by a rule that matches at 10%.</li><li>A verified rule still wins when both match well.</li><li>Leaves most answers to Agent Memory.</li></ul></div>
+      <div><h4>Against</h4><ul><li>Needs one recall per layer, since hits carry no scope.</li><li>Scores from separate recalls may not be comparable.</li><li>“Far more relevant” needs a threshold we set.</li><li>Deciding “same point” is hard when keys differ.</li></ul></div>
+    </div>
+  </article>
+
+  <article class="opt">
+    <span class="letter">C</span>
+    <div class="head"><h3>Show every layer, decide nothing</h3><span class="v v-yes">Keeps trust in Agent Memory</span></div>
+    <div class="what"><p>Answer from all readable scopes, label each result with its layer, and flag disagreements for the user.</p>
+      <p class="variant"><b>Fair-search variant:</b> query each layer in parallel with a fixed share of results, for example 10 personal, 10 team and 20 org, so no layer crowds out the others.</p></div>
+    <div class="pc">
+      <div><h4>For</h4><ul><li>No trust logic on our side.</li><li>Nothing is hidden, so a user sees when policy and practice differ.</li></ul></div>
+      <div><h4>Against</h4><ul><li>The user resolves conflicts.</li><li>Labels need one recall per layer, or a layer label written with each fact.</li></ul></div>
+    </div>
+  </article>
+
+  <article class="opt">
+    <span class="letter">D</span>
+    <div class="head"><h3>Targeted Reflect across scopes, ahead of time</h3><span class="v v-neutral">Detects, does not resolve</span></div>
+    <div class="what"><p>For topics where conflicts are expected, run Reflect across the layers in advance to find disagreements.</p></div>
+    <div class="pc">
+      <div><h4>For</h4><ul><li>The only Agent Memory feature that saw cross-layer conflicts in our tests.</li></ul></div>
+      <div><h4>Against</h4><ul><li>We must know which topics to check.</li><li>About 10 to 40 seconds and one model call per question.</li><li>Picks no winner, and may invent an order of events.</li></ul></div>
+    </div>
+  </article>
+
+</div>
+
+<h3>Considered and set aside</h3>
+<p><b>A confidence score per scope.</b> Agent Memory has no per-scope weight, and decay could push a high-trust layer below a lower one over time.</p>
+
+<h3 id="compare">Side by side</h3>
+<div class="tw"><table>
+  <thead><tr><th>Option</th><th>Trust stays out of our code</th><th>Handles relevance</th><th>Picks a value</th><th>Extra cost</th></tr></thead>
+  <tbody>
+    <tr><td>A. Fixed order</td><td class="cell-part">Partly</td><td class="cell-no">No</td><td>Yes</td><td>One recall per layer</td></tr>
+    <tr><td>B. Relevance, then order</td><td class="cell-part">Partly</td><td class="cell-yes">Yes</td><td>Sometimes</td><td>One recall per layer, plus matching</td></tr>
+    <tr><td>C. Show all, decide nothing</td><td class="cell-yes">Yes</td><td class="cell-yes">Yes (Agent Memory ranks)</td><td>No</td><td>Labels per layer</td></tr>
+    <tr><td>D. Targeted Reflect</td><td class="cell-yes">Yes</td><td class="cell-yes">Yes</td><td>No</td><td>High: model call per topic</td></tr>
+  </tbody>
+</table></div>
+
+<h3 id="proposal">Our proposal</h3>
+<div class="proposal">
+  <ol class="direction">
+    <li><span><b>V1 works from the personal layer.</b> Each user’s answers come from their own scope, with team and org rules shown beside them and labelled by layer (option C).</span></li>
+    <li><span><b>Nothing is overridden automatically.</b> When a personal note disagrees with a verified rule, the user sees both.</span></li>
+    <li><span><b>Revisit A or B once real promoted rules exist.</b> Then we can test how a verified rule meets a personal note, which our tests did not cover.</span></li>
+  </ol>
+</div>
+
+<h2 id="promotion"><span class="n">3</span>Promotion: moving shared knowledge up a layer</h2>
+<p class="lead">Promotion means turning something many people hold into one team or org fact. Agent Memory has no promotion feature, so each route below is ours.</p>
+
+<h3>The ladder from the earlier spec</h3>
+<div class="ladder" role="img" aria-label="A personal fact becomes a personal rule at the holder's score of 1.75; at a team score of 3 it is shown to the team admin, who approves it into a team rule; the org step works the same way one level up.">
+  <div class="rung"><span class="lv">Org rule</span><span>The org step works the same way, one level up.</span></div>
+  <div class="gate">org admin approves</div>
+  <div class="rung"><span class="lv">Team rule</span><span>Written to the team layer only when a team admin approves.</span></div>
+  <div class="gate">team score <b>≥ 3</b> → shown to the team admin</div>
+  <div class="rung"><span class="lv">Personal rule</span><span>At the holder’s own score of <b>1.75</b>: stated once, confirmed twice more.</span></div>
+</div>
+<p>Each person’s support for a fact is weighted, so that nobody can push a fact up alone. One person adds at most about 2, so a team score of 3 always needs at least two people.</p>
+<div class="tw"><table>
+  <thead><tr><th>Event</th><th>Adds to the score</th></tr></thead>
+  <tbody>
+    <tr><td>A person’s first statement of the fact</td><td class="num">1</td></tr>
+    <tr><td>That person’s 2nd, 3rd, 4th confirmation</td><td class="num">0.5, 0.25, 0.125…</td></tr>
+    <tr><td>A different person’s first statement</td><td class="num">1</td></tr>
+    <tr><td>A person’s first contradiction, then repeats</td><td class="num">−1, −0.5, −0.25…</td></tr>
+  </tbody>
+</table></div>
+
+<h3>Routes compared</h3>
+<div class="tw"><table>
+  <thead><tr><th>Route</th><th>How it works</th><th>Main trade-off</th></tr></thead>
+  <tbody>
+    <tr><td>Counter ladder</td><td>Score support per person as above; show candidates at 3 to an admin.</td><td>Needs every fact under a standard name and key, so one fact is counted once.</td></tr>
+    <tr><td>Similarity across personal scopes</td><td>Find facts about 90% alike in several people’s scopes, merge them into one new fact, and write it to the team layer.</td><td>Groups facts by their text, so different keys do not matter. Says nothing about how many people agree.</td></tr>
+    <tr><td>Impact on VCT goals</td><td>Score a fact by how many VCT nodes and goals it connects to and how often it is recalled. Promote the highest scores.</td><td>Depends on the VCT tagging, which is still at design stage.</td></tr>
+    <tr><td>Admin approval</td><td>An admin approves each candidate before anything is written.</td><td>Slower, but nothing is promoted automatically.</td></tr>
+  </tbody>
+</table></div>
+<p class="aside"><b>A likely combination:</b> similarity to group facts that mean the same thing, the counter with its two-person minimum to score them, and admin approval to write the result. The VCT impact score can then order the candidate list.</p>
+
+<h3 id="unextracted">Promoting what was never extracted</h3>
+<p>Agent Memory extracts few facts on purpose. The rest stays in stored passages, the raw notes and chat turns, which recall can still find. A promotion system that only looks at facts misses most of what people say.</p>
+<div class="tw"><table>
+  <thead><tr><th>Route</th><th>How it works</th><th>Where it stands</th></tr></thead>
+  <tbody>
+    <tr><td>Match passages, not just facts</td><td>Run the similarity check over stored passages in personal scopes. When several people’s passages say the same thing, put one fact on the candidate list.</td><td>Untested. Recall already returns passages with a match score, so this needs no new Agent Memory feature.</td></tr>
+    <tr><td>Let interest surface facts</td><td>For topics many people ask about, run Reflect with saving on, so its answer is written as a fact that can then be scored.</td><td>Unproven. In both our tests, Reflect with saving on wrote nothing.</td></tr>
+  </tbody>
+</table></div>
+
+<h3>What our tests add</h3>
+<ul>
+  <li><b>Consolidate cannot replace the counter.</b> It works within one scope and stored only facts with proof 2 or more.</li>
+  <li><b>Standard naming, or matching by text, is required.</b> The same term was stored under different keys in each scope, such as <code>promotional_discount_cap</code> and <code>max_promotional_discount</code>.</li>
+  <li><b>Only extracted facts can be promoted.</b> Extraction is sparse, so much knowledge stays in passages and is never a fact.</li>
+  <li><b>A promoted fact is a new write.</b> Written as a triple, we choose its category (knowledge or identity), so it does not expire like context.</li>
+</ul>
+
+</main>
+</div>
+</body>
+</html>

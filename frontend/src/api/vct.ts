@@ -148,6 +148,8 @@ export interface VctApi {
   runTagger(retag?: boolean): Promise<TaggerStatus>
   /** Match a description of someone's work to VCT nodes; nothing is saved. */
   previewOnboarding(primaryWork: string): Promise<OnboardingPreview>
+  /** The signed-in user's own onboarding: their VCT nodes and domains. */
+  myOnboarding(signal?: AbortSignal): Promise<OnboardingStatus>
   /** Admin: a user's onboarding, and replacing their nodes. */
   userOnboarding(email: string, signal?: AbortSignal): Promise<OnboardingStatus>
   setUserNodes(email: string, nodeIds: string[]): Promise<OnboardingStatus>
@@ -172,6 +174,7 @@ export const vctApi: VctApi = {
     apiPost<OnboardingPreview>('/api/v1/onboarding/preview', {
       primary_work: primaryWork,
     }),
+  myOnboarding: (signal) => apiGet<OnboardingStatus>('/api/v1/onboarding', { signal }),
   userOnboarding: (email, signal) =>
     apiGet<OnboardingStatus>(
       `/api/v1/admin/users/${encodeURIComponent(email)}/onboarding`,

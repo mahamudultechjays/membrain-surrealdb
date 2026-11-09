@@ -1,0 +1,56 @@
+{
+ "org": {
+  "scope": "org/spreetail/lab/conflict-2",
+  "summary": {
+   "entities": 5,
+   "relations": 19
+  },
+  "items": [
+   "Prime Day features consumables",
+   "Prime Day features commodity basics",
+   "Q1 planning prepares_for Prime Day",
+   "March promo event precedes Prime Day",
+   "Prime Day impacts_logistics_in Dallas",
+   "Prime Day impacts_logistics_in Reno",
+   "Prime Day requires pre-build timeline",
+   "Prime Day informs promotional pricing strategy",
+   "Prime Day impacts inventory replenishment",
+   "promotional pricing strategy applies_to Prime Day",
+   "Prime Day impacts reorder point",
+   "Prime Day features Tier A products",
+   "unified seasonality framework accounts_for Prime Day",
+   "elasticity model applied_during Prime Day",
+   "Amazon operates_in Dallas",
+   "Amazon operates_in Reno",
+   "Northwind Outdoor sells_on Amazon",
+   "Dana Whitfield works_at Amazon",
+   "Dana Whitfield lives_in Texas"
+  ],
+  "seconds": 50.5
+ },
+ "team": {
+  "scope": "org/spreetail/lab/conflict-2/team/ops",
+  "summary": {
+   "entities": 4,
+   "relations": 1
+  },
+  "items": [
+   "Reno located_in Texas"
+  ],
+  "seconds": 11.5
+ },
+ "personal": {
+  "scope": "org/spreetail/lab/conflict-2/user/vidyul",
+  "summary": {
+   "entities": 6,
+   "relations": 1
+  },
+  "items": [
+   "Amazon operates_in Texas",
+   "self works_at Amazon",
+   "self works_at Amazon",
+   "Category Probe Nov4 targets Amazon"
+  ],
+  "seconds": 21.3
+ }
+}

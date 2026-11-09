@@ -1,6 +1,6 @@
 import asyncio
 import time
-from collections.abc import Iterator
+from collections.abc import Iterator, Sequence
 from typing import ClassVar
 
 import pytest
@@ -58,7 +58,8 @@ class FakeRecall:
         self.queries: list[tuple[str, str]] = []
         self.fail_on: str | None = None
 
-    async def recall(self, query: str, *, lens: str, k: int) -> RecallResult:
+    async def recall(self, query: str, *, lenses: Sequence[str], k: int) -> RecallResult:
+        lens = lenses[0]
         self.queries.append((query, lens))
         if self.fail_on and self.fail_on in query:
             raise MemoryUnavailableError("timeout")
@@ -407,9 +408,9 @@ def test_tagger_routes_refuse_non_admins(client: TestClient) -> None:
 
 async def test_a_passage_from_an_older_wording_no_longer_counts() -> None:
     class StaleRecall(FakeRecall):
-        async def recall(self, query: str, *, lens: str, k: int) -> RecallResult:
-            if lens != NODES:
-                return await super().recall(query, lens=lens, k=k)
+        async def recall(self, query: str, *, lenses: Sequence[str], k: int) -> RecallResult:
+            if lenses[0] != NODES:
+                return await super().recall(query, lenses=lenses, k=k)
             old_mo1 = "VCT node [mo1] Administer Sales Channels. Configure and manage channels."
             texts = [old_mo1, node_text(VMAP.node("sc6"))]  # type: ignore[arg-type]
             return RecallResult(

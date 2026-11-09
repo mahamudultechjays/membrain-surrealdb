@@ -1,6 +1,7 @@
-"""Ask endpoint: what memory knows, grouped org -> team -> personal.
+"""Ask endpoint: what memory knows, as one recall ranked by Agent Memory.
 
-Reads only the scopes the signed-in user's grants allow, each through a lens.
+Reads only the scopes the signed-in user's grants allow, through one lens each.
+With a VCT filter the same recall also yields the value-driven list.
 """
 
 from datetime import UTC, datetime
@@ -19,10 +20,10 @@ from app.api.deps import (
 from app.domain.errors import MemoryNotConfiguredError, MemoryUnavailableError
 from app.domain.ports.memory_recall import RecallHit
 from app.domain.vct import VctMap
-from app.schemas.ask import AskFact, AskFilter, AskLayer, AskMetadata, AskResponse, FactSource
+from app.schemas.ask import AskFact, AskFilter, AskMetadata, AskResponse, FactSource
 from app.schemas.vct_tags import fact_tags_out
 from app.services import ask_flow, logger
-from app.services.vct_tags import FILTER_WIDEN, HitTags, TagFilter, tag_answer
+from app.services.vct_tags import HitTags, TagFilter, tag_answer
 
 router = APIRouter(prefix="/ask")
 
@@ -53,9 +54,9 @@ async def ask(
     scopes. Admins may pass `as_user` emails to ask as other users, e.g. two
     people at once; their combined grants are read.
 
-    `goal`, `node` and `domain` (VCT ids, repeatable or comma-separated) keep
-    only facts whose active tag matches: any of the values within one kind, and
-    every kind given. Dropped facts come back per layer in `removed`.
+    `goal`, `node` and `domain` (VCT ids, repeatable or comma-separated) fill
+    `value_facts`: the hits whose active tag matches, any value within one kind
+    and every kind given. `facts` always holds every hit.
     """
     flt = TagFilter(
         goals=frozenset(_split(goal or [])),
@@ -82,9 +83,8 @@ async def ask(
                 status.HTTP_403_FORBIDDEN, f"Not readable: {', '.join(sorted(missing))}"
             )
         grants = [g for g in grants if g.scope_path in wanted]
-    scopes = list(dict.fromkeys(g.scope_path for g in grants))
     try:
-        answer = await ask_flow.ask(recall, grants, q=q, widen=FILTER_WIDEN if flt.active else 1)
+        answer = await ask_flow.ask(recall, grants, q=q)
     except MemoryNotConfiguredError as exc:
         raise HTTPException(
             status.HTTP_503_SERVICE_UNAVAILABLE,
@@ -96,7 +96,6 @@ async def ask(
         ) from exc
 
     tagged = await tag_answer(answer, tag_store, vmap, flt)
-    answer = tagged.answer
 
     def fact_out(hit: RecallHit) -> AskFact:
         return _fact(hit, tagged.tags.get(hit.id), vmap)
@@ -107,36 +106,26 @@ async def ask(
         trace_id=trace_id,
         user=user.email,
         as_users=",".join(emails) if as_user else None,
-        scopes=",".join(scopes),
+        scopes=",".join(answer.scopes),
         q=repr(q[:80]),
-        facts_found=answer.total_facts,
-        layers_failed=sum(1 for layer in answer.layers if layer.error) or None,
+        facts_found=len(answer.hits),
         latency_ms=answer.latency_ms,
-        tier=",".join(answer.tiers) or None,
+        tier=answer.tier,
         vct_filter=",".join(sorted(flt.goals | flt.nodes | flt.domains)) or None,
-        removed=tagged.removed_total if flt.active else None,
+        value_facts=len(tagged.kept) if tagged.kept is not None else None,
     )
     return AskResponse(
         q=q,
-        scopes=scopes,
+        scopes=answer.scopes,
         answered_at=datetime.now(UTC).isoformat(timespec="seconds"),
-        layers=[
-            AskLayer(
-                layer=layer.layer,
-                area=layer.area,
-                owner=layer.owner,
-                error=layer.error,
-                facts=[fact_out(hit) for hit in layer.hits],
-                removed=[fact_out(hit) for hit in tagged.removed.get(layer.area, [])],
-            )
-            for layer in answer.layers
-        ],
+        facts=[fact_out(hit) for hit in answer.hits],
+        value_facts=[fact_out(hit) for hit in tagged.kept] if tagged.kept is not None else None,
         metadata=AskMetadata(
-            total_facts=answer.total_facts,
-            resolution_tier=",".join(answer.tiers) or None,
+            total_facts=len(answer.hits),
+            resolution_tier=answer.tier,
             latency_ms=answer.latency_ms,
             include_inferred=include_inferred,
-            trace_ids=answer.trace_ids,
+            trace_ids=[answer.trace_id] if answer.trace_id else [],
             filter=AskFilter(
                 goals=sorted(flt.goals),
                 nodes=sorted(flt.nodes),

@@ -142,18 +142,8 @@
   color: var(--mb-muted);
 }
 
-.ask-conflict {
-  margin-bottom: 16px;
-  padding: 10px 14px;
-  border: 1px solid color-mix(in srgb, var(--mb-warn) 26%, transparent);
-  border-radius: var(--mb-radius-sm);
-  background: var(--mb-warn-soft);
-  color: var(--mb-warn);
-  font-size: 14px;
-}
-
-/* One card per layer, so org, team and personal read as separate sources. */
-.ask-layer {
+/* One card for the whole ranked list. */
+.ask-results {
   margin-bottom: 12px;
   padding: 0 16px;
   border: 1px solid var(--mb-line);
@@ -161,44 +151,12 @@
   background: var(--mb-bg);
 }
 
-.ask-layer-head {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 12px;
-  padding: 12px 0;
+.ask-results > .ask-muted {
+  margin: 14px 0;
 }
 
-.ask-layer-head h3 {
-  margin: 0;
-  font-size: 15px;
-  font-weight: 600;
-}
-
-.ask-area {
-  margin-left: 4px;
-  color: var(--mb-muted);
-  font-weight: 400;
-}
-
-.ask-count {
-  min-width: 28px;
-  padding: 2px 8px;
-  border-radius: 999px;
-  background: var(--mb-soft);
-  color: var(--mb-ink-2);
-  text-align: center;
-  font-variant-numeric: tabular-nums;
-}
-
-.ask-owner {
-  font-weight: 500;
-  color: var(--mb-ink-2);
-}
-
-.ask-layer > .ask-muted,
-.ask-layer > .error {
-  margin: 0 0 14px;
+.ask-results > .ask-facts {
+  border-top: 0;
 }
 
 .ask-facts {
@@ -301,6 +259,49 @@
   overflow-wrap: anywhere;
 }
 
+/* Normal and Value-driven side by side; stacked on narrow screens. */
+.ask-columns {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 360px), 1fr));
+  gap: 16px;
+  align-items: start;
+}
+
+.ask-column {
+  min-width: 0;
+}
+
+.ask-column-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.ask-column-head h3 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.ask-count {
+  color: var(--mb-muted);
+  font-size: 13px;
+}
+
+.ask-column-note {
+  margin: 2px 0 8px;
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+
+.ask-column-empty {
+  margin-top: 8px;
+  padding: 14px 16px;
+  border: 1px dashed var(--mb-line);
+  border-radius: var(--mb-radius);
+}
+
 .ask-footer {
   display: flex;
   flex-wrap: wrap;
@@ -343,7 +344,7 @@
     margin-top: 6px;
   }
 
-  .ask-layer {
+  .ask-results {
     padding: 0 12px;
   }
 }

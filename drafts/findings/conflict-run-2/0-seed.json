@@ -1,0 +1,66 @@
+{
+ "org": {
+  "scope": "org/spreetail/lab/conflict-2",
+  "note": "Northwind Outdoor vendor terms for 2026. Northwind supplies our patio furniture and fire pits, shipped into the Reno and Dallas warehouses. Standard lead time from purchase order to warehouse arrival is 21 days. Promotions on Northwind items are capped at a 15% maximum discount on every channel, including Prime Day. Northwind pays freight on purchase orders above $5,000; below that we pay it. Defective units can be charged back to Northwind at full cost within 90 days of receipt. Purchase orders go out every Monday, and the account contact is Dana Whitfield.",
+  "seconds": 11.6,
+  "entities": [
+   "Northwind Outdoor",
+   "Reno",
+   "Dallas",
+   "Dana Whitfield",
+   "Prime Day"
+  ],
+  "attributes": [
+   "Northwind Outdoor · supplied_products = patio furniture and fire pits [knowledge]",
+   "Northwind Outdoor · lead_time = 21 days from purchase order to warehouse arrival [knowledge]",
+   "Northwind Outdoor · promotional_discount_cap = 15% maximum discount on every channel, including Prime Day [knowledge]",
+   "Northwind Outdoor · freight_terms = Northwind pays freight on purchase orders above $5,000; below that we pay it [knowledge]",
+   "Northwind Outdoor · defective_chargeback_policy = can be charged back at full cost within 90 days of receipt [knowledge]",
+   "Northwind Outdoor · purchase_order_cadence = every Monday [knowledge]"
+  ],
+  "relations": 3
+ },
+ "team": {
+  "scope": "org/spreetail/lab/conflict-2/team/ops",
+  "note": "How we work with Northwind Outdoor. Northwind lead time is 28 days from purchase order to arrival, so reorders are planned a full month ahead. The maximum promotional discount on Northwind items is 20%, and we use it for Prime Day and holiday events. Freight is free from $7,500 per purchase order. Defective units are charged back within 60 days of receipt. Northwind ships patio furniture and fire pits into Reno and Dallas, purchase orders go out on Mondays, and Dana Whitfield is the contact.",
+  "seconds": 13.2,
+  "entities": [
+   "Northwind Outdoor",
+   "Dana Whitfield",
+   "Reno",
+   "Dallas"
+  ],
+  "attributes": [
+   "Northwind Outdoor · lead_time = 28 days from purchase order to arrival [knowledge]",
+   "Northwind Outdoor · max_promotional_discount = 20% [knowledge]",
+   "Northwind Outdoor · promotional_discount_usage = Prime Day and holiday events [knowledge]",
+   "Northwind Outdoor · free_freight_threshold = $7,500 per purchase order [knowledge]",
+   "Northwind Outdoor · defective_chargeback_window = within 60 days of receipt [knowledge]",
+   "Northwind Outdoor · shipped_products = patio furniture and fire pits [knowledge]",
+   "Northwind Outdoor · purchase_order_schedule = Mondays [knowledge]"
+  ],
+  "relations": 3
+ },
+ "personal": {
+  "scope": "org/spreetail/lab/conflict-2/user/vidyul",
+  "note": "Northwind Outdoor, what I've seen lately. Lead time is about 14 days now that they moved production to their Texas plant. I've been running Northwind promotions at up to 25% off on Amazon without any pushback. Freight is free above $5,000. Defect chargebacks are accepted within 90 days. They supply our patio furniture and fire pits for Reno and Dallas, purchase orders go out every Monday, and I deal with Dana Whitfield.",
+  "seconds": 14.8,
+  "entities": [
+   "Northwind Outdoor",
+   "Texas",
+   "Amazon",
+   "Reno",
+   "Dallas",
+   "Dana Whitfield",
+   "vidyul.narayanan@spreetail.com"
+  ],
+  "attributes": [
+   "Northwind Outdoor · lead_time = about 14 days [knowledge]",
+   "Northwind Outdoor · freight_policy = free above $5,000 [knowledge]",
+   "Northwind Outdoor · defect_chargeback_window = within 90 days [knowledge]",
+   "Northwind Outdoor · supplied_products = patio furniture and fire pits [knowledge]",
+   "Northwind Outdoor · purchase_order_schedule = every Monday [knowledge]"
+  ],
+  "relations": 5
+ }
+}

@@ -1,4 +1,4 @@
-"""Ask schemas: facts grouped by the memory layer they were read from."""
+"""Ask schemas: one recall's hits, in the order Agent Memory ranked them."""
 
 from pydantic import BaseModel, Field
 
@@ -27,23 +27,11 @@ class AskFact(BaseModel):
     tags: FactTagsOut | None = None
 
 
-class AskLayer(BaseModel):
-    layer: str
-    area: str
-    # Demo user name for a personal layer, else null.
-    owner: str | None
-    facts: list[AskFact]
-    # Set when this layer's recall failed; other layers are still returned.
-    error: str | None
-    # Facts the VCT filter dropped from this layer, for comparing with no filter.
-    removed: list[AskFact] = Field(default_factory=list)
-
-
 class AskFilter(BaseModel):
     goals: list[str]
     nodes: list[str]
     domains: list[str]
-    removed: int = Field(description="Hits the filter dropped across all layers.")
+    removed: int = Field(description="Hits the filter dropped from the recall.")
 
 
 class AskMetadata(BaseModel):
@@ -58,8 +46,13 @@ class AskMetadata(BaseModel):
 
 class AskResponse(BaseModel):
     q: str
+    # The scopes the recall read, org first, then team, then personal.
     scopes: list[str]
     answered_at: str
-    layers: list[AskLayer]
+    # Agent Memory's ranking across all those scopes. Hits carry no scope.
+    facts: list[AskFact]
+    # With a VCT filter: the same hits, keeping only those that match, in the
+    # same order (the value-driven column). Null when no filter was given.
+    value_facts: list[AskFact] | None = None
     metadata: AskMetadata
     trace_id: str | None

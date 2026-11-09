@@ -1,5 +1,7 @@
 import {
   Fragment,
+  useContext,
+  useEffect,
   useId,
   useRef,
   useState,
@@ -14,6 +16,7 @@ import { updateChat, useChat, type Turn } from '@/components/ask/chatStore'
 import { formatScore, readAreas, spaceName, startExcluded } from '@/components/ask/layers'
 import ReplyText from '@/components/ask/ReplyText'
 import HeaderSlot from '@/components/HeaderSlot'
+import { PageActiveContext } from '@/components/pageActiveContext'
 import ScopePicker from '@/components/ScopePicker'
 
 /** Unique across visits to the page, since turns outlive the component. */
@@ -39,6 +42,15 @@ export default function AskChat({ me, api = chatApi }: Props) {
   const { turns, sessionId } = useChat(owner)
   const inFlight = useRef<AbortController | null>(null)
   const prefix = useId().replace(/[^a-zA-Z0-9_-]/g, '')
+  const messageBox = useRef<HTMLTextAreaElement>(null)
+  const active = useContext(PageActiveContext)
+
+  // Opening the Chat tab lands on the message box, below the conversation.
+  useEffect(() => {
+    if (!active) return
+    messageBox.current?.scrollIntoView?.({ block: 'end' })
+    messageBox.current?.focus({ preventScroll: true })
+  }, [active])
 
   const readable = readAreas(me.grants).map((path) =>
     me.grants.find((g) => g.scope_path === path)!,
@@ -88,18 +100,18 @@ export default function AskChat({ me, api = chatApi }: Props) {
       .catch((error: unknown) => {
         if (controller.signal.aborted) return
         const status = error instanceof ApiError ? error.status : null
-        settle(
+        // The session has gone: start over with a new, clean chat.
+        if (status === 404) {
+          updateChat(owner, () => ({ turns: [], sessionId: null }))
+          return
+        }
+        settle(id, {
           id,
-          {
-            id,
-            question: message,
-            status: 'error',
-            message: error instanceof Error ? error.message : String(error),
-            hint: hintFor(status),
-          },
-          // The server forgets sessions on restart; the next message starts afresh.
-          status === 404 ? null : undefined,
-        )
+          question: message,
+          status: 'error',
+          message: error instanceof Error ? error.message : String(error),
+          hint: hintFor(status),
+        })
       })
   }
 
@@ -201,6 +213,7 @@ export default function AskChat({ me, api = chatApi }: Props) {
           Message
         </label>
         <textarea
+          ref={messageBox}
           id={`${prefix}-message`}
           rows={2}
           value={draft}
@@ -235,8 +248,6 @@ export default function AskChat({ me, api = chatApi }: Props) {
 }
 
 function hintFor(status: number | null): string | null {
-  if (status === 404)
-    return 'This chat has ended, for example after a server restart. Your next message will start a new chat.'
   if (status === 403) return 'One of the chosen spaces is not one you can read.'
   if (status === 503) return 'Agent Memory did not answer. Try again shortly.'
   return null

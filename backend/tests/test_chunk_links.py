@@ -8,7 +8,7 @@ from app.domain.errors import MemoryUnavailableError
 from app.domain.ports.memory_capture import CaptureResult, ExtractedAttribute, FactTriple
 from app.domain.ports.memory_recall import RecallHit
 from app.services import capture_flow, vct_map
-from app.services.ask_flow import Answer, LayerAnswer
+from app.services.ask_flow import Answer
 from app.services.vct_tags import TagFilter, tag_answer
 
 ME = "org/spreetail/user/mahamudul_hasan"
@@ -126,8 +126,9 @@ def test_the_fact_listing_reads_the_turn_a_fact_came_from() -> None:
 
 
 def _answer(*hits: RecallHit) -> Answer:
-    layer = LayerAnswer("personal", ME, "Me", list(hits))
-    return Answer(q="shipping costs", layers=[layer], tiers=[], trace_ids=[], latency_ms=1)
+    return Answer(
+        q="shipping costs", scopes=[ME], hits=list(hits), tier=None, trace_id=None, latency_ms=1
+    )
 
 
 async def test_a_chunk_passes_the_value_filter_through_its_facts() -> None:
@@ -146,15 +147,14 @@ async def test_a_chunk_passes_the_value_filter_through_its_facts() -> None:
     none_match = await tag_answer(answer, tags, VMAP, TagFilter(nodes=frozenset({"fi4"})))
 
     # No filter: everything stays; the linked chunk shows its first fact's tags.
-    assert [h.id for h in plain.answer.layers[0].hits] == [h.id for h in answer.layers[0].hits]
+    assert plain.kept is None
     first = plain.tags["memory_chunk:c1"].node
     assert first is not None
     assert first.tag == "sc6"
     # Filter: the chunk passes through its second fact and shows that fact's tags.
-    assert [h.id for h in by_goal.answer.layers[0].hits] == ["memory_chunk:c1"]
+    assert [h.id for h in by_goal.kept or []] == ["memory_chunk:c1"]
     matched = by_goal.tags["memory_chunk:c1"].goal
     assert matched is not None
     assert matched.tag == "ff-mgmt1"
-    removed = [h.id for h in by_goal.removed[ME]]
-    assert removed == ["memory_chunk:c2", "memory_chunk:c3", "chunk:d1"]
-    assert none_match.answer.layers[0].hits == []
+    assert by_goal.removed_total == 3
+    assert none_match.kept == []

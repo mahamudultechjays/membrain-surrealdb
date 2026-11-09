@@ -1,4 +1,4 @@
-from collections.abc import Iterator
+from collections.abc import Iterator, Sequence
 
 import pytest
 from fastapi.testclient import TestClient
@@ -28,7 +28,8 @@ class FakeRecall:
         self.lenses: list[str] = []
         self.error: Exception | None = None
 
-    async def recall(self, query: str, *, lens: str, k: int) -> RecallResult:
+    async def recall(self, query: str, *, lenses: Sequence[str], k: int) -> RecallResult:
+        lens = lenses[0]
         self.lenses.append(lens)
         if self.error:
             raise self.error

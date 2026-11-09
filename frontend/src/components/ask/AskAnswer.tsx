@@ -1,70 +1,67 @@
-import type { AskLayer, AskResponse } from '@/api/ask'
+import type { AskFact, AskResponse } from '@/api/ask'
 import type { VctApi } from '@/api/vct'
-import { findConflicts } from '@/components/ask/conflicts'
 import FactRow from '@/components/ask/FactRow'
-import { LAYER_LABELS } from '@/components/ask/layers'
 
 interface Props {
   answer: AskResponse
   /** Whose grants were read, e.g. "Priya" or "Priya + Arun". */
   who: string
-  /** Also list, crossed out, the facts the VCT filter dropped. */
-  compare?: boolean
   vctApi?: VctApi
 }
 
-/** The answer, one section per layer in the order the backend returned them. */
-export default function AskAnswer({ answer, who, compare = false, vctApi }: Props) {
+const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : 's'}`
+
+/**
+ * One recall, two columns. Normal lists every hit in the order Agent Memory
+ * ranked them; Value-driven keeps only the hits whose value chain tags match
+ * the filter, in the same order. Facts match on their own tags, memory chunks
+ * through the facts captured with them.
+ */
+export default function AskAnswer({ answer, who, vctApi }: Props) {
   const { metadata } = answer
-  const conflicts = findConflicts(answer.layers)
-  const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : 's'}`
+  const filter = metadata.filter
+  const valueFacts = answer.value_facts ?? null
 
   return (
     <section className="ask-answer" aria-labelledby="ask-answer-heading">
       <h2 id="ask-answer-heading">{answer.q}</h2>
       <p className="mono ask-summary">
-        {plural(metadata.total_facts, 'fact')} · {plural(answer.layers.length, 'layer')}{' '}
+        {plural(metadata.total_facts, 'result')} · {plural(answer.scopes.length, 'scope')}{' '}
         read · tier {metadata.resolution_tier ?? 'none'} ·{' '}
         {metadata.latency_ms.toLocaleString('en')} ms · as {who}
       </p>
-      {metadata.filter && (
-        <p className="mono ask-summary">
-          value chain filter{' '}
-          {[
-            ...metadata.filter.goals,
-            ...metadata.filter.nodes,
-            ...metadata.filter.domains,
-          ].join(', ')}{' '}
-          · {plural(metadata.filter.removed, 'result')} removed
-        </p>
-      )}
 
-      {conflicts.map((conflict) => (
-        <div key={conflict.entity} className="ask-conflict" role="note">
-          <strong>Layers disagree on {conflict.entity}.</strong>{' '}
-          {conflict.values.map((v, i) => (
-            <span key={v.value}>
-              {i > 0 && ' · '}
-              <span className="mono">{v.value}</span> ({v.layers.join(', ')})
-            </span>
-          ))}
-          . Nothing decides between them yet; check the sources.
-        </div>
-      ))}
-
-      {answer.layers.map((layer) => (
-        <LayerSection
-          key={`${layer.layer}:${layer.area}`}
-          layer={layer}
-          compare={compare}
+      <div className="ask-columns">
+        <Column
+          title="Normal"
+          note="Everything Agent Memory found, best match first."
+          facts={answer.facts}
+          empty={`Nothing found in ${answer.scopes.join(', ')}`}
           vctApi={vctApi}
         />
-      ))}
+        {valueFacts === null || !filter ? (
+          <section className="ask-column" aria-label="Value-driven">
+            <ColumnHead title="Value-driven" />
+            <p className="ask-muted ask-column-empty">
+              Pick a domain, node or goal in the value-driven filter to see only the
+              results tied to that part of the value chain.
+            </p>
+          </section>
+        ) : (
+          <Column
+            title="Value-driven"
+            note={`${[...filter.domains, ...filter.nodes, ...filter.goals].join(', ')} · ${plural(filter.removed, 'result')} left out`}
+            facts={valueFacts}
+            empty="None of these results is tagged with that part of the value chain."
+            vctApi={vctApi}
+          />
+        )}
+      </div>
 
       <footer className="mono ask-footer">
         <span>trace {answer.trace_id ?? 'none'}</span>
         {metadata.trace_ids.length > 0 && (
-          <span>layer traces {metadata.trace_ids.join(', ')}</span>
+          <span>memory trace {metadata.trace_ids.join(', ')}</span>
         )}
         <span>answered {answer.answered_at}</span>
       </footer>
@@ -72,52 +69,43 @@ export default function AskAnswer({ answer, who, compare = false, vctApi }: Prop
   )
 }
 
-function LayerSection({
-  layer,
-  compare,
+function ColumnHead({ title, count }: { title: string; count?: number }) {
+  return (
+    <header className="ask-column-head">
+      <h3>{title}</h3>
+      {count !== undefined && <span className="mono ask-count">{count}</span>}
+    </header>
+  )
+}
+
+function Column({
+  title,
+  note,
+  facts,
+  empty,
   vctApi,
 }: {
-  layer: AskLayer
-  compare: boolean
+  title: string
+  note: string
+  facts: AskFact[]
+  empty: string
   vctApi?: VctApi
 }) {
-  const removed = compare ? (layer.removed ?? []) : []
   return (
-    <section
-      className="ask-layer"
-      aria-label={`${LAYER_LABELS[layer.layer]} ${layer.area}`}
-    >
-      <header className="ask-layer-head">
-        <h3>
-          {LAYER_LABELS[layer.layer]} <span className="mono ask-area">{layer.area}</span>
-          {layer.layer === 'personal' && layer.owner && (
-            <span className="ask-owner"> · {layer.owner}</span>
-          )}
-        </h3>
-        <span className="mono ask-count">{layer.facts.length}</span>
-      </header>
-      {/* One layer failing still lets the others answer. */}
-      {layer.error ? (
-        <p className="error">Recall failed for this layer: {layer.error}</p>
-      ) : layer.facts.length === 0 ? (
-        <p className="ask-muted">Nothing found in {layer.area}</p>
-      ) : (
-        <ul className="ask-facts">
-          {layer.facts.map((fact) => (
-            <FactRow key={fact.source.hit_id} fact={fact} vctApi={vctApi} />
-          ))}
-        </ul>
-      )}
-      {removed.length > 0 && (
-        <div className="vct-removed">
-          <p className="ask-muted">Removed by the filter ({removed.length})</p>
-          <ul className="ask-facts">
-            {removed.map((fact) => (
-              <FactRow key={fact.source.hit_id} fact={fact} removed />
+    <section className="ask-column" aria-label={title}>
+      <ColumnHead title={title} count={facts.length} />
+      <p className="mono ask-muted ask-column-note">{note}</p>
+      <div className="ask-results">
+        {facts.length === 0 ? (
+          <p className="ask-muted">{empty}</p>
+        ) : (
+          <ul className="ask-facts" aria-label={`${title} results`}>
+            {facts.map((fact) => (
+              <FactRow key={fact.source.hit_id} fact={fact} vctApi={vctApi} />
             ))}
           </ul>
-        </div>
-      )}
+        )}
+      </div>
     </section>
   )
 }

@@ -115,6 +115,7 @@ function fakeApi(overrides: Partial<VctApi> = {}): VctApi {
     tagger: vi.fn<VctApi['tagger']>(),
     runTagger: vi.fn<VctApi['runTagger']>(),
     previewOnboarding: vi.fn<VctApi['previewOnboarding']>(),
+    myOnboarding: vi.fn<VctApi['myOnboarding']>(),
     userOnboarding: vi.fn<VctApi['userOnboarding']>(),
     setUserNodes: vi.fn<VctApi['setUserNodes']>(),
     ...overrides,
