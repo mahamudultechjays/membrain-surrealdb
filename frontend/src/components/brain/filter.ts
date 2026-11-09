@@ -95,6 +95,8 @@ export interface RecordRow extends RowBase {
   vct?: FactTags | null
   /** False until the VCT tagger has handled the fact. */
   vct_tagged?: boolean
+  /** False when the tagger judged the fact not business. */
+  vct_business?: boolean
 }
 
 /** A memory chunk: the text of one captured turn. */
@@ -272,6 +274,7 @@ export function toRows(
       origin: originOf(fact.source),
       vct: fact.vct ?? null,
       vct_tagged: fact.vct_tagged ?? false,
+      vct_business: fact.vct_business ?? true,
     })),
     ...entity.relations.map((relation): RecordRow => ({
       id: `relation:${relation.id}`,

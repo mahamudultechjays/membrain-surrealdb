@@ -27,6 +27,8 @@ export interface FactTags {
 export interface FactTagDetail {
   fact_id: string
   scope: string
+  /** False when the tagger judged it not business; adding a tag makes it business. */
+  business: boolean
   /** Rank order: the first is active, the rest are the tagger's alternatives. */
   nodes: TagRef[]
   goals: TagRef[]
@@ -60,6 +62,7 @@ export interface VctCoverage {
   scopes: string[]
   tagged_facts: number
   without_goal: number
+  not_business: number
   nodes: { id: string; facts: number }[]
   goals: { id: string; facts: number }[]
   /** One per domain x section that holds map nodes; facts 0 is a gap. */
@@ -73,6 +76,7 @@ export interface TaggerRun {
   listed: number
   new: number
   tagged: number
+  not_business: number
   carried: number
   failed: number
   capped: boolean
@@ -89,6 +93,7 @@ export interface TaggerStatus {
   current: TaggerRun | null
   last: TaggerRun | null
   tagged_facts: number
+  not_business: number
   stats: {
     days: number
     edits: number
@@ -126,7 +131,8 @@ export interface VctApi {
   ): Promise<FactTagDetail>
   coverage(signal?: AbortSignal): Promise<VctCoverage>
   tagger(signal?: AbortSignal): Promise<TaggerStatus>
-  runTagger(): Promise<TaggerStatus>
+  /** `retag` re-tags every fact in the tagged spaces; a person's tags stay. */
+  runTagger(retag?: boolean): Promise<TaggerStatus>
   /** Match a description of someone's work to VCT nodes; nothing is saved. */
   previewOnboarding(primaryWork: string): Promise<OnboardingPreview>
   /** Admin: a user's onboarding, and replacing their nodes. */
@@ -142,7 +148,8 @@ export const vctApi: VctApi = {
   editTag: (factId, edit) => apiPut<FactTagDetail>(fact(factId), edit),
   coverage: (signal) => apiGet<VctCoverage>('/api/v1/vct/coverage', { signal }),
   tagger: (signal) => apiGet<TaggerStatus>('/api/v1/admin/vct/tagger', { signal }),
-  runTagger: () => apiPost<TaggerStatus>('/api/v1/admin/vct/tagger/run'),
+  runTagger: (retag = false) =>
+    apiPost<TaggerStatus>(`/api/v1/admin/vct/tagger/run${retag ? '?retag=true' : ''}`),
   previewOnboarding: (primaryWork) =>
     apiPost<OnboardingPreview>('/api/v1/onboarding/preview', {
       primary_work: primaryWork,

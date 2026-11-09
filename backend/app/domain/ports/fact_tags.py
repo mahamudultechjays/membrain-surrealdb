@@ -4,6 +4,8 @@ Only fact ids and tags are kept here, never fact text: the facts themselves stay
 in Agent Memory. A fact gets up to 3 node and 3 goal tags; rank 1 is the active
 tag that filters use, ranks 2-3 are alternatives shown in the editor. Tags set
 by a person (source "user") are never overwritten by the tagger.
+A fact the tagger judges "not business" (a decoy passage ranked first) is
+processed but gets no tags, until a person adds one.
 """
 
 from dataclasses import dataclass, field
@@ -56,16 +58,28 @@ class FactTagRepository(Protocol):
         later removed every tag)."""
         ...
 
+    async def not_business(self, fact_ids: list[str]) -> set[str]:
+        """Which of these facts the tagger marked "not business"."""
+        ...
+
     async def scope_of(self, fact_id: str) -> str | None:
         """The scope a processed fact belongs to, or None if never processed."""
         ...
 
     async def save_auto(
-        self, fact_id: str, scope: str, *, nodes: list[str], goals: list[str], version: str
+        self,
+        fact_id: str,
+        scope: str,
+        *,
+        nodes: list[str],
+        goals: list[str],
+        version: str,
+        business: bool = True,
     ) -> None:
         """Store the tagger's ranked matches and mark the fact processed.
 
-        A kind that already has a tag set by a person is left untouched.
+        A kind that already has a tag set by a person is left untouched. With
+        `business` False the tagger's own tags are cleared instead.
         """
         ...
 
@@ -92,12 +106,14 @@ class FactTagRepository(Protocol):
         """How many facts carry each rank 1 tag, over these scopes only."""
         ...
 
-    async def totals(self, scopes: list[str]) -> tuple[int, int]:
-        """(processed facts, processed facts with no goal) over these scopes."""
+    async def totals(self, scopes: list[str]) -> tuple[int, int, int]:
+        """(processed facts, business facts with no goal, not-business facts)
+        over these scopes."""
         ...
 
     async def without(self, kind: TagKind, scopes: list[str], limit: int, offset: int) -> list[str]:
-        """Processed fact ids in these scopes with no tag of this kind, newest first."""
+        """Processed business fact ids in these scopes with no tag of this kind,
+        newest first."""
         ...
 
     async def feedback_stats(self, since: str) -> FeedbackStats:

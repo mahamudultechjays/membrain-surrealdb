@@ -20,7 +20,8 @@ CREATE TABLE IF NOT EXISTS tagged_facts (
     fact_id        TEXT PRIMARY KEY,
     scope          TEXT NOT NULL,
     tagger_version TEXT NOT NULL,
-    tagged_at      TEXT NOT NULL
+    tagged_at      TEXT NOT NULL,
+    business       INTEGER NOT NULL DEFAULT 1
 );
 CREATE INDEX IF NOT EXISTS tagged_facts_scope ON tagged_facts (scope, tagged_at);
 CREATE TABLE IF NOT EXISTS fact_tags (
@@ -107,9 +108,17 @@ def _accept(db: sqlite3.Connection, fact_id: str, kind: TagKind, user: str) -> N
     _log(db, fact_id, kind, "accept", top[0], top[0], top[1], user)
 
 
+def _add_business_column(db: sqlite3.Connection) -> None:
+    """Files made before 9 Nov lack tagged_facts.business; every fact counted as business."""
+    columns = {row[1] for row in db.execute("PRAGMA table_info(tagged_facts)")}
+    if "business" not in columns:
+        db.execute("ALTER TABLE tagged_facts ADD COLUMN business INTEGER NOT NULL DEFAULT 1")
+
+
 class SqliteFactTags(SqliteStore):
     def __init__(self, path: str | Path) -> None:
         super().__init__(path, _SCHEMA)
+        self._run(_add_business_column)
 
     async def tags_for(self, fact_ids: list[str]) -> dict[str, list[FactTag]]:
         if not fact_ids:
@@ -133,22 +142,45 @@ class SqliteFactTags(SqliteStore):
         )
         return {row[0] for row in rows}
 
+    async def not_business(self, fact_ids: list[str]) -> set[str]:
+        if not fact_ids:
+            return set()
+        rows = await self._query(
+            "SELECT fact_id FROM tagged_facts "
+            f"WHERE business = 0 AND fact_id IN ({_marks(fact_ids)})",
+            tuple(fact_ids),
+        )
+        return {row[0] for row in rows}
+
     async def scope_of(self, fact_id: str) -> str | None:
         rows = await self._query("SELECT scope FROM tagged_facts WHERE fact_id = ?", (fact_id,))
         return str(rows[0][0]) if rows else None
 
     async def save_auto(
-        self, fact_id: str, scope: str, *, nodes: list[str], goals: list[str], version: str
+        self,
+        fact_id: str,
+        scope: str,
+        *,
+        nodes: list[str],
+        goals: list[str],
+        version: str,
+        business: bool = True,
     ) -> None:
         now = _now()
+        if not business:
+            nodes, goals = [], []
 
         def work(db: sqlite3.Connection) -> None:
+            # A person's tag means it is business, whatever the tagger thinks.
+            has_user = db.execute(
+                "SELECT 1 FROM fact_tags WHERE fact_id = ? AND source = 'user'", (fact_id,)
+            ).fetchone()
             db.execute(
-                "INSERT INTO tagged_facts (fact_id, scope, tagger_version, tagged_at) "
-                "VALUES (?, ?, ?, ?) ON CONFLICT (fact_id) DO UPDATE SET "
+                "INSERT INTO tagged_facts (fact_id, scope, tagger_version, tagged_at, business) "
+                "VALUES (?, ?, ?, ?, ?) ON CONFLICT (fact_id) DO UPDATE SET "
                 "scope = excluded.scope, tagger_version = excluded.tagger_version, "
-                "tagged_at = excluded.tagged_at",
-                (fact_id, scope, version, now),
+                "tagged_at = excluded.tagged_at, business = excluded.business",
+                (fact_id, scope, version, now, int(business or bool(has_user))),
             )
             for kind, tags in (("node", nodes), ("goal", goals)):
                 user_set = db.execute(
@@ -203,6 +235,7 @@ class SqliteFactTags(SqliteStore):
                 f"INSERT INTO fact_tags ({_COLUMNS}) VALUES (?, ?, ?, ?, 1, 'user', NULL, ?, ?)",
                 (fact_id, scope, kind, tag, user, _now()),
             )
+            db.execute("UPDATE tagged_facts SET business = 1 WHERE fact_id = ?", (fact_id,))
             _log(db, fact_id, kind, "change" if old else "add", old, tag, version, user)
 
         await self._write(work)
@@ -235,23 +268,24 @@ class SqliteFactTags(SqliteStore):
         )
         return [TagCount(kind, tag, n) for kind, tag, n in rows]
 
-    async def totals(self, scopes: list[str]) -> tuple[int, int]:
+    async def totals(self, scopes: list[str]) -> tuple[int, int, int]:
         if not scopes:
-            return (0, 0)
+            return (0, 0, 0)
         rows = await self._query(
-            "SELECT COUNT(*), COALESCE(SUM(NOT EXISTS ("
-            "SELECT 1 FROM fact_tags f WHERE f.fact_id = t.fact_id AND f.kind = 'goal')), 0) "
+            "SELECT COUNT(*), COALESCE(SUM(t.business = 1 AND NOT EXISTS ("
+            "SELECT 1 FROM fact_tags f WHERE f.fact_id = t.fact_id AND f.kind = 'goal')), 0), "
+            "COALESCE(SUM(t.business = 0), 0) "
             f"FROM tagged_facts t WHERE t.scope IN ({_marks(scopes)})",
             tuple(scopes),
         )
-        return (int(rows[0][0]), int(rows[0][1]))
+        return (int(rows[0][0]), int(rows[0][1]), int(rows[0][2]))
 
     async def without(self, kind: TagKind, scopes: list[str], limit: int, offset: int) -> list[str]:
         if not scopes:
             return []
         rows = await self._query(
             "SELECT t.fact_id FROM tagged_facts t "
-            f"WHERE t.scope IN ({_marks(scopes)}) AND NOT EXISTS ("
+            f"WHERE t.scope IN ({_marks(scopes)}) AND t.business = 1 AND NOT EXISTS ("
             "SELECT 1 FROM fact_tags f WHERE f.fact_id = t.fact_id AND f.kind = ?) "
             "ORDER BY t.tagged_at DESC, t.fact_id LIMIT ? OFFSET ?",
             (*scopes, kind, limit, offset),

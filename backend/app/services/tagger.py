@@ -6,8 +6,11 @@ and for every fact not yet processed:
 1. carries a person's tags over from the fact it superseded, if any;
 2. recalls the fact's text against the node passages and the goal passages;
 3. keeps the first 3 distinct ids of each and saves them as "auto".
-Recall scores are rank positions, not similarity, so matches are kept by order.
-Tags a person set are never replaced. The scope list is an allowlist: the
+Recall scores are rank positions, not similarity, so matches are kept by order
+and there is no score threshold. Instead the node scope also holds a few
+"not business" decoy passages (DECOYS): when one ranks first, the fact is
+marked not business and gets no node or goal (decoy test, 9 Nov: 0 of 33
+business facts dropped). Tags a person set are never replaced. The scope list is an allowlist: the
 matcher scopes and lab scopes are never tagged, even when listed.
 """
 
@@ -37,9 +40,37 @@ TOP = 3
 _RECALL_K = 10
 _RECALL_CONCURRENCY = 4  # 16 recalls at once timed out at the 30 s client limit
 _SEED_CONCURRENCY = 8
-_NODE_TAG = re.compile(r"VCT node \[([a-z0-9-]+)\]")
-_GOAL_TAG = re.compile(r"VCT goal \[([a-z0-9-]+)\]")
+_NODE_TAG = re.compile(r"VCT (node|none) \[([a-z0-9-]+)\]")
+_GOAL_TAG = re.compile(r"VCT (goal) \[([a-z0-9-]+)\]")
+# What _match returns when a decoy ranks first.
+NOT_BUSINESS = "<not-business>"
 NEVER_TAGGED = ("org/spreetail/vct", "org/spreetail/lab")
+
+# Generic "not business" passages stored beside the nodes. Kept broad on purpose:
+# they are not tuned to one dataset.
+DECOYS: dict[str, str] = {
+    "dev": "Software engineering work: code, commits, commit messages, branches, pull "
+    "requests, pushed, uncommitted, tests passing, frontend, backend, localhost, bugs, "
+    "deployments, servers, latency, versions, phases, status of a build.",
+    "api": "Apps and their APIs: endpoints, routes, URLs, pages, tabs, screens, buttons, "
+    "checkboxes, output formats, purposes of a feature, how a tool behaves.",
+    "tools": "Files and links: artifacts, documents, PDFs, HTML pages, downloads folder, "
+    "file locations, page counts, drafts, write-ups.",
+    "memory": "The memory system itself: Agent Memory, recall, chat, reflect, consolidate, "
+    "elaborate, scopes, layers, lab runs, fact counts, attribute and relation counts, "
+    "extraction, Membrain.",
+    "account": "Accounts and access: emails, passwords, API keys, permissions, access "
+    "levels, admin rights, login, user names, display names.",
+    "people": "People and the team: who collaborates with whom, assigned tasks, standups, "
+    "meetings, proposals and opinions about the project, preferences of a person.",
+    "personal": "Personal life and small talk: lunch, work from home days, favourite "
+    "things, hobbies, weather, travel, sports, news, birthdays, holidays.",
+}
+
+
+def decoy_text(key: str, description: str) -> str:
+    """A decoy passage; "VCT none [key]" ranking first means not business."""
+    return f"VCT none [{key}] {description}"
 
 
 def goal_text(goal: VctGoal) -> str:
@@ -70,6 +101,8 @@ class TaggerRun:
     listed: int = 0
     new: int = 0
     tagged: int = 0
+    # Of the tagged facts, how many a decoy marked "not business".
+    not_business: int = 0
     # User tags carried over from a superseded fact.
     carried: int = 0
     failed: int = 0
@@ -121,21 +154,25 @@ class TaggerService:
     def running(self) -> bool:
         return self._lock.locked() or (self._task is not None and not self._task.done())
 
-    def start(self) -> bool:
-        """Start a run in the background; False when one is already running."""
+    def start(self, *, retag: bool = False) -> bool:
+        """Start a run in the background; False when one is already running.
+
+        `retag` re-tags every fact in the tagged scopes, not only new ones;
+        tags a person set still stay.
+        """
         if self.running:
             return False
-        self._task = asyncio.create_task(self._quiet_run())
+        self._task = asyncio.create_task(self._quiet_run(retag=retag))
         return True
 
-    async def run(self) -> TaggerRun:
+    async def run(self, *, retag: bool = False) -> TaggerRun:
         if self._lock.locked():
             raise TaggerBusyError
         async with self._lock:
             run = TaggerRun(started_at=_now(), scopes=list(self.scopes))
             self.current = run
             try:
-                await self._tag_new(run)
+                await self._tag_new(run, retag=retag)
             except (MemoryNotConfiguredError, MemoryUnavailableError) as exc:
                 run.error = str(exc) or type(exc).__name__
                 logger.warning("VCT tagger run stopped: %s", run.error)
@@ -143,10 +180,12 @@ class TaggerService:
                 run.finished_at = _now()
                 self.current, self.last = None, run
             logger.info(
-                "VCT tagger: listed=%d new=%d tagged=%d carried=%d failed=%d capped=%s",
+                "VCT tagger: listed=%d new=%d tagged=%d not_business=%d carried=%d failed=%d "
+                "capped=%s",
                 run.listed,
                 run.new,
                 run.tagged,
+                run.not_business,
                 run.carried,
                 run.failed,
                 run.capped,
@@ -160,6 +199,15 @@ class TaggerService:
             self.next_run_at = next_at.isoformat(timespec="seconds")
             await asyncio.sleep(interval_seconds)
             await self._quiet_run()
+
+    async def seed_decoys(self) -> int:
+        """Store the "not business" decoys in the node scope. Writing them twice
+        is harmless: matching keeps each id once."""
+        await self._registry.ensure(self._nodes_scope)
+        await asyncio.gather(
+            *(self._passages.write(decoy_text(k, d), self._nodes_scope) for k, d in DECOYS.items())
+        )
+        return len(DECOYS)
 
     async def seed_goals(self, *, force: bool = False) -> int:
         """Store every goal as a passage in the goals scope, once."""
@@ -175,29 +223,32 @@ class TaggerService:
         await asyncio.gather(*(write(g) for g in self.map.goals))
         return len(self.map.goals)
 
-    async def _quiet_run(self) -> TaggerRun | None:
+    async def _quiet_run(self, *, retag: bool = False) -> TaggerRun | None:
         try:
-            return await self.run()
+            return await self.run(retag=retag)
         except TaggerBusyError:
             return None
         except Exception:
             logger.exception("VCT tagger run failed")
             return None
 
-    async def _tag_new(self, run: TaggerRun) -> None:
-        todo = await self._untagged(run)
+    async def _tag_new(self, run: TaggerRun, *, retag: bool = False) -> None:
+        todo = await self._untagged(run, retag=retag)
         run.new = len(todo)
         await asyncio.gather(*(self._tag(fact, scope, run) for fact, scope in todo))
 
-    async def _untagged(self, run: TaggerRun) -> list[tuple[ListedFact, str]]:
-        """Facts in the tagged scopes the tagger has not handled, newest first."""
+    async def _untagged(
+        self, run: TaggerRun, *, retag: bool = False
+    ) -> list[tuple[ListedFact, str]]:
+        """Facts in the tagged scopes the tagger has not handled (all of them
+        with `retag`), newest first."""
         todo: list[tuple[ListedFact, str]] = []
         cursor: str | None = None
         for _ in range(self._max_pages):
             page = await self._lister.page(self.scopes, limit=self._page_size, cursor=cursor)
             mine = [(f, s) for f in page.facts if (s := self._scope_of(f))]
             run.listed += len(mine)
-            done = await self._tags.processed([f.id for f, _ in mine])
+            done = set() if retag else await self._tags.processed([f.id for f, _ in mine])
             for fact, scope in mine:
                 if fact.id in done:
                     continue
@@ -221,10 +272,17 @@ class TaggerService:
                 self._match(fact.text, self._nodes_scope, _NODE_TAG, self._is_node),
                 self._match(fact.text, self._goals_scope, _GOAL_TAG, self._is_goal),
             )
+            business = not nodes or nodes[0] != NOT_BUSINESS
             await self._tags.save_auto(
-                fact.id, scope, nodes=nodes, goals=goals, version=self.version
+                fact.id,
+                scope,
+                nodes=[n for n in nodes if n != NOT_BUSINESS],
+                goals=goals,
+                version=self.version,
+                business=business,
             )
             run.tagged += 1
+            run.not_business += 0 if business else 1
         except Exception as exc:
             run.failed += 1
             run.failures.append(fact.id)
@@ -240,8 +298,16 @@ class TaggerService:
         ids: dict[str, None] = {}
         for hit in result.hits:
             found = pattern.search(hit.text or "")
-            if found and known(found.group(1)):
-                ids.setdefault(found.group(1))
+            if not found:
+                continue
+            if found.group(1) == "none":
+                # A decoy: only matters when it ranks above every real match.
+                if not ids:
+                    return [NOT_BUSINESS]
+                continue
+            tag = found.group(found.lastindex or 1)
+            if known(tag):
+                ids.setdefault(tag)
         return list(ids)[:TOP]
 
     def _is_node(self, node_id: str) -> bool:

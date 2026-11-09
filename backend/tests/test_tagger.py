@@ -15,7 +15,7 @@ from app.main import app
 from app.services import vct_map
 from app.services.access import AccessService
 from app.services.onboarding import node_text
-from app.services.tagger import TaggerService, goal_text, taggable
+from app.services.tagger import TaggerService, decoy_text, goal_text, taggable
 from tests.conftest import FakeRegistry, sign_in
 
 ME = "org/spreetail/user/mahamudul_hasan"
@@ -48,6 +48,8 @@ class FakeRecall:
     """Answers with node or goal passages by trigger word, depending on the lens."""
 
     ROUTES: ClassVar[dict[str, tuple[list[str], list[str]]]] = {
+        "lunch": (["none:personal", "mo5"], ["ps-mgmt1"]),
+        "branch": (["sc6", "none:dev"], ["ff-mgmt5"]),
         "freight": (["sc6", "sc6", "zz9", "sc7", "mo1", "sc4"], ["ff-mgmt5", "ff-mgmt3"]),
         "payout": (["mo1", "fi4"], ["ps-mgmt5"]),
     }
@@ -62,7 +64,14 @@ class FakeRecall:
             raise MemoryUnavailableError("timeout")
         nodes, goals = next((v for w, v in self.ROUTES.items() if w in query), ([], []))
         if lens == NODES:
-            texts = [node_text(n) if (n := VMAP.node(i)) else f"VCT node [{i}] ?" for i in nodes]
+            texts = [
+                decoy_text(i[5:], "decoy")
+                if i.startswith("none:")
+                else node_text(n)
+                if (n := VMAP.node(i))
+                else f"VCT node [{i}] ?"
+                for i in nodes
+            ]
         else:
             texts = [goal_text(g) for i in goals if (g := VMAP.goal(i))]
         hits = [RecallHit(f"p{n}", t, "chunk", 0.38) for n, t in enumerate(texts)]
@@ -137,6 +146,56 @@ async def test_a_run_tags_new_facts_in_the_tagged_scopes_only() -> None:
     assert (again.new, again.tagged) == (0, 0)
     assert service.last is again
     assert service.current is None
+
+
+async def test_a_decoy_ranked_first_marks_the_fact_not_business() -> None:
+    tags = SqliteFactTags(":memory:")
+    lister = FakeLister([[_fact("f1", "Team lunch on Friday"), _fact("f2", "branch for freight")]])
+    service = _service(lister, tags=tags)
+
+    run = await service.run()
+
+    assert (run.tagged, run.not_business) == (2, 1)
+    assert await tags.not_business(["f1", "f2"]) == {"f1"}
+    found = await tags.tags_for(["f1", "f2"])
+    assert "f1" not in found
+    # A decoy below a real node is ignored.
+    assert [t.tag for t in found["f2"] if t.kind == "node"] == ["sc6"]
+
+
+async def test_retag_runs_every_fact_again_and_keeps_a_person_s_tags() -> None:
+    tags = SqliteFactTags(":memory:")
+    lister = FakeLister([[_fact("f1", "freight"), _fact("f2", "payout")]])
+    service = _service(lister, tags=tags)
+    await service.run()
+    await tags.set_tag("f2", "node", "fi4", "mahamudul")
+
+    again = await service.run()
+    redo = await service.run(retag=True)
+
+    assert again.new == 0
+    assert (redo.new, redo.tagged) == (2, 2)
+    nodes = [t.tag for t in (await tags.tags_for(["f2"]))["f2"] if t.kind == "node"]
+    assert nodes == ["fi4"]
+
+
+async def test_decoys_are_seeded_into_the_node_scope() -> None:
+    passages = FakePassages()
+    service = TaggerService(
+        SqliteFactTags(":memory:"),
+        FakeLister([]),
+        FakeRecall(),
+        passages,
+        FakeRegistry(),
+        VMAP,
+        scopes=[ME],
+        nodes_scope=NODES,
+        goals_scope=GOALS,
+    )
+
+    assert await service.seed_decoys() == 7
+    assert {scope for _, scope in passages.written} == {NODES}
+    assert all(text.startswith("VCT none [") for text, _ in passages.written)
 
 
 async def test_user_tags_follow_a_superseded_fact() -> None:
@@ -321,9 +380,18 @@ def test_status_reports_corrections_from_the_last_week(
     assert stats["confusions"] == [{"old": "mo1", "new": "fi4", "times": 1}]
 
 
+def test_admin_can_retag_everything(client: TestClient, service: TaggerService) -> None:
+    sign_in(client, "admin@x.com", "Ada Admin")
+    seen: list[bool] = []
+    service.start = lambda retag=False: seen.append(retag) or True  # type: ignore[method-assign]
+
+    assert client.post("/api/v1/admin/vct/tagger/run?retag=true").status_code == 202
+    assert seen == [True]
+
+
 def test_a_second_run_while_running_is_409(client: TestClient, service: TaggerService) -> None:
     sign_in(client, "admin@x.com", "Ada Admin")
-    service.start = lambda: False  # type: ignore[method-assign]
+    service.start = lambda retag=False: False  # type: ignore[method-assign]
 
     assert client.post("/api/v1/admin/vct/tagger/run").status_code == 409
 

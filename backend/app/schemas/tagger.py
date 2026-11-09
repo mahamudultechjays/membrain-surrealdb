@@ -10,6 +10,7 @@ class TaggerRunOut(BaseModel):
     listed: int = Field(description="Facts seen in the tagged scopes.")
     new: int = Field(description="Facts not tagged before this run.")
     tagged: int
+    not_business: int = Field(default=0, description="Tagged facts a decoy marked not business.")
     carried: int = Field(description="Tags a person set, carried to a fact's new version.")
     failed: int
     capped: bool = Field(description="True when the run hit its limit; the rest go next run.")
@@ -42,4 +43,5 @@ class TaggerStatus(BaseModel):
     current: TaggerRunOut | None
     last: TaggerRunOut | None
     tagged_facts: int = 0
+    not_business: int = 0
     stats: TaggerStats | None = None

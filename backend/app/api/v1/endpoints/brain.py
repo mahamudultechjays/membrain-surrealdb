@@ -103,6 +103,7 @@ async def list_brain(
     vct = _Vct(
         tags={fid: active_tags(rows) for fid, rows in stored.items()},
         processed=await tag_store.processed(fact_ids),
+        not_business=await tag_store.not_business(fact_ids),
         vmap=vmap,
     )
     entities = [_entity_out(e, found.names, vct) for e in found.entities]
@@ -199,9 +200,16 @@ async def list_brain(
 class _Vct:
     """The VCT tags of the listed facts, looked up once per request."""
 
-    def __init__(self, tags: dict[str, HitTags], processed: set[str], vmap: VctMap) -> None:
+    def __init__(
+        self,
+        tags: dict[str, HitTags],
+        processed: set[str],
+        not_business: set[str],
+        vmap: VctMap,
+    ) -> None:
         self.tags = tags
         self.processed = processed
+        self.not_business = not_business
         self.vmap = vmap
 
 
@@ -234,6 +242,7 @@ def _entity_out(entity: brain.EntityView, names: dict[str, str], vct: _Vct) -> B
                 source=_source_out(f.source),
                 vct=fact_tags_out(vct.tags.get(f.id), vct.vmap),
                 vct_tagged=f.id in vct.processed,
+                vct_business=f.id not in vct.not_business,
             )
             for f in entity.facts
         ],

@@ -41,6 +41,8 @@ class BrainFactOut(BaseModel):
     vct: FactTagsOut | None = None
     # False until the VCT tagger has handled the fact.
     vct_tagged: bool = False
+    # False when the tagger judged the fact not business.
+    vct_business: bool = True
 
 
 class BrainRelationOut(BaseModel):

@@ -73,6 +73,7 @@ const FREIGHT = ref('goal', 'ff-mgmt5', 'Carrier & Freight Cost')
 const DETAIL: FactTagDetail = {
   fact_id: 'f1',
   scope: 'org/spreetail/user/mahamudul_hasan',
+  business: true,
   nodes: [TRANSPORT, ref('node', 'fi4', 'Manage Cash & Payouts', 2)],
   goals: [FREIGHT],
 }
@@ -92,12 +93,14 @@ const STATUS: TaggerStatus = {
     listed: 6,
     new: 6,
     tagged: 6,
+    not_business: 2,
     carried: 0,
     failed: 0,
     capped: false,
     error: null,
   },
   tagged_facts: 6,
+  not_business: 2,
   stats: {
     days: 7,
     edits: 4,
@@ -124,6 +127,7 @@ function fakeApi(overrides: Partial<VctApi> = {}): VctApi {
       scopes: ['org/spreetail'],
       tagged_facts: 3,
       without_goal: 1,
+      not_business: 1,
       nodes: [{ id: 'sc6', facts: 2 }],
       goals: [{ id: 'ff-mgmt5', facts: 2 }],
       cells: [
@@ -172,6 +176,9 @@ describe('VctTags', () => {
 
     rerender(<VctTags tags={null} />)
     expect(screen.queryByText('tagging within 3 h')).not.toBeInTheDocument()
+
+    rerender(<VctTags tags={null} business={false} />)
+    expect(screen.getByText('not business')).toBeInTheDocument()
   })
 })
 
@@ -392,7 +399,9 @@ describe('TaggerPanel', () => {
     render(<TaggerPanel api={api} />)
 
     expect(await screen.findByText(/25% of 4/)).toBeInTheDocument()
-    expect(screen.getByText(/6 seen · 6 new · 6 tagged · 0 failed/)).toBeInTheDocument()
+    expect(
+      screen.getByText(/6 seen · 6 new · 6 tagged · 2 not business · 0 failed/),
+    ).toBeInTheDocument()
     expect(screen.getByText('mo1 → fi4 · 1')).toBeInTheDocument()
 
     // From here on the backend reports the run in progress.
@@ -400,6 +409,16 @@ describe('TaggerPanel', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Run now' }))
     expect(await screen.findByRole('button', { name: 'Running…' })).toBeDisabled()
     expect(api.runTagger).toHaveBeenCalledTimes(1)
+    expect(api.runTagger).toHaveBeenCalledWith(false)
+  })
+
+  it('re-tags everything on request', async () => {
+    const api = fakeApi()
+    render(<TaggerPanel api={api} />)
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Re-tag all' }))
+
+    await waitFor(() => expect(api.runTagger).toHaveBeenCalledWith(true))
   })
 
   it('shows errors', async () => {

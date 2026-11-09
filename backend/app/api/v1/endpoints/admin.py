@@ -167,12 +167,16 @@ async def seed_vct(
     onboarding: OnboardingServiceDep,
     tagger: TaggerServiceDep,
     force: bool = False,
+    with_decoys: bool = False,
 ) -> SeedResponse:
     """Store the VCT nodes and goals in their matcher scopes, once. `seeded: 0`
-    means they were already there; `force` writes them again (duplicates are harmless)."""
+    means they were already there; `force` writes them again (duplicates are harmless).
+    The "not business" decoys go in with the nodes, or alone with `with_decoys`."""
     try:
         seeded = await onboarding.seed(force=force)
         goals = await tagger.seed_goals(force=force)
+        # Decoys live beside the nodes; add them whenever the nodes are written.
+        decoys = await tagger.seed_decoys() if seeded or force or with_decoys else 0
     except (MemoryNotConfiguredError, MemoryUnavailableError) as exc:
         raise _unavailable(exc) from exc
     _log(request, admin.email, "vct_seed", None, settings.VCT_SCOPE, f"{seeded}/{goals}")
@@ -181,6 +185,7 @@ async def seed_vct(
         seeded=seeded,
         goals_scope=settings.VCT_GOALS_SCOPE,
         goals_seeded=goals,
+        decoys_seeded=decoys,
     )
 
 
@@ -195,19 +200,25 @@ async def tagger_status(
 
 @router.post("/vct/tagger/run", response_model=TaggerStatus, status_code=status.HTTP_202_ACCEPTED)
 async def run_tagger(
-    request: Request, admin: AdminUserDep, tagger: TaggerServiceDep, tags: FactTagRepositoryDep
+    request: Request,
+    admin: AdminUserDep,
+    tagger: TaggerServiceDep,
+    tags: FactTagRepositoryDep,
+    retag: bool = False,
 ) -> TaggerStatus:
-    """Start a tagger run now, in the background; 409 while one is running."""
-    if not tagger.start():
+    """Start a tagger run now, in the background; 409 while one is running.
+    `retag` re-tags every fact in the tagged scopes; a person's tags stay."""
+    if not tagger.start(retag=retag):
         raise HTTPException(status.HTTP_409_CONFLICT, "The VCT tagger is already running.")
-    _log(request, admin.email, "vct_tagger_run", None, ",".join(tagger.scopes), None)
+    action = "vct_tagger_retag" if retag else "vct_tagger_run"
+    _log(request, admin.email, action, None, ",".join(tagger.scopes), None)
     return await _tagger_status(tagger, tags)
 
 
 async def _tagger_status(tagger: TaggerService, tags: FactTagRepository) -> TaggerStatus:
     since = (datetime.now(UTC) - timedelta(days=STATS_DAYS)).isoformat(timespec="seconds")
     feedback = await tags.feedback_stats(since)
-    tagged, _ = await tags.totals(tagger.scopes)
+    tagged, _, not_business = await tags.totals(tagger.scopes)
     return TaggerStatus(
         enabled=settings.TAGGER_ENABLED,
         version=tagger.version,
@@ -218,6 +229,7 @@ async def _tagger_status(tagger: TaggerService, tags: FactTagRepository) -> Tagg
         current=_run_out(tagger.current),
         last=_run_out(tagger.last),
         tagged_facts=tagged,
+        not_business=not_business,
         stats=TaggerStats(
             days=STATS_DAYS,
             edits=feedback.edits,
@@ -240,6 +252,7 @@ def _run_out(run: TaggerRun | None) -> TaggerRunOut | None:
         listed=run.listed,
         new=run.new,
         tagged=run.tagged,
+        not_business=run.not_business,
         carried=run.carried,
         failed=run.failed,
         capped=run.capped,

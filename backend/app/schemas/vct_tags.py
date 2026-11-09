@@ -38,6 +38,8 @@ class TagEditRequest(BaseModel):
 class FactTagDetail(BaseModel):
     fact_id: str
     scope: str
+    # False when the tagger judged it not business; adding a tag makes it business.
+    business: bool = True
     # Rank order: [0] is active, the rest are the tagger's alternatives.
     nodes: list[TagRef]
     goals: list[TagRef]
@@ -60,6 +62,7 @@ class VctCoverage(BaseModel):
     scopes: list[str]
     tagged_facts: int
     without_goal: int
+    not_business: int = 0
     nodes: list[CoverageCount]
     goals: list[CoverageCount]
     cells: list[CoverageCell]

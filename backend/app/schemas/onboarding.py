@@ -97,3 +97,4 @@ class SeedResponse(BaseModel):
     seeded: int
     goals_scope: str | None = None
     goals_seeded: int = 0
+    decoys_seeded: int = 0

@@ -255,9 +255,10 @@ def test_admin_seeds_views_and_overrides(client: TestClient, passages: FakePassa
         "seeded": 41,
         "goals_scope": GOALS,
         "goals_seeded": 42,
+        "decoys_seeded": 7,
     }
-    assert len(passages.written) == 83
-    assert passages.written[-1][1] == GOALS
+    assert len(passages.written) == 90
+    assert sum(1 for text, _ in passages.written if text.startswith("VCT none")) == 7
     assert [n["id"] for n in viewed.json()["nodes"]] == ["sc6"]
     assert changed.json()["team"] == "Ops"
     assert [(n["id"], n["confirmed_by"]) for n in changed.json()["nodes"]] == [

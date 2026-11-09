@@ -98,10 +98,11 @@ async def coverage(
     vmap: VctMapDep,
 ) -> VctCoverage:
     """How many facts carry each node and goal, and a domain x section grid,
-    over the scopes the caller may read. A cell with nodes but no facts is a gap."""
+    over the scopes the caller may read. A cell with nodes but no facts is a gap.
+    Facts marked not business are counted apart and never in the grid."""
     scopes = sorted({g.scope_path for g in await access.readable(user.email)})
     counts = await tags.counts(scopes)
-    tagged, without_goal = await tags.totals(scopes)
+    tagged, without_goal, not_business = await tags.totals(scopes)
     by_node = {c.tag: c.facts for c in counts if c.kind == "node"}
     nodes_in: Counter[tuple[str, str]] = Counter()
     facts_in: Counter[tuple[str, str]] = Counter()
@@ -113,6 +114,7 @@ async def coverage(
         scopes=scopes,
         tagged_facts=tagged,
         without_goal=without_goal,
+        not_business=not_business,
         nodes=[CoverageCount(id=c.tag, facts=c.facts) for c in counts if c.kind == "node"],
         goals=[CoverageCount(id=c.tag, facts=c.facts) for c in counts if c.kind == "goal"],
         cells=[
@@ -141,6 +143,7 @@ async def _detail(fid: str, scope: str, tags: FactTagRepository, vmap: VctMap) -
     return FactTagDetail(
         fact_id=fid,
         scope=scope,
+        business=fid not in await tags.not_business([fid]),
         nodes=[r for r in refs if r.kind == "node"],
         goals=[r for r in refs if r.kind == "goal"],
     )

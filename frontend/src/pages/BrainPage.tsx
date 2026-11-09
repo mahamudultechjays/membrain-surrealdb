@@ -546,6 +546,7 @@ export default function BrainPage({ me, api = brainApi, vctApi }: Props) {
               value: r.value,
               tags: r.vct,
               tagged: r.vct_tagged ?? false,
+              business: r.vct_business ?? true,
             }))}
         />
       )}
@@ -1145,7 +1146,11 @@ function RecordLine({ row }: { row: RecordRow }) {
       </span>
       <span className="brain-value">{row.value}</span>
       {row.kind === 'fact' && !row.replaced && (
-        <VctTags tags={row.vct} tagged={row.vct_tagged ?? false} />
+        <VctTags
+          tags={row.vct}
+          tagged={row.vct_tagged ?? false}
+          business={row.vct_business ?? true}
+        />
       )}
     </span>
   )

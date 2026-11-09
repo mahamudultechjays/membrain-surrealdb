@@ -28,11 +28,23 @@ const percent = (weight: number) => `${(weight * 100).toFixed(1)}%`
 export function VctTags({
   tags,
   tagged = true,
+  business = true,
 }: {
   tags: FactTags | null | undefined
   tagged?: boolean
+  /** False when the tagger judged the fact not business. */
+  business?: boolean
 }) {
   if (!tags) {
+    if (tagged && !business)
+      return (
+        <span
+          className="tag vct-pending"
+          title="The tagger found no value-chain match; add a tag if it is business"
+        >
+          not business
+        </span>
+      )
     return tagged ? null : (
       <span className="tag vct-pending" title="The VCT tagger runs every 3 hours">
         tagging within 3 h
@@ -142,6 +154,11 @@ export function TagEditor({
   const { detail } = load
   return (
     <div className="vct-editor">
+      {!detail.business && (
+        <p className="vct-muted">
+          The tagger marked this fact not business. Add a node or goal if it is.
+        </p>
+      )}
       <KindEditor
         kind="node"
         label="Node"
@@ -381,6 +398,8 @@ export interface CoverageFact {
   value: string
   tags: FactTags | null | undefined
   tagged: boolean
+  /** False when the tagger judged it not business: left out of the gaps. */
+  business?: boolean
 }
 
 /**
@@ -413,7 +432,9 @@ export function VctCoverageView({
   }, [api])
 
   const tagsOf = (f: CoverageFact) => (f.id in changed ? changed[f.id] : f.tags)
-  const withoutGoal = facts.filter((f) => f.tagged && !tagsOf(f)?.goal)
+  const withoutGoal = facts.filter(
+    (f) => f.tagged && !tagsOf(f)?.goal && (f.business !== false || f.id in changed),
+  )
   const pending = facts.filter((f) => !f.tagged).length
 
   return (
@@ -427,8 +448,8 @@ export function VctCoverageView({
         <>
           <p className="vct-muted">
             {coverage.tagged_facts} tagged facts in the spaces you can read ·{' '}
-            {coverage.without_goal} without a goal · {pending} listed here waiting for the
-            tagger
+            {coverage.without_goal} without a goal · {coverage.not_business} not business
+            · {pending} listed here waiting for the tagger
           </p>
           <div className="vct-grid-wrap">
             <table className="vct-grid">
@@ -558,10 +579,10 @@ export function TaggerPanel({ api = vctApi }: { api?: VctApi }) {
     }
   }, [api, running])
 
-  const run = () => {
+  const run = (retag = false) => {
     setFailure(null)
     api
-      .runTagger()
+      .runTagger(retag)
       .then(setStatus)
       .catch((error: unknown) => setFailure(messageOf(error, 'Failed')))
   }
@@ -572,9 +593,25 @@ export function TaggerPanel({ api = vctApi }: { api?: VctApi }) {
     <section className="panel vct-tagger" aria-labelledby="vct-tagger-heading">
       <div className="vct-tagger-head">
         <h2 id="vct-tagger-heading">VCT tagger</h2>
-        <button type="button" className="btn" disabled={!status || running} onClick={run}>
-          {running ? 'Running…' : 'Run now'}
-        </button>
+        <div className="vct-current">
+          <button
+            type="button"
+            className="btn-secondary"
+            disabled={!status || running}
+            title="Tag every fact in the tagged spaces again; tags people set stay"
+            onClick={() => run(true)}
+          >
+            Re-tag all
+          </button>
+          <button
+            type="button"
+            className="btn"
+            disabled={!status || running}
+            onClick={() => run()}
+          >
+            {running ? 'Running…' : 'Run now'}
+          </button>
+        </div>
       </div>
       {failure && (
         <p className="error" role="alert">
@@ -603,6 +640,10 @@ export function TaggerPanel({ api = vctApi }: { api?: VctApi }) {
               <dd>{status.tagged_facts}</dd>
             </div>
             <div>
+              <dt>Not business</dt>
+              <dd>{status.not_business}</dd>
+            </div>
+            <div>
               <dt>Corrected ({stats?.days ?? 7} days)</dt>
               <dd>
                 {stats?.correction_rate == null
@@ -614,8 +655,8 @@ export function TaggerPanel({ api = vctApi }: { api?: VctApi }) {
           {last && (
             <p className="mono vct-muted">
               {running ? 'running: ' : 'last run: '}
-              {last.listed} seen · {last.new} new · {last.tagged} tagged · {last.failed}{' '}
-              failed
+              {last.listed} seen · {last.new} new · {last.tagged} tagged ·{' '}
+              {last.not_business} not business · {last.failed} failed
               {last.carried ? ` · ${last.carried} carried` : ''}
               {last.capped ? ' · capped, the rest next run' : ''}
               {last.error ? ` · ${last.error}` : ''}

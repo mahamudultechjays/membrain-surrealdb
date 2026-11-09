@@ -45,6 +45,8 @@ export interface BrainFact extends BrainExtras {
   vct?: FactTags | null
   /** False until the VCT tagger has handled the fact. */
   vct_tagged?: boolean
+  /** False when the tagger judged the fact not business. */
+  vct_business?: boolean
 }
 
 export interface BrainRelation extends BrainExtras {

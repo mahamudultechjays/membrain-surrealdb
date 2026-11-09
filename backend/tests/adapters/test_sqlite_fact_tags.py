@@ -163,9 +163,49 @@ async def test_counts_and_gaps_only_cover_the_given_scopes() -> None:
     assert await repo.without("goal", [ME], limit=10, offset=0) == ["f4"]
     assert await repo.without("goal", [OTHER], limit=10, offset=0) == []
     assert await repo.without("goal", [], limit=10, offset=0) == []
-    assert await repo.totals([ME]) == (3, 1)
-    assert await repo.totals([ME, OTHER]) == (4, 1)
-    assert await repo.totals([]) == (0, 0)
+    assert await repo.totals([ME]) == (3, 1, 0)
+    assert await repo.totals([ME, OTHER]) == (4, 1, 0)
+    assert await repo.totals([]) == (0, 0, 0)
+
+
+async def test_not_business_facts_get_no_tags_until_a_person_adds_one(tmp_path: Path) -> None:
+    repo = SqliteFactTags(tmp_path / "tags.db")
+    await _tagged(repo, "f1")
+    await repo.save_auto("f1", ME, nodes=["sc6"], goals=["ff-mgmt5"], version="v2", business=False)
+    await repo.save_auto("f2", ME, nodes=["sc6"], goals=[], version="v2", business=False)
+
+    assert await repo.tags_for(["f1", "f2"]) == {}
+    assert await repo.not_business(["f1", "f2", "f3"]) == {"f1", "f2"}
+    assert await repo.not_business([]) == set()
+    assert await repo.processed(["f1", "f2"]) == {"f1", "f2"}
+    assert await repo.totals([ME]) == (2, 0, 2)  # not counted as missing a goal
+    assert await repo.without("goal", [ME], limit=10, offset=0) == []
+
+    await repo.set_tag("f2", "goal", "ff-mgmt5", "mahamudul")
+    assert await repo.not_business(["f2"]) == set()
+    # A person's tag keeps it business on the next run, and that tag stays.
+    await repo.save_auto("f2", ME, nodes=[], goals=[], version="v2", business=False)
+    assert await repo.not_business(["f2"]) == set()
+    assert [t.tag for t in (await repo.tags_for(["f2"]))["f2"]] == ["ff-mgmt5"]
+
+
+def test_an_older_file_gains_the_business_column(tmp_path: Path) -> None:
+    import sqlite3
+
+    path = tmp_path / "old.db"
+    db = sqlite3.connect(path)
+    db.execute(
+        "CREATE TABLE tagged_facts (fact_id TEXT PRIMARY KEY, scope TEXT NOT NULL, "
+        "tagger_version TEXT NOT NULL, tagged_at TEXT NOT NULL)"
+    )
+    db.execute("INSERT INTO tagged_facts VALUES ('f1', 's', 'v1', 'now')")
+    db.commit()
+    db.close()
+
+    SqliteFactTags(path)
+
+    columns = {r[1] for r in sqlite3.connect(path).execute("PRAGMA table_info(tagged_facts)")}
+    assert "business" in columns
 
 
 async def test_feedback_stats_only_count_edits_in_the_window() -> None:
