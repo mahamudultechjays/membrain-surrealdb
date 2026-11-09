@@ -43,6 +43,9 @@ class BrainFactOut(BaseModel):
     vct_tagged: bool = False
     # False when the tagger judged the fact not business.
     vct_business: bool = True
+    # When the tagger last tagged it, and when a person reviewed it (null: not yet).
+    vct_tagged_at: str | None = None
+    vct_reviewed_at: str | None = None
 
 
 class BrainRelationOut(BaseModel):

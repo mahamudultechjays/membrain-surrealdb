@@ -17,13 +17,16 @@ from app.api.deps import (
     is_admin,
 )
 from app.domain.errors import FactNotTaggedError
-from app.domain.ports.fact_tags import FactTagRepository
+from app.domain.ports.fact_tags import FactTag, FactTagRepository, TagKind
 from app.domain.vct import VctMap
 from app.schemas.vct_tags import (
     CoverageCell,
     CoverageCount,
     FactTagDetail,
+    ReviewBulkRequest,
+    ReviewBulkResponse,
     TagEditRequest,
+    TagRef,
     VctCoverage,
     tag_ref,
 )
@@ -58,23 +61,40 @@ async def edit_fact_tags(
     tags: FactTagRepositoryDep,
     vmap: VctMapDep,
 ) -> FactTagDetail:
-    """Change, remove or accept a fact's node or goal. A person's tag is never
-    replaced by the tagger."""
+    """Change, remove or accept a fact's node or goal, or review it. A person's
+    tag is never replaced by the tagger; any action marks the fact reviewed."""
     fid, scope = await _readable(fact_id, user.email, access, tags)
+    kind = body.kind
+    if body.action in ("change", "remove", "accept") and kind is None:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, f"{body.action} needs a kind.")
     try:
-        if body.action == "change":
+        if body.action == "change" and kind is not None:
             tag = (body.tag or "").strip()
-            known = vmap.node(tag) if body.kind == "node" else vmap.goal(tag)
+            known = vmap.node(tag) if kind == "node" else vmap.goal(tag)
             if known is None:
                 raise HTTPException(
                     status.HTTP_422_UNPROCESSABLE_CONTENT,
-                    f"Unknown VCT {body.kind}: {tag or '(none)'}",
+                    f"Unknown VCT {kind}: {tag or '(none)'}",
                 )
-            await tags.set_tag(fid, body.kind, tag, user.email)
-        elif body.action == "remove":
-            await tags.remove(fid, body.kind, user.email)
+            await tags.set_tag(fid, kind, tag, user.email)
+        elif body.action == "remove" and kind is not None:
+            await tags.remove(fid, kind, user.email)
+        elif body.action == "accept" and kind is not None:
+            await tags.accept(fid, kind, user.email)
+        elif body.action == "confirm":
+            await tags.confirm(fid, user.email)
+        elif body.action == "not_business":
+            await tags.mark_not_business(fid, user.email)
+        elif body.action == "keep":
+            await tags.keep(fid, user.email)
         else:
-            await tags.accept(fid, body.kind, user.email)
+            guesses = await tags.guesses(fid)
+            if not guesses:
+                raise HTTPException(
+                    status.HTTP_409_CONFLICT, "No guesses to use; pick a node or goal instead."
+                )
+            for guess_kind, ids in guesses.items():
+                await tags.set_tag(fid, guess_kind, ids[0], user.email)
     except FactNotTaggedError as exc:  # removed between the check and the edit
         raise _not_tagged() from exc
     logger.log(
@@ -83,11 +103,50 @@ async def edit_fact_tags(
         user=user.email,
         fact=fid,
         scope=scope,
-        kind=body.kind,
+        kind=kind,
         action=body.action,
         value=body.tag,
     )
     return await _detail(fid, scope, tags, vmap)
+
+
+@router.post("/facts/review", response_model=ReviewBulkResponse)
+async def review_facts(
+    body: ReviewBulkRequest,
+    request: Request,
+    user: CurrentUserDep,
+    access: AccessServiceDep,
+    tags: FactTagRepositoryDep,
+) -> ReviewBulkResponse:
+    """Review many facts at once ("Confirm all" on a group, or keep them).
+    Facts the caller can't read, or not tagged yet, are skipped."""
+    readable = {g.scope_path for g in await access.readable(user.email)}
+    done: list[str] = []
+    skipped: list[str] = []
+    for raw in dict.fromkeys(body.fact_ids):
+        fid = raw.removeprefix(FACT_PREFIX)
+        scope = await tags.scope_of(fid)
+        if scope is None or not (is_admin(user.email) or scope in readable):
+            skipped.append(fid)
+            continue
+        try:
+            if body.action == "confirm":
+                await tags.confirm(fid, user.email)
+            else:
+                await tags.keep(fid, user.email)
+        except FactNotTaggedError:
+            skipped.append(fid)
+            continue
+        done.append(fid)
+    logger.log(
+        "[TAG]",
+        trace_id=getattr(request.state, "trace_id", None),
+        user=user.email,
+        action=f"bulk_{body.action}",
+        facts=str(len(done)),
+        skipped=str(len(skipped)) if skipped else None,
+    )
+    return ReviewBulkResponse(done=done, skipped=skipped)
 
 
 @router.get("/vct/coverage", response_model=VctCoverage)
@@ -140,10 +199,25 @@ async def _readable(
 async def _detail(fid: str, scope: str, tags: FactTagRepository, vmap: VctMap) -> FactTagDetail:
     rows = (await tags.tags_for([fid])).get(fid, [])
     refs = [ref for row in rows if (ref := tag_ref(row, vmap))]
+    state = (await tags.review_state([fid])).get(fid)
+    guesses = await tags.guesses(fid)
+
+    def guessed(kind: TagKind) -> list[TagRef]:
+        made = (
+            tag_ref(FactTag(fid, scope, kind, tag, rank, "auto", None, "tagger", ""), vmap)
+            for rank, tag in enumerate(guesses.get(kind, []), start=1)
+        )
+        return [r for r in made if r]
+
     return FactTagDetail(
         fact_id=fid,
         scope=scope,
         business=fid not in await tags.not_business([fid]),
+        tagged_at=state.tagged_at if state else None,
+        reviewed_at=state.reviewed_at if state else None,
+        reviewed_by=state.reviewed_by if state else None,
+        guess_nodes=guessed("node"),
+        guess_goals=guessed("goal"),
         nodes=[r for r in refs if r.kind == "node"],
         goals=[r for r in refs if r.kind == "goal"],
     )

@@ -1,8 +1,11 @@
 """FactTagRepository on the same local SQLite file as the scope grants.
 
-Three tables, none holding fact text:
-- tagged_facts: one row per fact the tagger has handled, with its scope;
+Four tables, none holding fact text:
+- tagged_facts: one row per fact the tagger has handled, with its scope,
+  whether it is business, and when a person reviewed it;
 - fact_tags: the tags, one row per fact, kind and tag;
+- fact_guesses: the tagger's best nodes and goals for a not-business fact,
+  kept apart so they never act as tags, for "Tag it" in review;
 - tag_feedback: every edit a person makes, insert only.
 Each user edit changes fact_tags and writes tag_feedback in one transaction.
 """
@@ -13,7 +16,14 @@ from pathlib import Path
 
 from app.adapters.sqlite.base import SqliteStore
 from app.domain.errors import FactNotTaggedError
-from app.domain.ports.fact_tags import FactTag, FeedbackStats, TagAction, TagCount, TagKind
+from app.domain.ports.fact_tags import (
+    FactTag,
+    FeedbackStats,
+    ReviewState,
+    TagAction,
+    TagCount,
+    TagKind,
+)
 
 _SCHEMA = """
 CREATE TABLE IF NOT EXISTS tagged_facts (
@@ -21,7 +31,9 @@ CREATE TABLE IF NOT EXISTS tagged_facts (
     scope          TEXT NOT NULL,
     tagger_version TEXT NOT NULL,
     tagged_at      TEXT NOT NULL,
-    business       INTEGER NOT NULL DEFAULT 1
+    business       INTEGER NOT NULL DEFAULT 1,
+    reviewed_at    TEXT,
+    reviewed_by    TEXT
 );
 CREATE INDEX IF NOT EXISTS tagged_facts_scope ON tagged_facts (scope, tagged_at);
 CREATE TABLE IF NOT EXISTS fact_tags (
@@ -49,6 +61,13 @@ CREATE TABLE IF NOT EXISTS tag_feedback (
     at             TEXT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS tag_feedback_at ON tag_feedback (at);
+CREATE TABLE IF NOT EXISTS fact_guesses (
+    fact_id        TEXT NOT NULL,
+    kind           TEXT NOT NULL CHECK (kind IN ('node', 'goal')),
+    tag            TEXT NOT NULL,
+    rank           INTEGER NOT NULL CHECK (rank BETWEEN 1 AND 3),
+    PRIMARY KEY (fact_id, kind, tag)
+);
 """
 
 _TAGGER = "tagger"
@@ -108,17 +127,38 @@ def _accept(db: sqlite3.Connection, fact_id: str, kind: TagKind, user: str) -> N
     _log(db, fact_id, kind, "accept", top[0], top[0], top[1], user)
 
 
-def _add_business_column(db: sqlite3.Connection) -> None:
-    """Files made before 9 Nov lack tagged_facts.business; every fact counted as business."""
+def _add_columns(db: sqlite3.Connection) -> None:
+    """Files made before 9 Nov lack these tagged_facts columns; old facts count as
+    business and not reviewed."""
     columns = {row[1] for row in db.execute("PRAGMA table_info(tagged_facts)")}
-    if "business" not in columns:
-        db.execute("ALTER TABLE tagged_facts ADD COLUMN business INTEGER NOT NULL DEFAULT 1")
+    for name, kind in (
+        ("business", "INTEGER NOT NULL DEFAULT 1"),
+        ("reviewed_at", "TEXT"),
+        ("reviewed_by", "TEXT"),
+    ):
+        if name not in columns:
+            db.execute(f"ALTER TABLE tagged_facts ADD COLUMN {name} {kind}")
+
+
+def _reviewed(db: sqlite3.Connection, fact_id: str, user: str) -> None:
+    db.execute(
+        "UPDATE tagged_facts SET reviewed_at = ?, reviewed_by = ? WHERE fact_id = ?",
+        (_now(), user, fact_id),
+    )
+
+
+def _write_ranked(
+    db: sqlite3.Connection, table: str, fact_id: str, kind: str, tags: list[str]
+) -> list[str]:
+    """Clear this kind's rows in `table`; return the tags to keep, ranked, at most 3."""
+    db.execute(f"DELETE FROM {table} WHERE fact_id = ? AND kind = ?", (fact_id, kind))
+    return list(dict.fromkeys(tags))[:3]
 
 
 class SqliteFactTags(SqliteStore):
     def __init__(self, path: str | Path) -> None:
         super().__init__(path, _SCHEMA)
-        self._run(_add_business_column)
+        self._run(_add_columns)
 
     async def tags_for(self, fact_ids: list[str]) -> dict[str, list[FactTag]]:
         if not fact_ids:
@@ -167,8 +207,6 @@ class SqliteFactTags(SqliteStore):
         business: bool = True,
     ) -> None:
         now = _now()
-        if not business:
-            nodes, goals = [], []
 
         def work(db: sqlite3.Connection) -> None:
             # A person's tag means it is business, whatever the tagger thinks.
@@ -183,14 +221,19 @@ class SqliteFactTags(SqliteStore):
                 (fact_id, scope, version, now, int(business or bool(has_user))),
             )
             for kind, tags in (("node", nodes), ("goal", goals)):
+                # Not business: the matches become guesses, never tags.
+                guesses = _write_ranked(db, "fact_guesses", fact_id, kind, [] if business else tags)
+                db.executemany(
+                    "INSERT INTO fact_guesses (fact_id, kind, tag, rank) VALUES (?, ?, ?, ?)",
+                    [(fact_id, kind, t, r) for r, t in enumerate(guesses, start=1)],
+                )
                 user_set = db.execute(
                     "SELECT 1 FROM fact_tags WHERE fact_id = ? AND kind = ? AND source = 'user'",
                     (fact_id, kind),
                 ).fetchone()
                 if user_set:
                     continue
-                db.execute("DELETE FROM fact_tags WHERE fact_id = ? AND kind = ?", (fact_id, kind))
-                ranked = list(dict.fromkeys(tags))[:3]
+                ranked = _write_ranked(db, "fact_tags", fact_id, kind, tags if business else [])
                 db.executemany(
                     f"INSERT INTO fact_tags ({_COLUMNS}) VALUES (?, ?, ?, ?, ?, 'auto', ?, ?, ?)",
                     [
@@ -236,6 +279,8 @@ class SqliteFactTags(SqliteStore):
                 (fact_id, scope, kind, tag, user, _now()),
             )
             db.execute("UPDATE tagged_facts SET business = 1 WHERE fact_id = ?", (fact_id,))
+            _write_ranked(db, "fact_guesses", fact_id, kind, [])
+            _reviewed(db, fact_id, user)
             _log(db, fact_id, kind, "change" if old else "add", old, tag, version, user)
 
         await self._write(work)
@@ -247,6 +292,7 @@ class SqliteFactTags(SqliteStore):
             if top is None:
                 return
             db.execute("DELETE FROM fact_tags WHERE fact_id = ? AND kind = ?", (fact_id, kind))
+            _reviewed(db, fact_id, user)
             _log(db, fact_id, kind, "remove", top[0], None, top[1], user)
 
         await self._write(work)
@@ -255,8 +301,70 @@ class SqliteFactTags(SqliteStore):
         def work(db: sqlite3.Connection) -> None:
             _scope(db, fact_id)
             _accept(db, fact_id, kind, user)
+            _reviewed(db, fact_id, user)
 
         await self._write(work)
+
+    async def confirm(self, fact_id: str, user: str) -> None:
+        def work(db: sqlite3.Connection) -> None:
+            _scope(db, fact_id)
+            _accept(db, fact_id, "node", user)
+            _accept(db, fact_id, "goal", user)
+            _reviewed(db, fact_id, user)
+
+        await self._write(work)
+
+    async def mark_not_business(self, fact_id: str, user: str) -> None:
+        def work(db: sqlite3.Connection) -> None:
+            _scope(db, fact_id)
+            kinds: tuple[TagKind, TagKind] = ("node", "goal")
+            for kind in kinds:
+                rows = db.execute(
+                    "SELECT tag, tagger_version FROM fact_tags "
+                    "WHERE fact_id = ? AND kind = ? ORDER BY rank",
+                    (fact_id, kind),
+                ).fetchall()
+                if not rows:
+                    continue
+                # The tagger's matches stay as guesses, in case it is tagged later.
+                guesses = _write_ranked(db, "fact_guesses", fact_id, kind, [r[0] for r in rows])
+                db.executemany(
+                    "INSERT INTO fact_guesses (fact_id, kind, tag, rank) VALUES (?, ?, ?, ?)",
+                    [(fact_id, kind, t, r) for r, t in enumerate(guesses, start=1)],
+                )
+                _write_ranked(db, "fact_tags", fact_id, kind, [])
+                _log(db, fact_id, kind, "remove", rows[0][0], None, rows[0][1], user)
+            db.execute("UPDATE tagged_facts SET business = 0 WHERE fact_id = ?", (fact_id,))
+            _reviewed(db, fact_id, user)
+
+        await self._write(work)
+
+    async def keep(self, fact_id: str, user: str) -> None:
+        def work(db: sqlite3.Connection) -> None:
+            _scope(db, fact_id)
+            _reviewed(db, fact_id, user)
+
+        await self._write(work)
+
+    async def guesses(self, fact_id: str) -> dict[TagKind, list[str]]:
+        rows = await self._query(
+            "SELECT kind, tag FROM fact_guesses WHERE fact_id = ? ORDER BY kind, rank",
+            (fact_id,),
+        )
+        found: dict[TagKind, list[str]] = {}
+        for kind, tag in rows:
+            found.setdefault(kind, []).append(tag)
+        return found
+
+    async def review_state(self, fact_ids: list[str]) -> dict[str, ReviewState]:
+        if not fact_ids:
+            return {}
+        rows = await self._query(
+            "SELECT fact_id, tagged_at, reviewed_at, reviewed_by FROM tagged_facts "
+            f"WHERE fact_id IN ({_marks(fact_ids)})",
+            tuple(fact_ids),
+        )
+        return {f: ReviewState(tagged_at=t, reviewed_at=r, reviewed_by=b) for f, t, r, b in rows}
 
     async def counts(self, scopes: list[str]) -> list[TagCount]:
         if not scopes:

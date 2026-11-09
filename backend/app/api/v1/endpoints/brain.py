@@ -19,6 +19,7 @@ from app.api.deps import (
     is_admin,
 )
 from app.domain.errors import MemoryNotConfiguredError, MemoryUnavailableError
+from app.domain.ports.fact_tags import ReviewState
 from app.domain.ports.memory_brain import BrainReplaced, BrainSource, BrainTurns
 from app.domain.vct import VctMap
 from app.schemas.brain import (
@@ -104,6 +105,7 @@ async def list_brain(
         tags={fid: active_tags(rows) for fid, rows in stored.items()},
         processed=await tag_store.processed(fact_ids),
         not_business=await tag_store.not_business(fact_ids),
+        review=await tag_store.review_state(fact_ids),
         vmap=vmap,
     )
     entities = [_entity_out(e, found.names, vct) for e in found.entities]
@@ -205,12 +207,22 @@ class _Vct:
         tags: dict[str, HitTags],
         processed: set[str],
         not_business: set[str],
+        review: dict[str, ReviewState],
         vmap: VctMap,
     ) -> None:
         self.tags = tags
         self.processed = processed
         self.not_business = not_business
+        self.review = review
         self.vmap = vmap
+
+    def tagged_at(self, fact_id: str) -> str | None:
+        state = self.review.get(fact_id)
+        return state.tagged_at if state else None
+
+    def reviewed_at(self, fact_id: str) -> str | None:
+        state = self.review.get(fact_id)
+        return state.reviewed_at if state else None
 
 
 def _entity_out(entity: brain.EntityView, names: dict[str, str], vct: _Vct) -> BrainEntityOut:
@@ -243,6 +255,8 @@ def _entity_out(entity: brain.EntityView, names: dict[str, str], vct: _Vct) -> B
                 vct=fact_tags_out(vct.tags.get(f.id), vct.vmap),
                 vct_tagged=f.id in vct.processed,
                 vct_business=f.id not in vct.not_business,
+                vct_tagged_at=vct.tagged_at(f.id),
+                vct_reviewed_at=vct.reviewed_at(f.id),
             )
             for f in entity.facts
         ],

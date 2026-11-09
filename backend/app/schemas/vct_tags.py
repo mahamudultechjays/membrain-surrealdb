@@ -29,10 +29,25 @@ class FactTagsOut(BaseModel):
 
 
 class TagEditRequest(BaseModel):
-    kind: Literal["node", "goal"]
-    # change: pick `tag` as the active tag; remove: drop the kind; accept: confirm it.
-    action: Literal["change", "remove", "accept"]
+    """change: pick `tag` as this kind's active tag; remove: drop this kind;
+    accept: confirm this kind. Review actions take no kind: confirm (node and
+    goal), not_business, keep (reviewed, nothing changed) and tag_guesses (make
+    the best guesses of a not-business fact its tags)."""
+
+    action: Literal["change", "remove", "accept", "confirm", "not_business", "keep", "tag_guesses"]
+    kind: Literal["node", "goal"] | None = None
     tag: str | None = Field(default=None, max_length=40)
+
+
+class ReviewBulkRequest(BaseModel):
+    fact_ids: list[str] = Field(min_length=1, max_length=200)
+    action: Literal["confirm", "keep"]
+
+
+class ReviewBulkResponse(BaseModel):
+    done: list[str]
+    # Facts left out: not tagged yet, or in a scope the caller can't read.
+    skipped: list[str]
 
 
 class FactTagDetail(BaseModel):
@@ -40,6 +55,12 @@ class FactTagDetail(BaseModel):
     scope: str
     # False when the tagger judged it not business; adding a tag makes it business.
     business: bool = True
+    tagged_at: str | None = None
+    reviewed_at: str | None = None
+    reviewed_by: str | None = None
+    # A not-business fact's best matches, for "Tag it"; empty otherwise.
+    guess_nodes: list[TagRef] = Field(default_factory=list)
+    guess_goals: list[TagRef] = Field(default_factory=list)
     # Rank order: [0] is active, the rest are the tagger's alternatives.
     nodes: list[TagRef]
     goals: list[TagRef]

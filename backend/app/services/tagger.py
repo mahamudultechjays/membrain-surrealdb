@@ -296,19 +296,20 @@ class TaggerService:
         async with self._gate:
             result = await self._recall.recall(text, lens=scope, k=_RECALL_K)
         ids: dict[str, None] = {}
+        decoy_first = False
         for hit in result.hits:
             found = pattern.search(hit.text or "")
             if not found:
                 continue
             if found.group(1) == "none":
-                # A decoy: only matters when it ranks above every real match.
-                if not ids:
-                    return [NOT_BUSINESS]
+                # A decoy only matters when it ranks above every real match; the
+                # real matches below it are still kept, as guesses.
+                decoy_first = decoy_first or not ids
                 continue
             tag = found.group(found.lastindex or 1)
             if known(tag):
                 ids.setdefault(tag)
-        return list(ids)[:TOP]
+        return ([NOT_BUSINESS] if decoy_first else []) + list(ids)[:TOP]
 
     def _is_node(self, node_id: str) -> bool:
         return self.map.node(node_id) is not None

@@ -48,6 +48,14 @@ class FeedbackStats:
     confusions: list[tuple[str, str | None, int]] = field(default_factory=list)
 
 
+@dataclass(frozen=True, slots=True)
+class ReviewState:
+    # When the tagger last tagged the fact, and when a person reviewed it.
+    tagged_at: str
+    reviewed_at: str | None = None
+    reviewed_by: str | None = None
+
+
 class FactTagRepository(Protocol):
     async def tags_for(self, fact_ids: list[str]) -> dict[str, list[FactTag]]:
         """All tags of these facts, by fact id, in rank order; facts with none are absent."""
@@ -100,6 +108,26 @@ class FactTagRepository(Protocol):
 
     async def accept(self, fact_id: str, kind: TagKind, user: str) -> None:
         """A person confirms the rank 1 tag, so the tagger never replaces it."""
+        ...
+
+    async def confirm(self, fact_id: str, user: str) -> None:
+        """A person confirms both the node and the goal (review "Confirm")."""
+        ...
+
+    async def mark_not_business(self, fact_id: str, user: str) -> None:
+        """A person says the fact is not business: its tags become guesses."""
+        ...
+
+    async def keep(self, fact_id: str, user: str) -> None:
+        """A person reviewed the fact and changed nothing (e.g. keeps not business)."""
+        ...
+
+    async def guesses(self, fact_id: str) -> dict[TagKind, list[str]]:
+        """The tagger's best nodes and goals for a not-business fact, ranked."""
+        ...
+
+    async def review_state(self, fact_ids: list[str]) -> dict[str, ReviewState]:
+        """When each processed fact was tagged, and reviewed if it was."""
         ...
 
     async def counts(self, scopes: list[str]) -> list[TagCount]:

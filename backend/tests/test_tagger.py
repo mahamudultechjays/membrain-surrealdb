@@ -157,6 +157,8 @@ async def test_a_decoy_ranked_first_marks_the_fact_not_business() -> None:
 
     assert (run.tagged, run.not_business) == (2, 1)
     assert await tags.not_business(["f1", "f2"]) == {"f1"}
+    # The real matches below the decoy are kept as guesses for review.
+    assert await tags.guesses("f1") == {"goal": ["ps-mgmt1"], "node": ["mo5"]}
     found = await tags.tags_for(["f1", "f2"])
     assert "f1" not in found
     # A decoy below a real node is ignored.
