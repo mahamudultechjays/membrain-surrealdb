@@ -45,26 +45,20 @@ describe('mock backend', () => {
     expect(stored.history[0]).toMatchObject({ old_value: '10', new_value: '18 days' })
 
     const asPriya = await mockAskApi.ask({ q: 'acme lead time' })
-    const personal = asPriya.layers.find((l) => l.layer === 'personal')
-    expect(personal?.facts.some((f) => f.fact.includes('lead_time = 18 days'))).toBe(true)
+    expect(asPriya.facts.some((f) => f.fact.includes('lead_time = 18 days'))).toBe(true)
 
     const asArun = await mockAskApi.ask({
       q: 'acme lead time',
       as_users: ['arun@example.com'],
     })
-    expect(asArun.layers.map((l) => l.area)).toEqual(['org', 'org/team/eng', ARUN])
+    expect(asArun.scopes).toEqual(['org', 'org/team/eng', ARUN])
     expect(JSON.stringify(asArun)).not.toContain('18 days')
 
     const together = await mockAskApi.ask({
       q: 'acme',
       as_users: ['priya@example.com', 'deena@example.com'],
     })
-    expect(together.layers.map((l) => l.area)).toEqual([
-      'org',
-      'org/team/ops',
-      PRIYA,
-      DEENA,
-    ])
+    expect(together.scopes).toEqual(['org', 'org/team/ops', PRIYA, DEENA])
   })
 
   it('refuses writes outside the grants, an unknown preview, and ask-as for non-admins', async () => {

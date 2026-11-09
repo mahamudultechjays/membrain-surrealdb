@@ -21,7 +21,7 @@ class FakeClient:
         return RecallResponse.from_dict(self.response)
 
 
-async def test_recall_reads_only_the_lens() -> None:
+async def test_recall_reads_only_the_lenses() -> None:
     client = FakeClient(
         {
             "tier": "hybrid",
@@ -32,11 +32,11 @@ async def test_recall_reads_only_the_lens() -> None:
     )
 
     result = await AgentMemoryRecall(client).recall(  # type: ignore[arg-type]
-        "returns?", lens="org", k=20
+        "returns?", lenses=("org", "org/team/ops"), k=20
     )
 
     assert client.calls == [
-        ("returns?", {"k": 20, "lens": ["org"], "include": ["facts", "passages"]})
+        ("returns?", {"k": 20, "lens": ["org", "org/team/ops"], "include": ["facts", "passages"]})
     ]
     assert result.hits[0].kind == "chunk"
     assert (result.tier, result.query_ms, result.trace_id) == ("hybrid", 12, "tr1")
@@ -46,9 +46,9 @@ async def test_recall_failure_is_unavailable() -> None:
     client = FakeClient(error=MemoryAuthError(403, "no grant"))
 
     with pytest.raises(MemoryUnavailableError):
-        await AgentMemoryRecall(client).recall("q", lens="org", k=1)  # type: ignore[arg-type]
+        await AgentMemoryRecall(client).recall("q", lenses=["org"], k=1)  # type: ignore[arg-type]
 
 
 async def test_not_configured() -> None:
     with pytest.raises(MemoryNotConfiguredError):
-        await NotConfiguredRecall().recall("q", lens="org", k=1)
+        await NotConfiguredRecall().recall("q", lenses=["org"], k=1)

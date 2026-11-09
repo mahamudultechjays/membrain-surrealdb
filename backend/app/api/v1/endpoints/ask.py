@@ -1,6 +1,6 @@
-"""Ask endpoint: what memory knows, grouped org -> team -> personal.
+"""Ask endpoint: what memory knows, as one recall ranked by Agent Memory.
 
-Reads only the scopes the signed-in user's grants allow, each through a lens.
+Reads only the scopes the signed-in user's grants allow, through one lens each.
 """
 
 from datetime import UTC, datetime
@@ -10,7 +10,7 @@ from fastapi import APIRouter, HTTPException, Query, Request, status
 
 from app.api.deps import AccessServiceDep, CurrentUserDep, MemoryRecallDep, is_admin
 from app.domain.errors import MemoryNotConfiguredError, MemoryUnavailableError
-from app.schemas.ask import AskFact, AskLayer, AskMetadata, AskResponse, FactSource
+from app.schemas.ask import AskFact, AskMetadata, AskResponse, FactSource
 from app.services import ask_flow, logger
 
 router = APIRouter(prefix="/ask")
@@ -53,7 +53,6 @@ async def ask(
                 status.HTTP_403_FORBIDDEN, f"Not readable: {', '.join(sorted(missing))}"
             )
         grants = [g for g in grants if g.scope_path in wanted]
-    scopes = list(dict.fromkeys(g.scope_path for g in grants))
     try:
         answer = await ask_flow.ask(recall, grants, q=q)
     except MemoryNotConfiguredError as exc:
@@ -72,45 +71,35 @@ async def ask(
         trace_id=trace_id,
         user=user.email,
         as_users=",".join(emails) if as_user else None,
-        scopes=",".join(scopes),
+        scopes=",".join(answer.scopes),
         q=repr(q[:80]),
-        facts_found=answer.total_facts,
-        layers_failed=sum(1 for layer in answer.layers if layer.error) or None,
+        facts_found=len(answer.hits),
         latency_ms=answer.latency_ms,
-        tier=",".join(answer.tiers) or None,
+        tier=answer.tier,
     )
     return AskResponse(
         q=q,
-        scopes=scopes,
+        scopes=answer.scopes,
         answered_at=datetime.now(UTC).isoformat(timespec="seconds"),
-        layers=[
-            AskLayer(
-                layer=layer.layer,
-                area=layer.area,
-                owner=layer.owner,
-                error=layer.error,
-                facts=[
-                    AskFact(
-                        fact=hit.text,
-                        source=FactSource(
-                            kind=ask_flow.source_kind(hit),
-                            hit_kind=hit.kind,
-                            hit_id=hit.id,
-                            text=hit.text,
-                            score=round(hit.score, 3),
-                        ),
-                    )
-                    for hit in layer.hits
-                ],
+        facts=[
+            AskFact(
+                fact=hit.text,
+                source=FactSource(
+                    kind=ask_flow.source_kind(hit),
+                    hit_kind=hit.kind,
+                    hit_id=hit.id,
+                    text=hit.text,
+                    score=round(hit.score, 3),
+                ),
             )
-            for layer in answer.layers
+            for hit in answer.hits
         ],
         metadata=AskMetadata(
-            total_facts=answer.total_facts,
-            resolution_tier=",".join(answer.tiers) or None,
+            total_facts=len(answer.hits),
+            resolution_tier=answer.tier,
             latency_ms=answer.latency_ms,
             include_inferred=include_inferred,
-            trace_ids=answer.trace_ids,
+            trace_ids=[answer.trace_id] if answer.trace_id else [],
         ),
         trace_id=trace_id,
     )

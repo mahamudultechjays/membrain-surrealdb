@@ -1,5 +1,6 @@
-"""Port for searching memory within one scope path."""
+"""Port for searching memory across scope paths in one recall."""
 
+from collections.abc import Sequence
 from dataclasses import dataclass, field
 from typing import Protocol
 
@@ -23,6 +24,6 @@ class RecallResult:
 
 
 class MemoryRecall(Protocol):
-    async def recall(self, query: str, *, lens: str, k: int) -> RecallResult:
-        """Facts and passages matching `query`, read only from `lens`."""
+    async def recall(self, query: str, *, lenses: Sequence[str], k: int) -> RecallResult:
+        """Facts and passages matching `query`, read only from `lenses`, ranked as one list."""
         ...

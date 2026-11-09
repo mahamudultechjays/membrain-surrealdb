@@ -24,45 +24,42 @@ async function findAnswer(question: string) {
   return screen.findByRole('region', { name: question }, { timeout: 2000 })
 }
 
-const layerHeadings = (answer: HTMLElement) =>
-  within(answer)
-    .getAllByRole('heading', { level: 3 })
-    .map((h) => h.textContent)
+const resultTexts = (answer: HTMLElement) =>
+  within(within(answer).getByRole('list', { name: 'Results' }))
+    .getAllByRole('listitem')
+    .map((item) => item.querySelector('.ask-fact-text')?.textContent)
 
-function answerWith(layers: AskResponse['layers']): AskResponse {
+function answerWith(facts: AskResponse['facts']): AskResponse {
   return {
     q: 'Is dock 3 open?',
-    scopes: ['org/user/u-0001'],
+    scopes: ['org', 'org/user/u-0001'],
     answered_at: '2026-11-02T10:00:00+00:00',
-    layers,
+    facts,
     metadata: {
-      total_facts: layers.reduce((n, l) => n + l.facts.length, 0),
+      total_facts: facts.length,
       resolution_tier: 'hybrid',
       latency_ms: 9800,
       include_inferred: false,
-      trace_ids: ['t-a', 't-b'],
+      trace_ids: ['t-a'],
     },
     trace_id: 't-root',
   }
 }
 
 describe('AskPage', () => {
-  it('answers the returns question as Priya org first, then team, then personal, with the 30 vs 60 conflict', async () => {
+  it('answers as one ranked list across every scope, with no layer grouping or verdict', async () => {
     await renderPage()
 
     fireEvent.click(screen.getByRole('button', { name: 'What is the returns window?' }))
     const answer = await findAnswer('What is the returns window?')
 
-    expect(layerHeadings(answer)).toEqual([
-      'Org org',
-      'Team org/team/ops',
-      'Personal org/user/u-0001 · Priya',
-    ])
-    expect(within(answer).getByText('Nothing found in org/team/ops')).toBeInTheDocument()
-    const conflict = within(answer).getByRole('note')
-    expect(conflict).toHaveTextContent('returns policy · window_days')
-    expect(conflict).toHaveTextContent('30 (Org)')
-    expect(conflict).toHaveTextContent("60 (Priya's personal)")
+    const texts = resultTexts(answer)
+    // Both values come back side by side, as Agent Memory ranks them.
+    expect(texts.some((t) => t?.includes('window_days = 30'))).toBe(true)
+    expect(texts.some((t) => t?.includes('window_days = 60'))).toBe(true)
+    expect(within(answer).queryAllByRole('heading', { level: 3 })).toHaveLength(0)
+    expect(within(answer).queryByRole('note')).not.toBeInTheDocument()
+    expect(within(answer).getByText(/3 scopes read/)).toBeInTheDocument()
     expect(within(answer).getByText(/as Priya$/)).toBeInTheDocument()
   })
 
@@ -97,37 +94,24 @@ describe('AskPage', () => {
     expect(first).toHaveFocus()
   })
 
-  it('shows a failed layer error while the other layers still answer', async () => {
+  it('keeps the order the backend returned, with each match score and the traces', async () => {
+    const fact = (id: string, text: string, score: number) => ({
+      fact: text,
+      source: {
+        kind: 'memory' as const,
+        hit_kind: 'attribute',
+        hit_id: id,
+        title: null,
+        date: null,
+        text,
+        score,
+      },
+    })
     const api: AskApi = {
       ask: async () =>
         answerWith([
-          {
-            layer: 'org',
-            area: 'org',
-            owner: null,
-            facts: [],
-            error: 'Agent Memory call failed: timeout',
-          },
-          {
-            layer: 'personal',
-            area: 'org/user/u-0001',
-            owner: 'Priya',
-            facts: [
-              {
-                fact: 'reno warehouse · dock_3_status = closed',
-                source: {
-                  kind: 'memory',
-                  hit_kind: 'attribute',
-                  hit_id: 'attribute_000007',
-                  title: null,
-                  date: null,
-                  text: 'reno warehouse · dock_3_status = closed',
-                  score: 0.823,
-                },
-              },
-            ],
-            error: null,
-          },
+          fact('attribute_000007', 'reno warehouse · dock_3_status = closed', 0.823),
+          fact('attribute_000008', 'reno warehouse · dock_3_status = open', 0.91),
         ]),
     }
     await renderPage(api)
@@ -135,11 +119,10 @@ describe('AskPage', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Is dock 3 open?' }))
     const answer = await findAnswer('Is dock 3 open?')
 
-    expect(
-      within(answer).getByText(
-        'Recall failed for this layer: Agent Memory call failed: timeout',
-      ),
-    ).toBeInTheDocument()
+    expect(resultTexts(answer)).toEqual([
+      'reno warehouse · dock_3_status = closed',
+      'reno warehouse · dock_3_status = open',
+    ])
     expect(
       within(answer).getByText('reno warehouse · dock_3_status = closed'),
     ).toBeInTheDocument()
@@ -147,9 +130,21 @@ describe('AskPage', () => {
       within(answer).getByRole('button', { name: 'match score 0.82' }),
     ).toBeInTheDocument()
     expect(within(answer).getByText(/trace t-root/)).toBeInTheDocument()
+    expect(within(answer).getByText('memory trace t-a')).toBeInTheDocument()
   })
 
-  it('shows the API error message when every layer fails', async () => {
+  it('says nothing was found when the recall has no hits', async () => {
+    await renderPage({ ask: async () => answerWith([]) })
+
+    fireEvent.click(screen.getByRole('button', { name: 'Is dock 3 open?' }))
+    const answer = await findAnswer('Is dock 3 open?')
+
+    expect(
+      within(answer).getByText('Nothing found in org, org/user/u-0001'),
+    ).toBeInTheDocument()
+  })
+
+  it('shows the API error message when the recall fails', async () => {
     const api: AskApi = {
       ask: async () => {
         throw new ApiError(503, 'Agent Memory call failed: x')
@@ -162,7 +157,7 @@ describe('AskPage', () => {
 
     const alert = await screen.findByRole('alert')
     expect(alert).toHaveTextContent('Agent Memory call failed: x')
-    expect(alert).toHaveTextContent('Every layer failed to answer')
+    expect(alert).toHaveTextContent('Agent Memory did not answer')
   })
 
   it('cancel aborts the in-flight ask', async () => {
@@ -190,7 +185,7 @@ describe('AskPage', () => {
     fireEvent.click(screen.getByRole('button', { name: /^Search in:/ }))
     fireEvent.click(screen.getByRole('checkbox', { name: /Team ops/ }))
 
-    expect(screen.getByText(/^Reads org → org\/user\/u-0001$/)).toBeInTheDocument()
+    expect(screen.getByText(/^Reads org, org\/user\/u-0001$/)).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /^Search in:/ })).toHaveAccessibleName(
       'Search in: Org + My space',
     )

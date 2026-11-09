@@ -5,10 +5,9 @@ from typing import Any
 import pytest
 from fastapi.testclient import TestClient
 
-from app.composition import get_chat_sessions, get_memory_chat, get_memory_recall
+from app.composition import get_chat_sessions, get_memory_chat
 from app.domain.errors import MemoryNotConfiguredError, MemoryUnavailableError
 from app.domain.ports.memory_chat import ChatAccess, ChatCitation, ChatReply
-from app.domain.ports.memory_recall import RecallHit, RecallResult
 from app.main import app
 from app.services.access import AccessService
 from app.services.chat_flow import ChatSessions
@@ -16,23 +15,6 @@ from tests.conftest import sign_in
 
 ORG, OPS = "org/spreetail", "org/spreetail/team/ops"
 PRIYA, ARUN = "org/spreetail/user/priya_shah", "org/spreetail/user/arun_das"
-
-
-class FakeRecall:
-    """The per-layer search chat runs alongside: hits per lens, recorded by lens."""
-
-    def __init__(self) -> None:
-        self.by_lens: dict[str, list[RecallHit]] = {
-            ORG: [RecallHit("attribute:a1", "Acme lead time 18", "attribute", 0.5)]
-        }
-        self.lenses: list[str] = []
-        self.error: Exception | None = None
-
-    async def recall(self, query: str, *, lens: str, k: int) -> RecallResult:
-        self.lenses.append(lens)
-        if self.error:
-            raise self.error
-        return RecallResult(hits=self.by_lens.get(lens, []))
 
 
 class FakeChat:
@@ -64,15 +46,9 @@ def chat() -> FakeChat:
 
 
 @pytest.fixture
-def recall() -> FakeRecall:
-    return FakeRecall()
-
-
-@pytest.fixture
-def client(access: AccessService, chat: FakeChat, recall: FakeRecall) -> Iterator[TestClient]:
+def client(access: AccessService, chat: FakeChat) -> Iterator[TestClient]:
     sessions = ChatSessions()
     app.dependency_overrides[get_memory_chat] = lambda: chat
-    app.dependency_overrides[get_memory_recall] = lambda: recall
     app.dependency_overrides[get_chat_sessions] = lambda: sessions
     with TestClient(app) as test_client:
         sign_in(test_client, "arun.das@x.com", "Arun Das")
@@ -149,8 +125,6 @@ def test_reply_citations_and_session_are_returned(client: TestClient) -> None:
             "position_percent": None,
             "role": None,
             "occurred_at": None,
-            "layer": "org",
-            "scope": ORG,
         }
     ]
 
@@ -197,40 +171,3 @@ def test_signed_out_is_401(client: TestClient) -> None:
     client.post("/api/v1/auth/logout")
 
     assert client.post("/api/v1/ask/chat", json={"message": "x"}).status_code == 401
-
-
-def test_each_citation_is_tagged_with_the_layer_it_came_from(
-    client: TestClient, recall: FakeRecall
-) -> None:
-    body = _chat(client)
-
-    [citation] = body["citations"]
-    assert (citation["layer"], citation["scope"]) == ("org", ORG)
-    assert sorted(recall.lenses) == sorted([ORG, PRIYA])
-
-
-def test_a_citation_no_layer_returned_stays_untagged(
-    client: TestClient, recall: FakeRecall
-) -> None:
-    recall.by_lens = {}
-
-    [citation] = _chat(client)["citations"]
-
-    assert (citation["layer"], citation["scope"]) == (None, None)
-
-
-def test_a_failing_layer_search_does_not_fail_the_chat(
-    client: TestClient, recall: FakeRecall
-) -> None:
-    recall.error = MemoryUnavailableError("down")
-
-    body = _chat(client)
-
-    assert body["reply"] == "Lead time is 18 days [S1]."
-    assert body["citations"][0]["layer"] is None
-
-
-def test_layer_search_covers_only_the_chosen_scopes(client: TestClient, recall: FakeRecall) -> None:
-    _chat(client, scopes=[PRIYA])
-
-    assert recall.lenses == [PRIYA]

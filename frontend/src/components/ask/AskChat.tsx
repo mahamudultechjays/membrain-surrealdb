@@ -13,7 +13,7 @@ import type { Me } from '@/api/auth'
 import { chatApi, type ChatApi, type ChatCitation, type ChatResponse } from '@/api/chat'
 import { ApiError } from '@/api/client'
 import { updateChat, useChat, type Turn } from '@/components/ask/chatStore'
-import { formatScore, LAYER_LABELS, readAreas, spaceName } from '@/components/ask/layers'
+import { formatScore, readAreas, spaceName } from '@/components/ask/layers'
 import ReplyText from '@/components/ask/ReplyText'
 import HeaderSlot from '@/components/HeaderSlot'
 import { PageActiveContext } from '@/components/pageActiveContext'
@@ -272,23 +272,19 @@ function ChatAnswer({
     target?.focus()
   }
 
-  // Each inline marker shows the layer its source came from.
-  const marker = (label: string) => {
-    const c = cited.get(label)
-    if (!c) return `[${label}]`
-    return (
+  const marker = (label: string) =>
+    cited.has(label) ? (
       <a
         className="chat-marker"
         href={`#${anchor(label)}`}
         aria-label={`Source ${label}`}
-        title={c.scope ?? undefined}
         onClick={(event) => jump(event, label)}
       >
         {label}
-        {c.layer && ` · ${LAYER_LABELS[c.layer]}`}
       </a>
+    ) : (
+      `[${label}]`
     )
-  }
 
   return (
     <article className="panel chat-answer" aria-label={`Answer to ${question}`}>
@@ -301,17 +297,7 @@ function ChatAnswer({
             <li key={c.marker} id={anchor(c.marker)} tabIndex={-1}>
               <span className="chat-source-marker mono">{c.marker}</span>
               <span className="chat-source-body">
-                <span>
-                  {c.layer && (
-                    <span
-                      className={`chat-layer chat-layer-${c.layer}`}
-                      title={c.scope ?? ''}
-                    >
-                      {LAYER_LABELS[c.layer]}
-                    </span>
-                  )}
-                  {c.snippet}
-                </span>
+                <span>{c.snippet}</span>
                 <span className="ask-muted chat-source-meta">{describe(c)}</span>
                 <span className="ask-muted mono chat-source-meta">
                   match {formatScore(c.score)}

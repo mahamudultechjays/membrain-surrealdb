@@ -28,20 +28,9 @@ export interface AskFact {
   source: FactSource
 }
 
-export interface AskLayer {
-  layer: LayerName
-  /** The scope path read, e.g. org/spreetail, org/spreetail/team/ops. */
-  area: string
-  /** The user's name for a personal layer, else null. */
-  owner: string | null
-  facts: AskFact[]
-  /** Set when this layer's recall failed; the other layers still answer. */
-  error: string | null
-}
-
 export interface AskMetadata {
   total_facts: number
-  /** Agent Memory's tiers, comma-joined, e.g. "direct,hybrid". */
+  /** How Agent Memory resolved the recall, e.g. "hybrid" or "escalated". */
   resolution_tier: string | null
   latency_ms: number
   /** Echoed back, but not applied: recall has no matching option. */
@@ -51,9 +40,11 @@ export interface AskMetadata {
 
 export interface AskResponse {
   q: string
+  /** The scopes the one recall read, org first, then team, then personal. */
   scopes: string[]
   answered_at: string
-  layers: AskLayer[]
+  /** Agent Memory's ranking across all those scopes. Hits carry no scope. */
+  facts: AskFact[]
   metadata: AskMetadata
   trace_id: string | null
 }

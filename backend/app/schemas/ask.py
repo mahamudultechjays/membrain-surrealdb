@@ -1,4 +1,4 @@
-"""Ask schemas: facts grouped by the memory layer they were read from."""
+"""Ask schemas: one recall's hits, in the order Agent Memory ranked them."""
 
 from pydantic import BaseModel
 
@@ -23,16 +23,6 @@ class AskFact(BaseModel):
     source: FactSource
 
 
-class AskLayer(BaseModel):
-    layer: str
-    area: str
-    # Demo user name for a personal layer, else null.
-    owner: str | None
-    facts: list[AskFact]
-    # Set when this layer's recall failed; other layers are still returned.
-    error: str | None
-
-
 class AskMetadata(BaseModel):
     total_facts: int
     resolution_tier: str | None
@@ -43,8 +33,10 @@ class AskMetadata(BaseModel):
 
 class AskResponse(BaseModel):
     q: str
+    # The scopes the recall read, org first, then team, then personal.
     scopes: list[str]
     answered_at: str
-    layers: list[AskLayer]
+    # Agent Memory's ranking across all those scopes. Hits carry no scope.
+    facts: list[AskFact]
     metadata: AskMetadata
     trace_id: str | None

@@ -1,20 +1,20 @@
-"""Ask: one recall per readable scope, in parallel, grouped org -> team -> personal.
+"""Ask: one recall across every readable scope, ranked by Agent Memory.
 
-The scopes come from the asking user's grants. Every recall goes through the
-one admin key with a lens on exactly that scope, so nothing outside the grants
-is read (a lens matches its exact path only, not the paths below it). A hit
-that shows up in more than one scope is kept only in the most specific one.
+The scopes come from the asking user's grants. The recall goes through the one
+admin key with a lens on each of those scopes, so nothing outside the grants is
+read (a lens matches its exact path only, not the paths below it). Agent Memory
+fuses and ranks the hits from all scopes into one list; we keep its order and
+apply no layer precedence of our own.
 """
 
-import asyncio
 import time
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
-from app.domain.errors import MemoryNotConfiguredError, MemoryUnavailableError
-from app.domain.ports.memory_recall import MemoryRecall, RecallHit, RecallResult
+from app.domain.ports.memory_recall import MemoryRecall, RecallHit
 from app.domain.ports.user_scopes import LayerName, ScopeGrant
 
-LAYER_LIMITS: dict[LayerName, int] = {"org": 20, "team": 10, "personal": 10}
+# Hits for the whole recall. Agent Memory's default is 10 and its maximum is 50.
+RECALL_K = 20
 LAYER_ORDER: dict[LayerName, int] = {"org": 0, "team": 1, "personal": 2}
 DOCUMENT_KINDS = frozenset({"chunk", "section"})
 
@@ -28,25 +28,13 @@ class LayerRead:
 
 
 @dataclass(frozen=True, slots=True)
-class LayerAnswer:
-    layer: LayerName
-    area: str
-    owner: str | None
-    hits: list[RecallHit] = field(default_factory=list)
-    error: str | None = None
-
-
-@dataclass(frozen=True, slots=True)
 class Answer:
     q: str
-    layers: list[LayerAnswer]
-    tiers: list[str]
-    trace_ids: list[str]
+    scopes: list[str]
+    hits: list[RecallHit]
+    tier: str | None
+    trace_id: str | None
     latency_ms: int
-
-    @property
-    def total_facts(self) -> int:
-        return sum(len(layer.hits) for layer in self.layers)
 
 
 def plan_reads(grants: list[ScopeGrant]) -> list[LayerRead]:
@@ -59,41 +47,17 @@ def plan_reads(grants: list[ScopeGrant]) -> list[LayerRead]:
 
 
 async def ask(recall: MemoryRecall, grants: list[ScopeGrant], *, q: str) -> Answer:
-    reads = plan_reads(grants)
+    """Raises MemoryNotConfiguredError or MemoryUnavailableError when recall fails."""
+    scopes = [read.area for read in plan_reads(grants)]
     started = time.perf_counter()
-    results = await asyncio.gather(
-        *(recall.recall(q, lens=read.area, k=LAYER_LIMITS[read.layer]) for read in reads),
-        return_exceptions=True,
-    )
-    latency_ms = round((time.perf_counter() - started) * 1000)
-
-    failures = [r for r in results if isinstance(r, BaseException)]
-    if failures and len(failures) == len(results):
-        first = failures[0]
-        if isinstance(first, (MemoryNotConfiguredError, MemoryUnavailableError)):
-            raise first
-        raise MemoryUnavailableError(str(first)) from first
-
-    seen: set[str] = set()
-    answers: list[LayerAnswer] = []
-    # Most specific layer first, so a hit is credited to the narrowest scope.
-    for read, result in reversed(list(zip(reads, results, strict=True))):
-        if isinstance(result, BaseException):
-            error = str(result) or "failed"
-            answers.append(LayerAnswer(read.layer, read.area, read.owner, error=error))
-            continue
-        hits = [hit for hit in result.hits if hit.id not in seen]
-        seen.update(hit.id for hit in hits)
-        answers.append(LayerAnswer(read.layer, read.area, read.owner, hits))
-    answers.reverse()
-
-    ok = [r for r in results if isinstance(r, RecallResult)]
+    result = await recall.recall(q, lenses=scopes, k=RECALL_K)
     return Answer(
         q=q,
-        layers=answers,
-        tiers=sorted({r.tier for r in ok if r.tier}),
-        trace_ids=[r.trace_id for r in ok if r.trace_id],
-        latency_ms=latency_ms,
+        scopes=scopes,
+        hits=result.hits,
+        tier=result.tier or None,
+        trace_id=result.trace_id,
+        latency_ms=round((time.perf_counter() - started) * 1000),
     )
 
 

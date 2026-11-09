@@ -47,7 +47,7 @@ const MODE_LABELS: Record<Mode, string> = {
 }
 const MODE_INTROS: Record<Mode, string> = {
   search:
-    'Answers come from every scope you can read: org first, then team, then personal. Asking never writes.',
+    'One search across every scope you can read, ranked by Agent Memory. Asking never writes.',
   chat: 'A written answer from every scope you can read, citing its sources. Follow-ups keep the context.',
   reflect:
     'A synthesis across every scope you can read, with the evidence it drew on. Each question stands alone.',
@@ -175,7 +175,7 @@ function AskSearch({ me, api = askApi }: Props) {
           </HeaderSlot>
         )}
         <p className="mono ask-muted ask-reads">
-          Reads {areas.length ? areas.join(' → ') : 'nothing: tick at least one space'}
+          Reads {areas.length ? areas.join(', ') : 'nothing: tick at least one space'}
         </p>
       </section>
 
@@ -240,7 +240,7 @@ function AskFailure({ error }: { error: Error }) {
     status === 403
       ? 'One of the chosen spaces is not one you can read.'
       : status === 503
-        ? 'Every layer failed to answer. Agent Memory may be down; try again shortly.'
+        ? 'Agent Memory did not answer. It may be down; try again shortly.'
         : null
   return (
     <div className="error" role="alert">

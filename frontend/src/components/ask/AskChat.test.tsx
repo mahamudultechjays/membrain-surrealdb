@@ -29,8 +29,6 @@ function reply(over: Partial<ChatResponse> = {}): ChatResponse {
         position_percent: null,
         role: null,
         occurred_at: null,
-        layer: 'org',
-        scope: 'org',
       },
       {
         marker: 'S2',
@@ -42,8 +40,6 @@ function reply(over: Partial<ChatResponse> = {}): ChatResponse {
         position_percent: 40,
         role: null,
         occurred_at: null,
-        layer: 'personal',
-        scope: 'org/user/u-0001',
       },
     ],
     facts_saved: 0,
@@ -263,39 +259,6 @@ describe('AskChat formats replies', () => {
 
     expect(answer.querySelector('img')).toBeNull()
     expect(answer).toHaveTextContent('<img src=x onerror=alert(1)>')
-  })
-})
-
-describe('AskChat layer precedence', () => {
-  it('tags each source with the layer it came from', async () => {
-    const { api } = fakeApi()
-    render(<AskChat me={PRIYA} api={api} />)
-
-    send('Where does Acme ship?')
-    const answer = await lastAnswer()
-
-    const sources = within(answer).getByRole('list', { name: 'Sources' })
-    const [first, second] = within(sources).getAllByRole('listitem')
-    expect(first).toHaveTextContent('Org')
-    expect(second).toHaveTextContent('Personal')
-  })
-
-  it('shows each inline marker with its layer, with no precedence verdict or strikes', async () => {
-    const { api } = fakeApi()
-    render(<AskChat me={PRIYA} api={api} />)
-
-    send('Where does Acme ship?')
-    const answer = await lastAnswer()
-
-    expect(within(answer).getByRole('link', { name: 'Source S1' })).toHaveTextContent(
-      'S1 · Org',
-    )
-    const personal = within(answer).getByRole('link', { name: 'Source S2' })
-    expect(personal).toHaveTextContent('S2 · Personal')
-    expect(
-      within(answer).queryByRole('note', { name: 'Layer check' }),
-    ).not.toBeInTheDocument()
-    expect(answer).not.toHaveTextContent(/precedence|overrid/i)
   })
 })
 

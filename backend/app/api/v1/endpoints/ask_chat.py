@@ -1,26 +1,17 @@
 """Ask in chat mode: an answer with citations, read only from the user's granted scopes.
 
 The user's message is stored in their personal scope (Agent Memory's /chat
-always stores the user turn). Alongside the chat, the same per-layer search
-as Search runs, so each citation can be tagged with the layer it came from;
-the page applies org > team > personal from those tags.
+always stores the user turn).
 """
 
-import asyncio
 import time
 
 from fastapi import APIRouter, HTTPException, Request, status
 
-from app.api.deps import (
-    AccessServiceDep,
-    ChatSessionsDep,
-    CurrentUserDep,
-    MemoryChatDep,
-    MemoryRecallDep,
-)
+from app.api.deps import AccessServiceDep, ChatSessionsDep, CurrentUserDep, MemoryChatDep
 from app.domain.errors import MemoryNotConfiguredError, MemoryUnavailableError, ScopeNotGrantedError
 from app.schemas.chat import ChatCitationOut, ChatRequest, ChatResponse
-from app.services import chat_flow, layers_flow, logger
+from app.services import chat_flow, logger
 
 router = APIRouter(prefix="/ask")
 
@@ -40,13 +31,13 @@ async def chat(
     user: CurrentUserDep,
     access: AccessServiceDep,
     memory: MemoryChatDep,
-    recall: MemoryRecallDep,
     sessions: ChatSessionsDep,
 ) -> ChatResponse:
     """Answer from every scope the signed-in user may read, citing sources inline."""
-    readable = await access.readable(user.email)
     try:
-        plan = chat_flow.plan_access(user.email, readable, wanted=body.scopes)
+        plan = chat_flow.plan_access(
+            user.email, await access.readable(user.email), wanted=body.scopes
+        )
     except ScopeNotGrantedError as exc:
         raise HTTPException(status.HTTP_403_FORBIDDEN, f"Not readable: {exc}") from exc
     if body.session_id and not sessions.belongs_to(body.session_id, user.email):
@@ -54,10 +45,7 @@ async def chat(
 
     started = time.perf_counter()
     try:
-        reply, sources = await asyncio.gather(
-            memory.chat(body.message, access=plan, session_id=body.session_id),
-            layers_flow.sources_by_id(recall, readable, plan.read, body.message),
-        )
+        reply = await memory.chat(body.message, access=plan, session_id=body.session_id)
     except MemoryNotConfiguredError as exc:
         raise HTTPException(
             status.HTTP_503_SERVICE_UNAVAILABLE,
@@ -80,10 +68,6 @@ async def chat(
         new_session=body.session_id is None,
         q=repr(body.message[:80]),
         citations=len(reply.citations),
-        citation_layers=",".join(
-            f"{c.marker}:{sources[c.id].layer}" for c in reply.citations if c.id in sources
-        )
-        or None,
         facts_saved=reply.facts_saved,
         latency_ms=round((time.perf_counter() - started) * 1000),
         memory_trace=reply.trace_id,
@@ -103,8 +87,6 @@ async def chat(
                 position_percent=c.position_percent,
                 role=c.role,
                 occurred_at=c.occurred_at,
-                layer=source.layer if (source := sources.get(c.id)) else None,
-                scope=source.scope if source else None,
             )
             for c in reply.citations
         ],

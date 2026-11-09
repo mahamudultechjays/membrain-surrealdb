@@ -1,5 +1,5 @@
 import asyncio
-from collections.abc import Iterator
+from collections.abc import Iterator, Sequence
 
 import pytest
 from fastapi.testclient import TestClient
@@ -16,20 +16,18 @@ PRIYA, ARUN = "org/spreetail/user/priya_shah", "org/spreetail/user/arun_das"
 
 
 class FakeRecall:
-    """Answers per lens; records (lens, k) for every call."""
+    """One ranked list per call, as Agent Memory returns it; records (lenses, k)."""
 
     def __init__(self) -> None:
-        self.by_lens: dict[str, list[RecallHit]] = {}
-        self.failing: dict[str, Exception] = {}
-        self.calls: list[tuple[str, int]] = []
+        self.hits: list[RecallHit] = []
+        self.error: Exception | None = None
+        self.calls: list[tuple[tuple[str, ...], int]] = []
 
-    async def recall(self, query: str, *, lens: str, k: int) -> RecallResult:
-        self.calls.append((lens, k))
-        if lens in self.failing:
-            raise self.failing[lens]
-        return RecallResult(
-            hits=self.by_lens.get(lens, []), tier="hybrid", query_ms=5, trace_id="tr"
-        )
+    async def recall(self, query: str, *, lenses: Sequence[str], k: int) -> RecallResult:
+        self.calls.append((tuple(lenses), k))
+        if self.error:
+            raise self.error
+        return RecallResult(hits=self.hits, tier="hybrid", query_ms=5, trace_id="tr")
 
 
 @pytest.fixture
@@ -58,46 +56,45 @@ def _ask(client: TestClient, **params: str | list[str]) -> dict:  # type: ignore
     return response.json()  # type: ignore[no-any-return]
 
 
-def test_reads_each_granted_scope_with_its_own_lens(client: TestClient, recall: FakeRecall) -> None:
-    recall.by_lens = {
-        ORG: [_hit("c1", "Customers may return items within 30 days.", "chunk")],
-        PRIYA: [_hit("a1", "Acme · lead_time_days = 18")],
-    }
+def test_one_recall_across_every_granted_scope(client: TestClient, recall: FakeRecall) -> None:
+    recall.hits = [
+        _hit("a1", "Acme · lead_time_days = 18", score=0.9),
+        _hit("c1", "Customers may return items within 30 days.", "chunk", score=0.6),
+    ]
 
     body = _ask(client)
 
-    assert [(layer["layer"], layer["area"]) for layer in body["layers"]] == [
-        ("org", ORG),
-        ("personal", PRIYA),
-    ]
-    org_fact = body["layers"][0]["facts"][0]
-    assert org_fact["source"]["kind"] == "document"
-    assert org_fact["source"]["text"] == "Customers may return items within 30 days."
-    assert org_fact["source"]["score"] == 0.8
-    assert {"trust", "quote", "location"}.isdisjoint(org_fact["source"])
-    assert "query_cost_tokens" not in body["metadata"]
-    assert body["layers"][1]["owner"] == "Priya Shah"
+    assert recall.calls == [((ORG, PRIYA), 20)]
+    assert body["scopes"] == [ORG, PRIYA]
+    # Agent Memory's own ranking, unchanged and not grouped by layer.
+    assert [f["source"]["hit_id"] for f in body["facts"]] == ["a1", "c1"]
+    doc = body["facts"][1]["source"]
+    assert doc["kind"] == "document"
+    assert doc["text"] == "Customers may return items within 30 days."
+    assert doc["score"] == 0.6
+    assert {"trust", "quote", "location"}.isdisjoint(doc)
+    assert "layers" not in body
     assert body["metadata"]["total_facts"] == 2
-    assert sorted(recall.calls) == sorted([(ORG, 20), (PRIYA, 10)])
+    assert body["metadata"]["resolution_tier"] == "hybrid"
+    assert body["metadata"]["trace_ids"] == ["tr"]
 
 
 def test_never_reads_another_users_personal_scope(client: TestClient, recall: FakeRecall) -> None:
-    recall.by_lens = {ARUN: [_hit("a9", "secret")]}
+    _ask(client)
 
-    body = _ask(client)
-
-    assert body["metadata"]["total_facts"] == 0
-    assert all(lens != ARUN for lens, _ in recall.calls)
+    [(lenses, _)] = recall.calls
+    assert ARUN not in lenses
 
 
-def test_a_team_grant_adds_the_team_layer(
+def test_a_team_grant_adds_the_team_scope(
     client: TestClient, recall: FakeRecall, access: AccessService
 ) -> None:
     asyncio.run(access.grant("priya.shah@x.com", "Priya Shah", OPS, "read", "team"))
 
     body = _ask(client)
 
-    assert [layer["area"] for layer in body["layers"]] == [ORG, OPS, PRIYA]
+    assert recall.calls == [((ORG, OPS, PRIYA), 20)]
+    assert body["scopes"] == [ORG, OPS, PRIYA]
 
 
 def test_scope_narrows_and_unreadable_scope_is_403(client: TestClient, recall: FakeRecall) -> None:
@@ -105,7 +102,7 @@ def test_scope_narrows_and_unreadable_scope_is_403(client: TestClient, recall: F
     denied = client.get("/api/v1/ask", params={"q": "x", "scope": ARUN})
 
     assert body["scopes"] == [PRIYA]
-    assert recall.calls == [(PRIYA, 10)]
+    assert recall.calls == [((PRIYA,), 20)]
     assert denied.status_code == 403
 
 
@@ -114,8 +111,8 @@ def test_admin_can_ask_as_two_users_at_once(client: TestClient, recall: FakeReca
 
     body = _ask(client, as_user="priya.shah@x.com,arun.das@x.com")
 
-    assert [layer["area"] for layer in body["layers"]] == [ORG, ARUN, PRIYA]
-    assert len(recall.calls) == 3
+    assert body["scopes"] == [ORG, ARUN, PRIYA]
+    assert recall.calls == [((ORG, ARUN, PRIYA), 20)]
 
 
 def test_non_admin_cannot_ask_as_someone_else(client: TestClient) -> None:
@@ -124,31 +121,10 @@ def test_non_admin_cannot_ask_as_someone_else(client: TestClient) -> None:
     assert response.status_code == 403
 
 
-def test_hit_is_kept_in_the_narrowest_layer(client: TestClient, recall: FakeRecall) -> None:
-    shared = _hit("a1", "Acme · lead_time_days = 18")
-    recall.by_lens = {ORG: [shared], PRIYA: [shared]}
-
-    body = _ask(client)
-
-    assert body["layers"][0]["facts"] == []
-    assert len(body["layers"][1]["facts"]) == 1
-
-
-def test_one_failing_layer_is_reported_not_fatal(client: TestClient, recall: FakeRecall) -> None:
-    recall.failing = {ORG: MemoryUnavailableError("timeout")}
-
-    body = _ask(client)
-
-    assert body["layers"][0]["error"] == "timeout"
-
-
-@pytest.mark.parametrize(
-    "error", [MemoryNotConfiguredError(), MemoryUnavailableError("down"), RuntimeError("boom")]
-)
-def test_503_when_every_layer_fails(
-    client: TestClient, recall: FakeRecall, error: Exception
-) -> None:
-    recall.failing = {ORG: error, PRIYA: error}
+# The adapter turns any client failure into MemoryUnavailableError.
+@pytest.mark.parametrize("error", [MemoryNotConfiguredError(), MemoryUnavailableError("down")])
+def test_503_when_recall_fails(client: TestClient, recall: FakeRecall, error: Exception) -> None:
+    recall.error = error
 
     assert client.get("/api/v1/ask", params={"q": "x"}).status_code == 503
 
