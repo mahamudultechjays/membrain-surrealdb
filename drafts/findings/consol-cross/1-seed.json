@@ -1,0 +1,17 @@
+{
+ "a": [
+  "return_window=30 days id=k1ode0y3gn6yxesu6ayi",
+  "lead_time=21 days id=h7h7b0ls12cd1i78tw11",
+  "po_day=Monday id=h2pwlkxpnpoj1km5sp8a"
+ ],
+ "b": [
+  "return_window=30 days id=cmkgrqrt8qk6ze98k6ir",
+  "lead_time_days=21 id=z9czunxzkjalxyi7u6gy",
+  "po_day=Monday id=v63tkf5w7979f01erkvq"
+ ],
+ "c": [
+  "returns_window=30 days id=p0gkptmoc4dserz6t5px",
+  "lead_time=21 days id=slil0eagjtcml249w226",
+  "contact=Dana Whitfield id=f7ktnwynnym9p54yi3wu"
+ ]
+}

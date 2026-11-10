@@ -1,0 +1,107 @@
+{
+ "a": [
+  {
+   "id": "h7h7b0ls12cd1i78tw11",
+   "entity": "entity:organisation/northwind_outdoor",
+   "key": "lead_time",
+   "value": "21 days",
+   "source": "upsert",
+   "scope": [
+    "org/spreetail/lab/consol-x/user/a"
+   ],
+   "supersededBy": null
+  },
+  {
+   "id": "h2pwlkxpnpoj1km5sp8a",
+   "entity": "entity:organisation/northwind_outdoor",
+   "key": "po_day",
+   "value": "Monday",
+   "source": "upsert",
+   "scope": [
+    "org/spreetail/lab/consol-x/user/a"
+   ],
+   "supersededBy": null
+  },
+  {
+   "id": "k1ode0y3gn6yxesu6ayi",
+   "entity": "entity:organisation/cobalt_ridge",
+   "key": "return_window",
+   "value": "30 days",
+   "source": "upsert",
+   "scope": [
+    "org/spreetail/lab/consol-x/user/a"
+   ],
+   "supersededBy": null
+  }
+ ],
+ "b": [
+  {
+   "id": "z9czunxzkjalxyi7u6gy",
+   "entity": "entity:organisation/northwind_outdoor",
+   "key": "lead_time_days",
+   "value": "21",
+   "source": "upsert",
+   "scope": [
+    "org/spreetail/lab/consol-x/user/b"
+   ],
+   "supersededBy": null
+  },
+  {
+   "id": "v63tkf5w7979f01erkvq",
+   "entity": "entity:organisation/northwind_outdoor",
+   "key": "po_day",
+   "value": "Monday",
+   "source": "upsert",
+   "scope": [
+    "org/spreetail/lab/consol-x/user/b"
+   ],
+   "supersededBy": null
+  },
+  {
+   "id": "cmkgrqrt8qk6ze98k6ir",
+   "entity": "entity:organisation/cobalt_ridge",
+   "key": "return_window",
+   "value": "30 days",
+   "source": "upsert",
+   "scope": [
+    "org/spreetail/lab/consol-x/user/b"
+   ],
+   "supersededBy": null
+  }
+ ],
+ "c": [
+  {
+   "id": "f7ktnwynnym9p54yi3wu",
+   "entity": "entity:organisation/northwind_outdoor",
+   "key": "contact",
+   "value": "Dana Whitfield",
+   "source": "upsert",
+   "scope": [
+    "org/spreetail/lab/consol-x/user/c"
+   ],
+   "supersededBy": null
+  },
+  {
+   "id": "slil0eagjtcml249w226",
+   "entity": "entity:organisation/northwind_outdoor",
+   "key": "lead_time",
+   "value": "21 days",
+   "source": "upsert",
+   "scope": [
+    "org/spreetail/lab/consol-x/user/c"
+   ],
+   "supersededBy": null
+  },
+  {
+   "id": "p0gkptmoc4dserz6t5px",
+   "entity": "entity:organisation/cobalt_ridge",
+   "key": "returns_window",
+   "value": "30 days",
+   "source": "upsert",
+   "scope": [
+    "org/spreetail/lab/consol-x/user/c"
+   ],
+   "supersededBy": null
+  }
+ ]
+}

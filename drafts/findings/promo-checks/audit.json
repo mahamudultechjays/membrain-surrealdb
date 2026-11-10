@@ -1,0 +1,326 @@
+{
+ "audit": {
+  "rows": [
+   {
+    "traceId": "emv4gmxqzpwv8v935l1i",
+    "createdAt": "2026-11-09T08:54:08.021404493+00:00",
+    "kind": "retrieval",
+    "cost": 0.0,
+    "latencyMs": 5750,
+    "rowsTouched": 9
+   },
+   {
+    "traceId": "emv4gmxqzpwv8v935l1i",
+    "createdAt": "2026-11-09T08:54:08.020890866+00:00",
+    "kind": "decision",
+    "cost": 0.0,
+    "latencyMs": 5750,
+    "rowsTouched": 0
+   },
+   {
+    "traceId": "tjv6c2o1c9roy3dbawkk",
+    "createdAt": "2026-11-09T08:54:07.496986193+00:00",
+    "kind": "retrieval",
+    "cost": 0.0,
+    "latencyMs": 5222,
+    "rowsTouched": 9
+   },
+   {
+    "traceId": "tjv6c2o1c9roy3dbawkk",
+    "createdAt": "2026-11-09T08:54:07.496146057+00:00",
+    "kind": "decision",
+    "cost": 0.0,
+    "latencyMs": 5222,
+    "rowsTouched": 0
+   },
+   {
+    "traceId": "v9qqbjx4mtw1n2tve3wy",
+    "createdAt": "2026-11-09T08:54:07.253096741+00:00",
+    "kind": "retrieval",
+    "cost": 0.0,
+    "latencyMs": 4977,
+    "rowsTouched": 9
+   },
+   {
+    "traceId": "v9qqbjx4mtw1n2tve3wy",
+    "createdAt": "2026-11-09T08:54:07.252232324+00:00",
+    "kind": "decision",
+    "cost": 0.0,
+    "latencyMs": 4977,
+    "rowsTouched": 0
+   },
+   {
+    "traceId": "nx5tp1fchhi2g27m0qht",
+    "createdAt": "2026-11-09T08:54:01.845312041+00:00",
+    "kind": "retrieval",
+    "cost": 0.0,
+    "latencyMs": 14514,
+    "rowsTouched": 7
+   },
+   {
+    "traceId": "nx5tp1fchhi2g27m0qht",
+    "createdAt": "2026-11-09T08:54:01.844767508+00:00",
+    "kind": "decision",
+    "cost": 0.0,
+    "latencyMs": 14514,
+    "rowsTouched": 0
+   },
+   {
+    "traceId": "x6t6hcph7kqc8dwlw3lb",
+    "createdAt": "2026-11-09T08:54:00.911831157+00:00",
+    "kind": "retrieval",
+    "cost": 0.0,
+    "latencyMs": 13578,
+    "rowsTouched": 8
+   },
+   {
+    "traceId": "x6t6hcph7kqc8dwlw3lb",
+    "createdAt": "2026-11-09T08:54:00.911196806+00:00",
+    "kind": "decision",
+    "cost": 0.0,
+    "latencyMs": 13578,
+    "rowsTouched": 0
+   },
+   {
+    "traceId": "gug97f8z23sqqlrnys7x",
+    "createdAt": "2026-11-09T08:53:59.303262914+00:00",
+    "kind": "retrieval",
+    "cost": 0.0,
+    "latencyMs": 11957,
+    "rowsTouched": 6
+   },
+   {
+    "traceId": "gug97f8z23sqqlrnys7x",
+    "createdAt": "2026-11-09T08:53:59.302496465+00:00",
+    "kind": "decision",
+    "cost": 0.0,
+    "latencyMs": 11957,
+    "rowsTouched": 0
+   },
+   {
+    "traceId": "kclaw6loyrotfd8z1q8u",
+    "createdAt": "2026-11-09T08:53:46.911066603+00:00",
+    "kind": "retrieval",
+    "cost": 0.0,
+    "latencyMs": 11439,
+    "rowsTouched": 7
+   },
+   {
+    "traceId": "kclaw6loyrotfd8z1q8u",
+    "createdAt": "2026-11-09T08:53:46.910294621+00:00",
+    "kind": "decision",
+    "cost": 0.0,
+    "latencyMs": 11439,
+    "rowsTouched": 0
+   },
+   {
+    "traceId": "zvh4wu383ssg2oa1hdw1",
+    "createdAt": "2026-11-09T08:53:40.724224713+00:00",
+    "kind": "retrieval",
+    "cost": 0.0,
+    "latencyMs": 5251,
+    "rowsTouched": 9
+   },
+   {
+    "traceId": "zvh4wu383ssg2oa1hdw1",
+    "createdAt": "2026-11-09T08:53:40.723619565+00:00",
+    "kind": "decision",
+    "cost": 0.0,
+    "latencyMs": 5251,
+    "rowsTouched": 0
+   },
+   {
+    "traceId": "efqce0i0b85mp9b3s47t",
+    "createdAt": "2026-11-09T08:53:39.781408462+00:00",
+    "kind": "retrieval",
+    "cost": 0.0,
+    "latencyMs": 4312,
+    "rowsTouched": 10
+   },
+   {
+    "traceId": "efqce0i0b85mp9b3s47t",
+    "createdAt": "2026-11-09T08:53:39.780781169+00:00",
+    "kind": "decision",
+    "cost": 0.0,
+    "latencyMs": 4312,
+    "rowsTouched": 0
+   },
+   {
+    "traceId": "i0ixochta5ijrard9boo",
+    "createdAt": "2026-11-09T08:53:35.008473449+00:00",
+    "kind": "retrieval",
+    "cost": 0.0,
+    "latencyMs": 6305,
+    "rowsTouched": 11
+   },
+   {
+    "traceId": "i0ixochta5ijrard9boo",
+    "createdAt": "2026-11-09T08:53:35.007948451+00:00",
+    "kind": "decision",
+    "cost": 0.0,
+    "latencyMs": 6305,
+    "rowsTouched": 0
+   },
+   {
+    "traceId": "ecusqy15k9wgwr5kaqib",
+    "createdAt": "2026-11-09T08:53:34.983290340+00:00",
+    "kind": "retrieval",
+    "cost": 0.0,
+    "latencyMs": 6361,
+    "rowsTouched": 7
+   },
+   {
+    "traceId": "ecusqy15k9wgwr5kaqib",
+    "createdAt": "2026-11-09T08:53:34.982440728+00:00",
+    "kind": "decision",
+    "cost": 0.0,
+    "latencyMs": 6361,
+    "rowsTouched": 0
+   },
+   {
+    "traceId": "lteny4n9ybaipfo258xk",
+    "createdAt": "2026-11-09T08:53:34.615948722+00:00",
+    "kind": "retrieval",
+    "cost": 0.0,
+    "latencyMs": 5915,
+    "rowsTouched": 11
+   },
+   {
+    "traceId": "lteny4n9ybaipfo258xk",
+    "createdAt": "2026-11-09T08:53:34.615125124+00:00",
+    "kind": "decision",
+    "cost": 0.0,
+    "latencyMs": 5915,
+    "rowsTouched": 0
+   },
+   {
+    "traceId": "jdw9ga6in739mlb9znsd",
+    "createdAt": "2026-11-09T08:53:28.220848006+00:00",
+    "kind": "retrieval",
+    "cost": 0.0,
+    "latencyMs": 6046,
+    "rowsTouched": 11
+   },
+   {
+    "traceId": "jdw9ga6in739mlb9znsd",
+    "createdAt": "2026-11-09T08:53:28.220238019+00:00",
+    "kind": "decision",
+    "cost": 0.0,
+    "latencyMs": 6046,
+    "rowsTouched": 0
+   },
+   {
+    "traceId": "hcruo8lxmq87m0yykask",
+    "createdAt": "2026-11-09T08:53:28.057523627+00:00",
+    "kind": "retrieval",
+    "cost": 0.0,
+    "latencyMs": 6105,
+    "rowsTouched": 11
+   },
+   {
+    "traceId": "hcruo8lxmq87m0yykask",
+    "createdAt": "2026-11-09T08:53:28.056606924+00:00",
+    "kind": "decision",
+    "cost": 0.0,
+    "latencyMs": 6105,
+    "rowsTouched": 0
+   },
+   {
+    "traceId": "go03dihdo44dmhyhhkql",
+    "createdAt": "2026-11-09T08:53:25.858307097+00:00",
+    "kind": "retrieval",
+    "cost": 0.0,
+    "latencyMs": 4214,
+    "rowsTouched": 7
+   },
+   {
+    "traceId": "go03dihdo44dmhyhhkql",
+    "createdAt": "2026-11-09T08:53:25.857483495+00:00",
+    "kind": "decision",
+    "cost": 0.0,
+    "latencyMs": 4214,
+    "rowsTouched": 0
+   },
+   {
+    "traceId": "q02xcfarnrt0w44v2bnq",
+    "createdAt": "2026-11-09T08:51:59.229370254+00:00",
+    "kind": "retrieval",
+    "cost": 0.0,
+    "latencyMs": 5816,
+    "rowsTouched": 11
+   },
+   {
+    "traceId": "q02xcfarnrt0w44v2bnq",
+    "createdAt": "2026-11-09T08:51:59.228813115+00:00",
+    "kind": "decision",
+    "cost": 0.0,
+    "latencyMs": 5816,
+    "rowsTouched": 0
+   },
+   {
+    "traceId": "zd433jv3l2ow8as9b9tf",
+    "createdAt": "2026-11-09T08:51:58.576339963+00:00",
+    "kind": "retrieval",
+    "cost": 0.0,
+    "latencyMs": 6251,
+    "rowsTouched": 11
+   },
+   {
+    "traceId": "zd433jv3l2ow8as9b9tf",
+    "createdAt": "2026-11-09T08:51:58.575506431+00:00",
+    "kind": "decision",
+    "cost": 0.0,
+    "latencyMs": 6251,
+    "rowsTouched": 0
+   },
+   {
+    "traceId": "f7zxdhdjrewsovxcmfft",
+    "createdAt": "2026-11-09T08:51:56.545700326+00:00",
+    "kind": "retrieval",
+    "cost": 0.0,
+    "latencyMs": 4198,
+    "rowsTouched": 7
+   },
+   {
+    "traceId": "f7zxdhdjrewsovxcmfft",
+    "createdAt": "2026-11-09T08:51:56.544922616+00:00",
+    "kind": "decision",
+    "cost": 0.0,
+    "latencyMs": 4198,
+    "rowsTouched": 0
+   },
+   {
+    "traceId": "oe0264v2ooqvkocrxkww",
+    "createdAt": "2026-11-09T08:51:37.483542550+00:00",
+    "kind": "retrieval",
+    "cost": 0.0,
+    "latencyMs": 6047,
+    "rowsTouched": 11
+   },
+   {
+    "traceId": "oe0264v2ooqvkocrxkww",
+    "createdAt": "2026-11-09T08:51:37.482906356+00:00",
+    "kind": "decision",
+    "cost": 0.0,
+    "latencyMs": 6047,
+    "rowsTouched": 0
+   },
+   {
+    "traceId": "ttpv5nqe4i7mu13ggz65",
+    "createdAt": "2026-11-09T08:51:37.349770911+00:00",
+    "kind": "retrieval",
+    "cost": 0.0,
+    "latencyMs": 5916,
+    "rowsTouched": 11
+   },
+   {
+    "traceId": "ttpv5nqe4i7mu13ggz65",
+    "createdAt": "2026-11-09T08:51:37.348952978+00:00",
+    "kind": "decision",
+    "cost": 0.0,
+    "latencyMs": 5916,
+    "rowsTouched": 0
+   }
+  ]
+ }
+}

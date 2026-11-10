@@ -1,0 +1,7 @@
+bogus ERR MemoryAPIError [400] unknown trace kind: bogus (expected decision|retrieval|response)
+ingest ERR MemoryAPIError [400] unknown trace kind: ingest (expected decision|retrieval|response)
+extraction ERR MemoryAPIError [400] unknown trace kind: extraction (expected decision|retrieval|response)
+write ERR MemoryAPIError [400] unknown trace kind: write (expected decision|retrieval|response)
+remember ERR MemoryAPIError [400] unknown trace kind: remember (expected decision|retrieval|response)
+consolidation ERR MemoryAPIError [400] unknown trace kind: consolidation (expected decision|retrieval|response)
+elaboration ERR MemoryAPIError [400] unknown trace kind: elaboration (expected decision|retrieval|response)

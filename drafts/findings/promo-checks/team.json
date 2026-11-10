@@ -1,0 +1,44 @@
+{
+ "entities": [
+  {
+   "id": "['organisation', 'cobalt_ridge']",
+   "name": "Cobalt Ridge",
+   "key": null,
+   "value": null,
+   "label": null,
+   "subject": null,
+   "object": null,
+   "predicate": null,
+   "source": null,
+   "labels": null,
+   "validUntil": null,
+   "createdAt": "2026-11-09T08:20:27.577544518+00:00",
+   "scope": null
+  }
+ ],
+ "attributes": [
+  {
+   "id": "j4824c89f3xhcnwzhqbg",
+   "name": null,
+   "key": "return_window",
+   "value": "45 days",
+   "label": null,
+   "subject": null,
+   "object": null,
+   "predicate": null,
+   "source": {
+    "kind": "upsert",
+    "trust": 0.95
+   },
+   "labels": [],
+   "validUntil": null,
+   "createdAt": "2026-11-09T08:20:59.488162856+00:00",
+   "scope": [
+    [
+     "org/spreetail/lab/promo-check/team/"
+    ]
+   ]
+  }
+ ],
+ "relations": []
+}

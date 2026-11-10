@@ -1,0 +1,70 @@
+{
+ "write_with_labels": {
+  "mode": "triples",
+  "session_id": "he9jimy77ij2o1ki7vwi",
+  "chunk_id": null,
+  "extraction": {
+   "turn_id": "",
+   "entities": [
+    {
+     "id": "['organisation', 'cobalt_ridge']",
+     "name": "Cobalt Ridge",
+     "entityType": "organization",
+     "memoryCategory": "knowledge",
+     "isNew": true
+    }
+   ],
+   "attributes": [
+    {
+     "id": "w66hwzbwd8s07lx6oby5",
+     "entityId": "['organisation', 'cobalt_ridge']",
+     "key": "return_window",
+     "value": "30 days",
+     "memoryCategory": "knowledge"
+    }
+   ],
+   "relations": [],
+   "instructions": [],
+   "uncertainties": [],
+   "corrections": []
+  },
+  "preview": false,
+  "turn_id": "myil9eobqoynv1snzmkg"
+ },
+ "no_filter": [
+  {
+   "id": "attribute:w66hwzbwd8s07lx6oby5",
+   "score": 0.6981,
+   "text": "Cobalt Ridge's return window is 30 days",
+   "source": "attribute"
+  },
+  {
+   "id": "entity:['organisation', 'cobalt_ridge']",
+   "score": 0.32,
+   "text": "Cobalt Ridge",
+   "source": "entity"
+  }
+ ],
+ "label_kind_rule": [
+  {
+   "id": "attribute:w66hwzbwd8s07lx6oby5",
+   "score": 0.6981,
+   "text": "Cobalt Ridge's return window is 30 days",
+   "source": "attribute"
+  },
+  {
+   "id": "entity:['organisation', 'cobalt_ridge']",
+   "score": 0.32,
+   "text": "Cobalt Ridge",
+   "source": "entity"
+  }
+ ],
+ "label_other": [
+  {
+   "id": "entity:['organisation', 'cobalt_ridge']",
+   "score": 0.32,
+   "text": "Cobalt Ridge",
+   "source": "entity"
+  }
+ ]
+}

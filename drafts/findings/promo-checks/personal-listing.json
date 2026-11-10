@@ -1,0 +1,6 @@
+attributes 11 source kinds {'turn': 2, 'upsert': 9}
+{"id": "qo5dck0c2k7wkr4n7uxv", "key": "returns_window", "value": "within 60 days of delivery for a full refund", "createdAt": "2026-11-05T07:05:06.409847924+00:00", "source": {"kind": "upsert", "trust": 0.95}, "sessionId": null, "turnId": null, "labels": []}
+{"id": "wx0asuogm3blgem3pj98", "key": "sold_on", "value": "Walmart", "createdAt": "2026-11-05T07:05:06.847541386+00:00", "source": {"kind": "upsert", "trust": 0.95}, "sessionId": null, "turnId": null, "labels": []}
+{"id": "wm7wkjqydalb72pp89t2", "key": "type", "value": "grill", "createdAt": "2026-11-05T07:06:45.221000336+00:00", "source": {"kind": "turn", "ref": "turn:krjbov664euwbveharc2", "sessionId": "p6x903duo21f70z7p26g", "trust": 0.5}, "sessionId": null, "turnId": null, "labels": []}
+{"id": "e37vgrocqjsvs8stxf6t", "key": "sold_on", "value": "Amazon", "createdAt": "2026-11-05T07:06:45.439074165+00:00", "source": {"kind": "turn", "ref": "turn:krjbov664euwbveharc2", "sessionId": "p6x903duo21f70z7p26g", "trust": 0.5}, "sessionId": null, "turnId": null, "labels": []}
+fields ['confidence', 'createdAt', 'entity', 'id', 'importance', 'key', 'labels', 'memoryCategory', 'scope', 'source', 'summary', 'supersededBy', 'supersedes', 'validFrom', 'validUntil', 'value']

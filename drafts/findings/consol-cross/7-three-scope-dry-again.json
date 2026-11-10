@@ -1,0 +1,99 @@
+{
+ "traceId": "qbzxi4wgo64nut763lj3",
+ "created": 9,
+ "updated": 0,
+ "superseded": 0,
+ "dryRun": true,
+ "outcomes": [
+  {
+   "kind": "create",
+   "entityName": "Cobalt Ridge",
+   "key": "return_window",
+   "value": "30 days",
+   "observationId": null,
+   "proofCount": 1,
+   "rationale": "New belief established regarding Cobalt Ridge's return window.",
+   "persisted": false
+  },
+  {
+   "kind": "create",
+   "entityName": "Northwind Outdoor",
+   "key": "lead_time_days",
+   "value": "21",
+   "observationId": null,
+   "proofCount": 1,
+   "rationale": "New belief established regarding Northwind Outdoor's lead time.",
+   "persisted": false
+  },
+  {
+   "kind": "create",
+   "entityName": "Northwind Outdoor",
+   "key": "po_day",
+   "value": "Monday",
+   "observationId": null,
+   "proofCount": 1,
+   "rationale": "New belief established regarding Northwind Outdoor's PO day.",
+   "persisted": false
+  },
+  {
+   "kind": "create",
+   "entityName": "Cobalt Ridge",
+   "key": "return_window",
+   "value": "30 days",
+   "observationId": null,
+   "proofCount": 1,
+   "rationale": "Initial consolidation of Cobalt Ridge's return window policy.",
+   "persisted": false
+  },
+  {
+   "kind": "create",
+   "entityName": "Northwind Outdoor",
+   "key": "lead_time",
+   "value": "21 days",
+   "observationId": null,
+   "proofCount": 1,
+   "rationale": "Initial consolidation of Northwind Outdoor's lead time.",
+   "persisted": false
+  },
+  {
+   "kind": "create",
+   "entityName": "Northwind Outdoor",
+   "key": "po_day",
+   "value": "Monday",
+   "observationId": null,
+   "proofCount": 1,
+   "rationale": "Initial consolidation of Northwind Outdoor's purchase order day.",
+   "persisted": false
+  },
+  {
+   "kind": "create",
+   "entityName": "Cobalt Ridge",
+   "key": "returns_window",
+   "value": "30 days",
+   "observationId": null,
+   "proofCount": 1,
+   "rationale": "Initial consolidation of returns window policy.",
+   "persisted": false
+  },
+  {
+   "kind": "create",
+   "entityName": "Northwind Outdoor",
+   "key": "lead_time",
+   "value": "21 days",
+   "observationId": null,
+   "proofCount": 1,
+   "rationale": "Initial consolidation of lead time.",
+   "persisted": false
+  },
+  {
+   "kind": "create",
+   "entityName": "Northwind Outdoor",
+   "key": "contact",
+   "value": "Dana Whitfield",
+   "observationId": null,
+   "proofCount": 1,
+   "rationale": "Initial consolidation of primary contact.",
+   "persisted": false
+  }
+ ]
+}

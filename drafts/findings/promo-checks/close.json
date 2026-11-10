@@ -1,0 +1,52 @@
+{
+ "rule_written": [
+  "fotfxda2gn9kqnexm72v"
+ ],
+ "triple_validUntil": "{\"mode\": \"triples\", \"sessionId\": \"lyowdlzhj4b4yrg6hmn3\", \"turnId\": \"k8mps5zhhybay90cttc4\", \"extraction\": {\"turnId\": \"\", \"entities\": [{\"id\": \"['other', 'harbor_basics']\", \"name\": \"Harbor Basics\", \"entityType\": \"product_line\", \"memoryCategory\": \"knowledge\", \"isNew\": false}], \"attributes\": [], \"relations\": [], \"actions\": [], \"instructions\": [], \"uncertainties\": [], \"corrections\": []}, \"preview\": false}",
+ "triple_valid_until": "MemoryAPIError: [422] triples[0]: `valid_from`/`valid_until` are only valid on relation entries",
+ "recall_now": [
+  {
+   "id": "attribute:fotfxda2gn9kqnexm72v",
+   "text": "Harbor Basics's prime day floor is below Amazon"
+  },
+  {
+   "id": "attribute:j4824c89f3xhcnwzhqbg",
+   "text": "Cobalt Ridge's return window is 45 days"
+  },
+  {
+   "id": "entity:['other', 'harbor_basics']",
+   "text": "Harbor Basics"
+  }
+ ],
+ "history": {
+  "history": [
+   {
+    "id": "fotfxda2gn9kqnexm72v",
+    "entity": "entity:other/harbor_basics",
+    "key": "prime_day_floor",
+    "value": "below Amazon",
+    "memoryCategory": "knowledge",
+    "importance": 0.8,
+    "confidence": 0.95,
+    "summary": "Harbor Basics's prime day floor is below Amazon",
+    "scope": [
+     [
+      "org/spreetail/lab/promo-check/team/"
+     ]
+    ],
+    "labels": [
+     "kind=rule"
+    ],
+    "validFrom": null,
+    "validUntil": null,
+    "supersedes": null,
+    "supersededBy": null,
+    "source": {
+     "kind": "upsert",
+     "trust": 0.95
+    },
+    "createdAt": "2026-11-09T09:35:21.289453730+00:00"
+   }
+  ]
+ }
+}
