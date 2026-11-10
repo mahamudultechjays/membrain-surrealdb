@@ -348,35 +348,40 @@ export function VctFilterBar({
       return map.domains.flatMap((d) => d.nodes).find((n) => n.id === id)?.name ?? id
     return map.sections.flatMap((s) => s.goals).find((g) => g.id === id)?.name ?? id
   }
-  const onboarded = Boolean(mine?.onboarded && mine.nodes.length)
+  const myDomains = mine?.domains ?? []
+  const myNodes = mine?.nodes ?? []
+  const intro =
+    myDomains.length > 0
+      ? 'Starts on your value chain domains. Change it to look at any part of the value chain.'
+      : 'You are not mapped to the value chain yet, so pick a domain, node or goal.'
+  const showShortcuts = myDomains.length > 0 || hasVctFilter(value)
   return (
     <section className="vct-filter" aria-label="Value-driven filter">
       <p className="vct-filter-intro">
-        <strong>Value-driven filter</strong>{' '}
-        <span className="ask-muted">
-          {onboarded
-            ? 'Starts on your value chain domains. Change it to look at any part of the value chain.'
-            : 'You have no value chain nodes yet, so pick a domain, node or goal.'}
-        </span>
+        <strong>Value-driven filter</strong> <span className="ask-muted">{intro}</span>
       </p>
-      {onboarded && mine && (
+      {showShortcuts && (
         <div className="ask-chips vct-filter-mine">
-          <button
-            type="button"
-            className="ask-chip"
-            onClick={() => onChange(filterFromOnboarding(mine))}
-          >
-            My domains
-          </button>
-          <button
-            type="button"
-            className="ask-chip"
-            onClick={() =>
-              onChange({ ...NO_VCT_FILTER, nodes: mine.nodes.map((n) => n.id) })
-            }
-          >
-            Only my nodes
-          </button>
+          {myDomains.length > 0 && (
+            <button
+              type="button"
+              className="ask-chip"
+              onClick={() => onChange(filterFromOnboarding(mine))}
+            >
+              My domains
+            </button>
+          )}
+          {myNodes.length > 0 && (
+            <button
+              type="button"
+              className="ask-chip"
+              onClick={() =>
+                onChange({ ...NO_VCT_FILTER, nodes: myNodes.map((n) => n.id) })
+              }
+            >
+              Only my nodes
+            </button>
+          )}
           {hasVctFilter(value) && (
             <button
               type="button"
@@ -440,9 +445,9 @@ export interface CoverageFact {
 }
 
 /**
- * Where knowledge is: fact counts per domain and value-chain section. A dashed
- * cell has map nodes but no facts, a gap. Below, facts the tagger handled that
- * have no goal, to fix by hand.
+ * The map of where knowledge is: fact counts per domain and value-chain
+ * section, each section with its share of EBITDA. A dashed cell has map nodes
+ * but no facts, a gap. The tagged facts themselves are listed below it.
  */
 export function VctCoverageView({
   facts,
@@ -454,8 +459,6 @@ export function VctCoverageView({
   const map = useVctMap(api)
   const [coverage, setCoverage] = useState<VctCoverage | null>(null)
   const [failure, setFailure] = useState<string | null>(null)
-  const [editing, setEditing] = useState<string | null>(null)
-  const [changed, setChanged] = useState<Record<string, FactTags | null>>({})
 
   useEffect(() => {
     const controller = new AbortController()
@@ -468,14 +471,11 @@ export function VctCoverageView({
     return () => controller.abort()
   }, [api])
 
-  const tagsOf = (f: CoverageFact) => (f.id in changed ? changed[f.id] : f.tags)
-  const withoutGoal = facts.filter(
-    (f) => f.tagged && !tagsOf(f)?.goal && (f.business !== false || f.id in changed),
-  )
   const pending = facts.filter((f) => !f.tagged).length
 
   return (
     <section className="vct-coverage" aria-label="Value chain coverage">
+      <h2 className="vct-heading">Where knowledge sits</h2>
       {failure && (
         <p className="error" role="alert">
           {failure}
@@ -501,6 +501,9 @@ export function VctCoverageView({
                       title={`${percent(s.ebitda_weight)} of EBITDA`}
                     >
                       {s.label}
+                      <span className="vct-share">
+                        {percent(s.ebitda_weight)} of EBITDA
+                      </span>
                     </th>
                   ))}
                 </tr>
@@ -541,40 +544,6 @@ export function VctCoverageView({
             Dashed cells have nodes but no facts yet: a gap. “–” means no node sits there.
           </p>
         </>
-      )}
-
-      <h2 className="vct-heading">Facts without a goal ({withoutGoal.length})</h2>
-      {withoutGoal.length === 0 ? (
-        <p className="vct-muted">Every tagged fact listed here has a goal.</p>
-      ) : (
-        <ul className="vct-gap-list">
-          {withoutGoal.map((f) => (
-            <li key={f.id}>
-              <div className="vct-gap-row">
-                <span>
-                  <strong>{f.entity}</strong> · <span className="mono">{f.key}</span> ={' '}
-                  {f.value}
-                </span>
-                <VctTags tags={tagsOf(f)} />
-                <button
-                  type="button"
-                  className="btn-secondary vct-small"
-                  aria-expanded={editing === f.id}
-                  onClick={() => setEditing(editing === f.id ? null : f.id)}
-                >
-                  {editing === f.id ? 'Close' : 'Add goal'}
-                </button>
-              </div>
-              {editing === f.id && (
-                <TagEditor
-                  factId={f.id}
-                  api={api}
-                  onChange={(next) => setChanged((c) => ({ ...c, [f.id]: next }))}
-                />
-              )}
-            </li>
-          ))}
-        </ul>
       )}
     </section>
   )

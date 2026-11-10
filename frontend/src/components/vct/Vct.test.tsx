@@ -266,7 +266,7 @@ describe('VctFilterBar', () => {
     )
     const goal = screen.getByLabelText('Goal')
     await waitFor(() => expect(goal).not.toBeDisabled())
-    expect(screen.getByText(/no value chain nodes yet/)).toBeInTheDocument()
+    expect(screen.getByText(/not mapped to the value chain yet/)).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'My domains' })).not.toBeInTheDocument()
 
     fireEvent.change(goal, { target: { value: 'ff-mgmt5' } })
@@ -298,6 +298,21 @@ describe('VctFilterBar', () => {
     expect(onChange).toHaveBeenLastCalledWith({ goals: [], nodes: ['sc6'], domains: [] })
     fireEvent.click(screen.getByRole('button', { name: 'Clear' }))
     expect(onChange).toHaveBeenLastCalledWith(NO_VCT_FILTER)
+
+    // Mapped to domains but no nodes: no "no nodes" text, and only My domains.
+    rerender(
+      <VctFilterBar
+        value={{ goals: [], nodes: [], domains: ['supply-chain'] }}
+        onChange={onChange}
+        mine={{ ...mine, nodes: [] }}
+        api={api}
+      />,
+    )
+    expect(screen.getByText(/Starts on your value chain domains/)).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'My domains' })).toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: 'Only my nodes' }),
+    ).not.toBeInTheDocument()
   })
 })
 
@@ -372,7 +387,7 @@ describe('AskAnswer', () => {
 })
 
 describe('VctCoverageView', () => {
-  it('draws the domain x section grid with gaps, and lists facts without a goal', async () => {
+  it("draws the domain x section grid with gaps and each section's EBITDA share", async () => {
     const api = fakeApi()
     const storeInventory = ref('node', 'sc4', 'Store Inventory')
     render(
@@ -412,12 +427,9 @@ describe('VctCoverageView', () => {
     expect(within(finance).getAllByRole('cell')[1]).toHaveAttribute('data-gap', '')
     expect(screen.getByText(/1 listed here waiting for the tagger/)).toBeInTheDocument()
 
-    expect(
-      screen.getByRole('heading', { name: 'Facts without a goal (1)' }),
-    ).toBeInTheDocument()
-    expect(screen.getByText('Dallas warehouse')).toBeInTheDocument()
-    fireEvent.click(screen.getByRole('button', { name: 'Add goal' }))
-    expect(await screen.findByLabelText('Choose another goal')).toBeInTheDocument()
+    expect(within(grid).getAllByText(/of EBITDA/).length).toBeGreaterThan(0)
+    // The facts themselves are listed by the Tagged facts view, not here.
+    expect(screen.queryByText('Dallas warehouse')).not.toBeInTheDocument()
   })
 })
 

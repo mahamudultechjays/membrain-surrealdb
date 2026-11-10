@@ -155,3 +155,10 @@ Merge of feat/layer-precedence into feat/vct-mapping (2026-11-09, Mahamudul):
 - Live: "shipping costs and carrier rates" 10 normal / 4 value-driven, "marketplace payouts" 12 / 6, about 10-12 s per recall.
 - Checks: make check green, 319 backend + 185 frontend tests.
 - Still open: a self-service onboarding screen (users not onboarded through Admin get an empty filter); tag quality on entity-type facts ("Amazon's type is organisation" tagged merchant-ops).
+
+Brain review feedback and Ask filter text (2026-11-10):
+- Brain: the Review view, its badge and its banner are gone. Value chain (#/brain/vct) now shows the map ("Where knowledge sits", each section with its share of EBITDA) above a view-only "Tagged facts" list.
+- Tagged facts: tabs Tagged, Without a goal and Not business; grouped by domain or node, newest first, with each group's share of tagged facts; a pencil on each row opens the existing tag editor. No Confirm buttons and no 48 h window. Backend review actions stay unused.
+- Ask filter: the intro and shortcuts follow the user's onboarding domains, not nodes. A user with domains but no nodes now sees "Starts on your value chain domains" and "My domains"; "Only my nodes" shows only when they have nodes; "Clear" shows whenever a filter is set.
+- make check green: 319 backend + 181 frontend tests.
+Next: check both screens in the browser; open items are tag quality on "X's type is Y" facts and self-service onboarding.

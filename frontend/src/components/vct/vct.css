@@ -268,25 +268,7 @@
   resize: vertical;
 }
 
-/* Review */
-.vct-banner {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px 12px;
-  align-items: center;
-  margin: 0 0 12px;
-  padding: 10px 16px;
-  border-radius: var(--mb-radius-sm);
-  background: var(--mb-accent-soft);
-  color: var(--mb-accent-ink);
-  font-size: 14px;
-}
-
-.vct-banner a {
-  margin-left: auto;
-  font-weight: 600;
-}
-
+/* Tagged facts */
 .vct-review {
   display: grid;
   gap: 14px;
@@ -441,22 +423,26 @@
   border-color: currentcolor;
 }
 
-.vct-guess {
-  border: 1px dashed var(--mb-muted);
-  background: transparent;
+.vct-row-tagged {
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1.6fr) auto;
+}
+
+.vct-pencil {
+  display: inline-grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--mb-line);
+  border-radius: 6px;
+  background: var(--mb-bg);
   color: var(--mb-muted);
+  cursor: pointer;
 }
 
-.vct-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-}
-
-.vct-confirm {
-  border-color: var(--mb-accent);
-  color: var(--mb-accent-ink);
-  font-weight: 600;
+.vct-pencil:hover,
+.vct-pencil[aria-expanded='true'] {
+  border-color: var(--mb-ink);
+  color: var(--mb-ink);
 }
 
 .vct-picker {
@@ -486,4 +472,11 @@
   .vct-row-head {
     display: none;
   }
+}
+
+.vct-share {
+  display: block;
+  color: var(--mb-muted);
+  font-size: 11px;
+  font-weight: 400;
 }
