@@ -162,3 +162,6 @@ Brain review feedback and Ask filter text (2026-11-10):
 - Ask filter: the intro and shortcuts follow the user's onboarding domains, not nodes. A user with domains but no nodes now sees "Starts on your value chain domains" and "My domains"; "Only my nodes" shows only when they have nodes; "Clear" shows whenever a filter is set.
 - make check green: 319 backend + 181 frontend tests.
 Next: check both screens in the browser; open items are tag quality on "X's type is Y" facts and self-service onboarding.
+
+Demo data (2026-11-10): 80 facts, 10 per domain, written as triples to org/spreetail/user/mahamudul_hasan/demo (granted to mahamudul.hasan@spreetail.com; personal scope untouched, no forget). Tagger: 62 of 80 in the intended domain; Sales & Marketing weakest (3/10, pulled to mo1 by "brand/partner/marketplace" words). The 18 misses were corrected as user tags (source=user), so the tagger's misses stay visible in tag feedback. Search check, 2 keywords per domain with that domain as the filter, demo scope only: all 16 searches kept 0 off-domain results in Value-driven while Default mixed in other domains. Normal column renamed Default. make check green. Script: session scratchpad demo_seed.py (seed | tag | fix | search).
+Next: tagger quality for Sales & Marketing and entity-type facts.

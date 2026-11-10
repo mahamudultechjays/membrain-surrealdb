@@ -50,7 +50,7 @@ async function findAnswer(question: string) {
 }
 
 const resultTexts = (answer: HTMLElement) =>
-  within(within(answer).getByRole('list', { name: 'Normal results' }))
+  within(within(answer).getByRole('list', { name: 'Default results' }))
     .getAllByRole('listitem')
     .map((item) => item.querySelector('.ask-fact-text')?.textContent)
 
@@ -82,12 +82,12 @@ describe('AskPage', () => {
     // Both values come back side by side, as Agent Memory ranks them.
     expect(texts.some((t) => t?.includes('window_days = 30'))).toBe(true)
     expect(texts.some((t) => t?.includes('window_days = 60'))).toBe(true)
-    // Two columns, Normal and Value-driven; no layer headings inside them.
+    // Two columns, Default and Value-driven; no layer headings inside them.
     expect(
       within(answer)
         .getAllByRole('heading', { level: 3 })
         .map((h) => h.textContent),
-    ).toEqual(['Normal', 'Value-driven'])
+    ).toEqual(['Default', 'Value-driven'])
     expect(within(answer).queryByRole('note')).not.toBeInTheDocument()
     expect(within(answer).getByText(/3 scopes read/)).toBeInTheDocument()
     expect(within(answer).getByText(/as Priya$/)).toBeInTheDocument()

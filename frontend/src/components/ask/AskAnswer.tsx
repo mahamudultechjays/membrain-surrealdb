@@ -12,7 +12,7 @@ interface Props {
 const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : 's'}`
 
 /**
- * One recall, two columns. Normal lists every hit in the order Agent Memory
+ * One recall, two columns. Default lists every hit in the order Agent Memory
  * ranked them; Value-driven keeps only the hits whose value chain tags match
  * the filter, in the same order. Facts match on their own tags, memory chunks
  * through the facts captured with them.
@@ -33,7 +33,7 @@ export default function AskAnswer({ answer, who, vctApi }: Props) {
 
       <div className="ask-columns">
         <Column
-          title="Normal"
+          title="Default"
           note="Everything Agent Memory found, best match first."
           facts={answer.facts}
           empty={`Nothing found in ${answer.scopes.join(', ')}`}

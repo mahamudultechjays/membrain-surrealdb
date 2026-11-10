@@ -350,10 +350,10 @@ describe('AskAnswer', () => {
     trace_id: null,
   }
 
-  it('shows every result in Normal and only the matches in Value-driven', () => {
+  it('shows every result in Default and only the matches in Value-driven', () => {
     render(<AskAnswer answer={answer} who="Priya" />)
 
-    const normal = screen.getByRole('region', { name: 'Normal' })
+    const normal = screen.getByRole('region', { name: 'Default' })
     const valueDriven = screen.getByRole('region', { name: 'Value-driven' })
     expect(within(normal).getByText('UPS rate up 5.9%')).toBeInTheDocument()
     expect(within(normal).getByText('Team lunch is Friday')).toBeInTheDocument()
