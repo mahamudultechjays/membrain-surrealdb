@@ -1,0 +1,90 @@
+[
+ {
+  "group": "Cobalt Ridge return window",
+  "response": {
+   "mode": "none",
+   "session_id": "a217vfwivc4l0wd3xfzl",
+   "chunk_id": "omzmp88qw2nf00q255yx",
+   "extraction": null,
+   "preview": false,
+   "turn_id": "y20jur1qwx60hrq9enjt"
+  }
+ },
+ {
+  "group": "Northwind Outdoor lead time",
+  "response": {
+   "mode": "none",
+   "session_id": "qtevji4ovyrmd3z9db1z",
+   "chunk_id": "d0yhkxue831hau9sioam",
+   "extraction": null,
+   "preview": false,
+   "turn_id": "mcco1nx7fj12jhe6yvrz"
+  }
+ },
+ {
+  "group": "Northwind Outdoor maximum promotional discount",
+  "response": {
+   "mode": "none",
+   "session_id": "j7c8as3oofwxptcr4pwi",
+   "chunk_id": "ss9uqtiefh63tn3glaor",
+   "extraction": null,
+   "preview": false,
+   "turn_id": "bzbrx4la2dywkggpwwnh"
+  }
+ },
+ {
+  "group": "Northwind Outdoor free freight threshold",
+  "response": {
+   "mode": "none",
+   "session_id": "jd5b5tl75zs5f75t092j",
+   "chunk_id": "zkrheyc1j83qyt19hfah",
+   "extraction": null,
+   "preview": false,
+   "turn_id": "ohlsql2eo43bez2we328"
+  }
+ },
+ {
+  "group": "Defect chargeback window for Northwind Outdoor",
+  "response": {
+   "mode": "none",
+   "session_id": "b9iow7g96gb7gmll6a2c",
+   "chunk_id": "amwnxdirhnk01x6jfsru",
+   "extraction": null,
+   "preview": false,
+   "turn_id": "foazdiudna2784i36vz6"
+  }
+ },
+ {
+  "group": "Reno warehouse closing time",
+  "response": {
+   "mode": "none",
+   "session_id": "jxtj3zmwwervto2t9k0g",
+   "chunk_id": "imtphnaud3tx8z4s1mg5",
+   "extraction": null,
+   "preview": false,
+   "turn_id": "krhaohtxyocgkof9vvrd"
+  }
+ },
+ {
+  "group": "Prime Day pricing strategy for Harbor Basics",
+  "response": {
+   "mode": "none",
+   "session_id": "t1onccn579qqygzr5pax",
+   "chunk_id": "n3vrdzou2bmvvspifr34",
+   "extraction": null,
+   "preview": false,
+   "turn_id": "j151lo7ksa4fxevjjlox"
+  }
+ },
+ {
+  "group": "Weekly purchase order day for Northwind Outdoor",
+  "response": {
+   "mode": "none",
+   "session_id": "rf6f2y53k292q9w8dln1",
+   "chunk_id": "sx2d28fvhxkf99058aox",
+   "extraction": null,
+   "preview": false,
+   "turn_id": "yvhv81cfqemdso0gred1"
+  }
+ }
+]

@@ -1,0 +1,382 @@
+<title>Promotion Build Spec</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Condensed:wght@500;600&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap">
+<style>
+/* Layout: same family as the layers spec. Sticky contents rail, one readable column, architecture first, numbered build steps as the spine. */
+:root {
+  --bg: #f7f8f7; --surface: #ffffff; --sunk: #eef1ef; --line: #d6ddd9;
+  --fg: #1b2420; --muted: #57635d; --accent: #0f6b5c;
+  --am: #1d6b3a; --am-bg: #e3f1e7;
+  --ours: #23519c; --ours-bg: #e4ecf8;
+  --open: #8a5300; --open-bg: #fbefd9;
+  --display: "IBM Plex Sans Condensed", "Arial Narrow", system-ui, sans-serif;
+  --body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #121715; --surface: #18201d; --sunk: #1f2925; --line: #2f3b36;
+  --fg: #e3e9e6; --muted: #9aa8a1; --accent: #5cc7b2;
+  --am: #7fd69a; --am-bg: #1c3325; --ours: #9bbcf2; --ours-bg: #1d2a40;
+  --open: #f0b65a; --open-bg: #3a2b12; color-scheme: dark; } }
+:root[data-theme="dark"] {
+  --bg: #121715; --surface: #18201d; --sunk: #1f2925; --line: #2f3b36;
+  --fg: #e3e9e6; --muted: #9aa8a1; --accent: #5cc7b2;
+  --am: #7fd69a; --am-bg: #1c3325; --ours: #9bbcf2; --ours-bg: #1d2a40;
+  --open: #f0b65a; --open-bg: #3a2b12; color-scheme: dark; }
+
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--fg); font: 16px/1.6 var(--body); }
+.wrap { max-width: 1240px; margin: 0 auto; padding-block: 32px 72px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: grid; grid-template-columns: 210px minmax(0, 1fr); gap: 44px; }
+nav.toc { position: sticky; top: calc(24px + env(safe-area-inset-top, 0px)); align-self: start; font-size: .86rem; }
+nav.toc .lbl { font: 600 .72rem/1 var(--display); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); margin-bottom: 10px; }
+nav.toc ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+nav.toc a { display: block; padding: 4px 10px; border-left: 2px solid var(--line); color: var(--muted); text-decoration: none; }
+nav.toc a:hover, nav.toc a:focus-visible { color: var(--fg); border-left-color: var(--accent); }
+main { min-width: 0; }
+header.doc { border-bottom: 1px solid var(--line); padding-bottom: 22px; margin-bottom: 8px; }
+.eyebrow { font: 600 .75rem/1 var(--display); letter-spacing: .12em; text-transform: uppercase; color: var(--accent); }
+h1 { font: 600 clamp(1.9rem, 4vw, 2.6rem)/1.12 var(--display); margin: 10px 0 14px; text-wrap: balance; letter-spacing: -.01em; }
+.meta { display: flex; flex-wrap: wrap; gap: 8px 24px; font-size: .88rem; color: var(--muted); }
+.meta b { color: var(--fg); font-weight: 500; }
+h2 { font: 600 1.45rem/1.25 var(--display); margin: 52px 0 12px; text-wrap: balance; scroll-margin-top: 20px; }
+h2 .n { color: var(--accent); font-variant-numeric: tabular-nums; margin-right: .4em; }
+h3 { font: 600 1.08rem/1.3 var(--body); margin: 28px 0 8px; scroll-margin-top: 20px; }
+p, li { max-width: 74ch; }
+p { margin: 0 0 12px; }
+ul, ol.list { margin: 0 0 14px; padding-left: 22px; display: grid; gap: 6px; }
+a { color: var(--accent); }
+code { font: .86em var(--mono); background: var(--sunk); border: 1px solid var(--line); border-radius: 4px; padding: 0 4px; overflow-wrap: anywhere; }
+pre { font: .84rem/1.55 var(--mono); background: var(--sunk); border: 1px solid var(--line); border-radius: 6px; padding: 12px 14px; overflow-x: auto; margin: 0 0 16px; }
+.tw { overflow-x: auto; margin: 4px 0 18px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); }
+table { width: 100%; border-collapse: collapse; font-size: .92rem; }
+th, td { text-align: left; vertical-align: top; padding: 9px 12px; border-bottom: 1px solid var(--line); }
+th { font: 600 .74rem/1.3 var(--display); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); background: var(--sunk); }
+tbody tr:last-child td { border-bottom: 0; }
+td.num { font-variant-numeric: tabular-nums; white-space: nowrap; }
+td code { white-space: nowrap; }
+.m { display: inline-block; font: 600 .7rem/1.5 var(--display); letter-spacing: .07em; text-transform: uppercase; padding: 1px 8px; border-radius: 3px; white-space: nowrap; vertical-align: 1px; }
+.m-am { color: var(--am); background: var(--am-bg); }
+.m-ours { color: var(--ours); background: var(--ours-bg); }
+.m-open { color: var(--open); background: var(--open-bg); }
+.note { border-left: 3px solid var(--open); background: var(--open-bg); padding: 10px 14px; border-radius: 0 6px 6px 0; margin: 4px 0 18px; }
+.note.ok { border-left-color: var(--am); background: var(--am-bg); }
+.note p:last-child, .note ul:last-child { margin-bottom: 0; }
+
+.diagram { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 16px; margin: 6px 0 10px; overflow-x: auto; }
+.diagram pre.mermaid { background: none; border: 0; padding: 0; margin: 0; font-family: var(--body); text-align: center; min-width: 900px; }
+.cap { font-size: .85rem; color: var(--muted); margin: 0 0 22px; }
+.key { display: flex; flex-wrap: wrap; gap: 8px 18px; font-size: .85rem; color: var(--muted); margin: 0 0 14px; }
+.key span { display: inline-flex; align-items: center; gap: 6px; }
+.sw { width: 14px; height: 14px; border-radius: 3px; border: 1px solid var(--line); display: inline-block; }
+.sw.ui { background: #fdf3e1; } .sw.be { background: #e4ecf8; } .sw.db { background: #efe7f7; } .sw.am { background: #e3f1e7; }
+
+figure.shot { margin: 8px 0 8px; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: var(--surface); }
+figure.shot .chrome { display: flex; align-items: center; gap: 6px; padding: 8px 12px; background: var(--sunk); border-bottom: 1px solid var(--line); font: .78rem var(--mono); color: var(--muted); }
+figure.shot .chrome i { width: 10px; height: 10px; border-radius: 50%; background: var(--line); display: inline-block; }
+figure.shot .chrome span { margin-left: 10px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+figure.shot img { display: block; width: 100%; height: auto; }
+
+.steps { display: grid; gap: 14px; margin: 10px 0 18px; }
+.step { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 16px 18px; display: grid; grid-template-columns: 44px minmax(0, 1fr); gap: 14px; }
+.step .no { font: 600 1.6rem/1 var(--display); color: var(--accent); font-variant-numeric: tabular-nums; }
+.step h3 { margin: 0 0 6px; }
+.step p, .step li { font-size: .95rem; }
+.step ul { margin-bottom: 8px; }
+.done { font-size: .9rem; border-top: 1px dashed var(--line); padding-top: 8px; margin-top: 6px; }
+.done b { font: 600 .72rem/1 var(--display); letter-spacing: .1em; text-transform: uppercase; color: var(--am); margin-right: 6px; }
+
+@media (max-width: 900px) {
+  .wrap { grid-template-columns: 1fr; gap: 20px; }
+  nav.toc { position: static; }
+  nav.toc ol { grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); }
+  .step { grid-template-columns: 1fr; gap: 6px; }
+}
+</style>
+
+<div class="wrap">
+<nav class="toc" aria-label="Contents">
+  <div class="lbl">Contents</div>
+  <ol>
+    <li><a href="#arch">1 Architecture</a></li>
+    <li><a href="#decisions">2 Design decisions</a></li>
+    <li><a href="#config">3 Settings</a></li>
+    <li><a href="#data">4 What we store</a></li>
+    <li><a href="#same">5 Same fact</a></li>
+    <li><a href="#score">6 Scoring</a></li>
+    <li><a href="#review">7 Admin › Promotion</a></li>
+    <li><a href="#build">8 Build steps</a></li>
+  </ol>
+</nav>
+
+<main>
+<header class="doc">
+  <div class="eyebrow">Build spec · Agent Memory proof of concept</div>
+  <h1>Promotion: from personal facts to team rules</h1>
+  <div class="meta"><span>Date <b>9 Nov 2026</b></span><span>Status <b>Design, not built</b></span><span>Builds on <a href="https://claude.ai/artifact/5eTfJYEwy8ZWXszogPtS81">Layers and promotion spec</a></span></div>
+</header>
+
+<p>This spec says how to build promotion step by step. Each step can be built and tested on its own.</p>
+<p>The ladder (personal rule at 1.75, team candidate at 3, admin approval), the weights and the "never demote automatically" rule follow the layers and promotion spec. This page covers how to build them.</p>
+
+<h2 id="arch"><span class="n">1</span>Architecture</h2>
+<p>Agent Memory holds what people know. Our backend and its SQLite file hold everything promotion needs to count and decide.</p>
+<div class="diagram">
+<pre class="mermaid">
+%%{init: {"themeVariables": {"fontSize": "19px"}, "flowchart": {"nodeSpacing": 40, "rankSpacing": 70, "padding": 14}}}%%
+flowchart LR
+  subgraph UI["Web app"]
+    CAP["Capture and Chat"]
+    PLG["Claude chat<br/>(Agent Memory plugin)"]
+    ASK["Ask<br/>default, B, C"]
+    ADM["Admin › Promotion"]
+  end
+  subgraph BE["Our backend"]
+    FLOW["Capture and<br/>chat flows"]
+    JOB["Promotion job<br/>group and score"]
+    API["Promotion API<br/>approve, reject"]
+    AF["Ask flow"]
+  end
+  LLM["Small Claude model<br/>picks the group"]
+  subgraph DB["SQLite"]
+    TAB["Statements, groups,<br/>review list and<br/>team rules"]
+    GR["Grants"]
+  end
+  subgraph AM["Agent Memory"]
+    PS["Personal scopes"]
+    TS["Team scope"]
+    OS["Org scope"]
+  end
+
+  CAP -->|"1"| FLOW
+  FLOW -->|"1 store"| PS
+  PLG -->|"1 store"| PS
+  JOB -->|"2 new and changed facts"| PS
+  JOB <-->|"3"| TAB
+  JOB -->|"4 pick"| LLM
+  ADM -->|"5"| API
+  API --> TAB
+  API -.->|"admin?"| GR
+  API -->|"6 write rule"| TS
+  ASK --> AF
+  AF -->|"7 read"| PS
+  AF --> TS
+  AF --> OS
+
+  classDef ui fill:#fdf3e1,stroke:#c99a4a,color:#3a2a10
+  classDef be fill:#e4ecf8,stroke:#5b7fc0,color:#13254a
+  classDef db fill:#efe7f7,stroke:#8a6bb5,color:#2e1d47
+  classDef am fill:#e3f1e7,stroke:#4f9a68,color:#123a20
+  class CAP,PLG,ASK,ADM ui
+  class FLOW,JOB,API,AF be
+  class TAB,GR db
+  class PS,TS,OS am
+  classDef ext fill:#f3eee8,stroke:#9a8a78,color:#3a3128
+  class LLM ext
+</pre>
+</div>
+<div class="tw"><table>
+  <thead><tr><th>Step</th><th>What happens</th></tr></thead>
+  <tbody>
+    <tr><td class="num">1</td><td>A user captures a note in our app, or chats with Claude through the Agent Memory plugin. Either way it is stored in their personal scope, as today.</td></tr>
+    <tr><td class="num">2</td><td>On each run the promotion job lists the facts in every personal scope and keeps the ones it has not seen, as statements in SQLite: who holds it, what, and when. It also notices facts that were replaced since the last run.</td></tr>
+    <tr><td class="num">3</td><td>The job groups the new statements, recomputes scores and stages, and updates the review list. Only one run happens at a time.</td></tr>
+    <tr><td class="num">4</td><td>To group new statements, the job sends a small Claude model the statements and the existing topics from SQLite: first only the topics about the same subject, then all topics if none fits. The model picks a topic or says it is a new one.</td></tr>
+    <tr><td class="num">5</td><td>A team admin reviews candidates on Admin › Promotion. The API checks their grant first.</td></tr>
+    <tr><td class="num">6</td><td>On Approve, the backend writes one knowledge fact to the team scope.</td></tr>
+    <tr><td class="num">7</td><td>Ask reads personal, team and org scopes as before, so approved rules now appear in answers.</td></tr>
+  </tbody>
+</table></div>
+<p>Every Agent Memory call uses a key limited to the scopes it needs. Users write only their personal scope. The job reads every personal scope and writes nothing to Agent Memory. Only the approval path writes to the team scope; no user, team admins included, can write there directly. No key is given the forget permission.</p>
+
+<h2 id="decisions"><span class="n">2</span>Design decisions</h2>
+<div class="tw"><table>
+  <thead><tr><th>Topic</th><th>Decision</th><th>Why</th></tr></thead>
+  <tbody>
+    <tr><td>Teams</td><td>One common team scope; every member reads it</td><td>Keeps promotion simple. How teams are created and joined is a separate design.</td></tr>
+    <tr><td>Where scores live</td><td>SQLite in our backend</td><td>The counter is ours, not Agent Memory's. Easy to recompute and reset for tests.</td></tr>
+    <tr><td>Finding new statements</td><td>The job lists each personal scope's facts and keeps the ones it has not seen</td><td>Claude chat through the plugin is the main source and writes straight to Agent Memory, not through our backend. Listing catches it, and app captures too, in one path.</td></tr>
+    <tr><td>Who a statement belongs to</td><td>The owner of the personal scope it sits in</td><td>Each person's plugin key writes only to their own personal scope.</td></tr>
+    <tr><td>Team admins</td><td>A role in our grants table, not a write grant</td><td>A write grant would let a team admin capture notes straight into the team scope and skip promotion.</td></tr>
+    <tr><td>Run safety</td><td>One run at a time, with a lock in the backend</td><td>A scheduled run and Run now must not overlap. The backend runs as one process, so an in-process lock is enough.</td></tr>
+    <tr><td>Same fact</td><td>A small model matches each new statement to the topics in SQLite: same-subject topics first, all topics if none fits</td><td>Our conflict tests stored one term under different keys in each scope. Check S1 showed Agent Memory's search scores cannot tell same from different, and the search took 4 to 9 seconds a call.</td></tr>
+    <tr><td>Retiring a rule</td><td>Write a closing value over it, and Ask modes skip closed rules</td><td>Checks S4 and S6: facts take no end date, and forget matched an unpredictable number of records. A new value keeps the old one in history.</td></tr>
+    <tr><td>Thresholds</td><td>Named settings, with a test profile</td><td>Lower values for testing, changed without a release.</td></tr>
+    <tr><td>What counts</td><td>Statements from personal scopes only; recall counting parked</td><td>Build the base ladder first; recall counting can be added on top later.</td></tr>
+    <tr><td>Org step</td><td>Not in this build</td><td>Same pattern one level up, added after the team step works.</td></tr>
+  </tbody>
+</table></div>
+
+<h2 id="config"><span class="n">3</span>Settings</h2>
+<p>Every number lives in settings outside the code, read at start-up. A test profile swaps in small values so a full cycle runs in minutes.</p>
+<div class="tw"><table>
+  <thead><tr><th>Setting</th><th>Default</th><th>Test profile</th><th>Meaning</th></tr></thead>
+  <tbody>
+    <tr><td><code>PROMOTION_ENABLED</code></td><td>off</td><td>on</td><td>Turns the promotion job on</td></tr>
+    <tr><td><code>PROMOTION_TEAM_SCOPE</code></td><td><code>org/spreetail/team/common</code></td><td>a lab scope</td><td>The one team scope rules are written to</td></tr>
+    <tr><td><code>PROMOTION_PERSONAL_RULE_AT</code></td><td class="num">1.75</td><td class="num">1.5</td><td>Own score that makes a hypothesis a personal rule</td></tr>
+    <tr><td><code>PROMOTION_CANDIDATE_AT</code></td><td class="num">3</td><td class="num">2</td><td>Team score that lists a fact for the team admin</td></tr>
+    <tr><td><code>PROMOTION_FLAG_AT</code></td><td class="num">2</td><td class="num">1</td><td>Score against an active team rule that opens a flag. At 2 it needs at least two people.</td></tr>
+    <tr><td><code>PROMOTION_FIRST_WEIGHT</code></td><td class="num">1</td><td class="num">1</td><td>Weight of a person's first statement or contradiction</td></tr>
+    <tr><td><code>PROMOTION_REPEAT_FACTOR</code></td><td class="num">0.5</td><td class="num">0.5</td><td>Each repeat is worth this times the one before (1, 0.5, 0.25…)</td></tr>
+    <tr><td><code>PROMOTION_BATCH_SIZE</code></td><td class="num">20</td><td class="num">5</td><td>How many new statements go to the model in one call</td></tr>
+    <tr><td><code>PROMOTION_GENERIC_SUBJECTS</code></td><td>Spreetail, our team, we, the company</td><td>same</td><td>Subjects too broad to filter by; statements about them go straight to the full topic list</td></tr>
+    <tr><td><code>PROMOTION_MODEL</code></td><td>a small Claude model</td><td>same</td><td>The model that picks the group and normalises the value</td></tr>
+    <tr><td><code>PROMOTION_JOB_EVERY</code></td><td>4 h</td><td>5 min</td><td>How often the job runs; the Promotion tab also has "Run now"</td></tr>
+  </tbody>
+</table></div>
+
+<h2 id="data"><span class="n">4</span>What we store</h2>
+<p>Three SQLite tables, next to the existing grants table. Scores and stages are not stored; they are recomputed from statements each run, so a settings change takes effect on the next run.</p>
+<div class="tw"><table>
+  <thead><tr><th>Table</th><th>One row per</th><th>Main fields</th></tr></thead>
+  <tbody>
+    <tr><td><code>statement</code></td><td>fact found in a personal scope</td><td>user, scope, memory_ref (the fact's id in Agent Memory), source (chat or app, from the fact's source), text (the fact's summary), entity, key, value, said_at, group_id, stance (for, against), replaced_at, processed_at</td></tr>
+    <tr><td><code>fact_group</code></td><td>thing people make claims about, such as "Cobalt Ridge return window"</td><td>label, subject (cleaned name used to filter topics), aliases (other subject names learned to mean the same thing), rule_entity, rule_key (the standard entity and key a team rule is written under), created_at</td></tr>
+    <tr><td><code>review_item</code></td><td>candidate, flag or approved team rule</td><td>kind (candidate, flag), group_id, value, score_when_listed, status, decided_by, decided_at, memory_ref (the fact written to the team scope), rule_id (for a flag, the rule it questions)</td></tr>
+  </tbody>
+</table></div>
+<p>One <code>review_item</code> row follows a candidate through its life:</p>
+<ul>
+  <li><b>Candidate:</b> open → active (approved, now a team rule) → closed (retired), or open → rejected, or open → dropped (score fell below the threshold).</li>
+  <li><b>Flag:</b> one open flag per rule. It opens when the score against the rule reaches <code>PROMOTION_FLAG_AT</code>, then goes to kept or closed. Closing a flag also closes the rule it points to.</li>
+  <li><b>Closing a rule</b> writes a closing value over it in the team scope that reads correctly in any answer, for example "no longer a team rule (closed by the team admin on 12 Nov)", labelled <code>kind=closed</code>. Agent Memory keeps the old value in its history with the date it ended. Our Ask modes also skip closed rules, using the ids in <code>review_item</code>.</li>
+</ul>
+<p>Two things are worked out rather than stored:</p>
+<ul>
+  <li><b>Stages.</b> A person's value is a personal rule while their own score is at least the threshold. The date it became one is the date of the statement that pushed it over.</li>
+  <li><b>Contributors to a rule.</b> The statements for the approved value dated up to the approval.</li>
+</ul>
+<p>The Promotion tab's last-run line is kept in the backend's memory, not stored. It shows blank after a restart until the next run.</p>
+
+<h2 id="same"><span class="n">5</span>Deciding two people hold the same fact</h2>
+<p>This is the hardest part. Our tests stored the same term as <code>promotional_discount_cap</code> in one scope and <code>max_promotional_discount</code> in another, and dropped some values entirely.</p>
+<h3>5.1 Grouping: match against the topic list</h3>
+<p>Each fact group is a topic with a short label, such as "Cobalt Ridge return window", kept in SQLite. Only statements not yet processed are sent; topics are the choices the model picks from.</p>
+<ol class="list">
+  <li><b>Same subject first.</b> The job cleans the statement's subject name (lower case, prefixes such as "organisation/" removed) and selects the topics with that subject or one of its aliases.</li>
+  <li><b>Model picks.</b> One small model call gets a batch of new statements and those topics. For each statement it answers with the matching topic, or "none of these".</li>
+  <li><b>Full list if none fits.</b> Statements with no match, or with a broad subject listed in <code>PROMOTION_GENERIC_SUBJECTS</code>, go to a second call with every topic label. Only then may the model say "new", with a short label and a standard entity and key for the new topic.</li>
+  <li><b>Learn aliases.</b> When the second call matches a statement to a topic under a different subject, for example "Cobalt Ridge return policy" to a "Cobalt Ridge" topic, that subject is saved as an alias. Next time those statements match in the first call.</li>
+</ol>
+<p>In every case the model also returns the value in the form the topic already uses ("about two weeks" becomes "14 days").</p>
+<div class="note"><p><b>Why not use Agent Memory's search for this.</b> In check S1, its scores were fixed by rank (0.3800, 0.3739, 0.3679 for places 1 to 3 on every query), so it could not say "new topic", and it put the right topic first for only 4 of 11 statements. Each search also took 4 to 9 seconds. If topics ever number in the thousands, a search-based shortlist can be added in front of the model (check S2 showed how).</p></div>
+<h3>5.2 Agree or disagree</h3>
+<ul>
+  <li><b>Same value as another statement in the group:</b> counts for that value.</li>
+  <li><b>Different value:</b> counts for its own value and against the others in the group. "30 days" and "60 days" are two values of one group.</li>
+  <li><b>The same person changes their value:</b> a self-correction. Agent Memory replaces their old fact, the job sees it as replaced, and their newest value counts instead. Nothing is subtracted.</li>
+  <li><b>A fact is removed or replaced in Agent Memory:</b> its statement gets <code>replaced_at</code> and stops counting.</li>
+</ul>
+<div class="note"><p>Only facts count. A chat sentence that Agent Memory did not turn into a fact is not seen, because stored chat text cannot be listed. Facts drawn from Claude's own replies cannot be told apart from the user's, so they count for the scope's owner.</p></div>
+
+<h2 id="score"><span class="n">6</span>Scoring</h2>
+<p>Each person's statements for one value add 1, 0.5, 0.25…; their statements against it subtract the same way. One person adds at most about 2.</p>
+<ul>
+  <li><b>Personal score:</b> the holder's own statements only. Reaching <code>PROMOTION_PERSONAL_RULE_AT</code> makes it their personal rule.</li>
+  <li><b>Team score:</b> the sum over all members of their "for" minus "against". Reaching <code>PROMOTION_CANDIDATE_AT</code> lists it for review. At 3 this always needs at least two people.</li>
+  <li><b>Counted from personal scopes only.</b> Team and org scopes never add to a score.</li>
+</ul>
+<p>Worked example, return window, candidate at 3:</p>
+<div class="tw"><table>
+  <thead><tr><th>Event</th><th>For "30 days"</th><th>Against</th><th>Team score</th></tr></thead>
+  <tbody>
+    <tr><td>Three people each say the return window is 30 days</td><td class="num">3</td><td class="num">0</td><td class="num">3, listed for review</td></tr>
+    <tr><td>A fourth says it is 60 days</td><td class="num">3</td><td class="num">1</td><td class="num">2, dropped from the list</td></tr>
+    <tr><td>One of the first three says 30 days again</td><td class="num">3.5</td><td class="num">1</td><td class="num">2.5</td></tr>
+    <tr><td>A fifth person says 30 days</td><td class="num">4.5</td><td class="num">1</td><td class="num">3.5, listed again</td></tr>
+  </tbody>
+</table></div>
+
+<h2 id="review"><span class="n">7</span>Review and approval: Admin › Promotion</h2>
+<p>Review lives in the Admin tab as a new sub-tab, <b>Promotion</b>, next to <b>Access</b> and <b>Lab</b>. It has its own address, <code>#/admin/promotion</code>, like the other two.</p>
+<p>Before approving, the admin can edit the rule's wording, entity and key that the model proposed.</p>
+
+<figure class="shot">
+  <div class="chrome"><i></i><i></i><i></i><span>MemBrain POC · #/admin/promotion · sample design</span></div>
+  <img src="admin-promotion-mock.png" alt="Admin page with Access, Lab and Promotion sub-tabs, Promotion selected. A status bar shows the team scope, last and next run and a Run now button. Filter chips: Candidates 2, Flags 1, Decided 5, All groups 18. The main card shows the candidate 'Cobalt Ridge return window = 30 days' with team score 3.5 against threshold 3, values 30 days at 3.5 and 60 days at 1, a For list of four members with their weights, quotes, sources and dates, an Against list with one member, and Approve as team rule and Reject buttons. A collapsed second candidate, Northwind lead time = 21 days at 3.0. A side column shows a flag where a member said $7,500 against the team rule 'Northwind free freight from $5,000' with Keep rule and Close rule buttons, a Recently decided list, and the settings in use." width="2040" height="1245">
+</figure>
+<p class="cap">Sample design, built from the app's own colours, fonts and tab styles. Names and values are examples.</p>
+
+<h3>7.1 Who sees it</h3>
+<div class="tw"><table>
+  <thead><tr><th>User</th><th>Admin sub-tabs</th><th>Can do on Promotion</th></tr></thead>
+  <tbody>
+    <tr><td>Org admin</td><td>Access, Lab, Promotion</td><td>Everything, plus Run now</td></tr>
+    <tr><td>Team admin (role in our grants table)</td><td>Promotion only</td><td>Approve, Reject, Keep, Close, and Run now</td></tr>
+    <tr><td>Everyone else</td><td>No Admin tab</td><td>Nothing</td></tr>
+  </tbody>
+</table></div>
+
+<h2 id="build"><span class="n">8</span>Build steps</h2>
+<div class="steps">
+
+  <div class="step"><div class="no">0</div><div>
+    <h3>Checks before building (run 9 Nov)</h3>
+    <p>Short tests of what the design relies on in Agent Memory, run on lab scopes.</p>
+    <div class="tw"><table>
+      <thead><tr><th>Check</th><th>Result</th><th>What it means for the build</th></tr></thead>
+      <tbody>
+        <tr><td><b>S1</b> Can recall's score say "same fact"?</td><td><span class="m m-open">No</span> Scores are fixed by rank: 0.3800, 0.3739, 0.3679 on every query. The <code>mode</code> setting (hybrid, vector, bm25) made no real difference. The right group was in the top 3 for 11 of 11 statements, but first for only 4.</td><td>Do not use search scores for grouping; a small model matches statements to the topic list (section 5.1).</td></tr>
+        <tr><td><b>S2</b> Can a stored group sentence be found and mapped back?</td><td><span class="m m-am">Yes</span> Storing with extraction off returns an id, and every recall hit carried that same id (42 of 42).</td><td>Not needed now. Kept as the way to add a search-based shortlist if topics grow into the thousands.</td></tr>
+        <tr><td><b>S3</b> Can we write a labelled team rule?</td><td><span class="m m-am">Yes</span> Written with category knowledge and the labels <code>kind=rule</code> and <code>approved_by</code>. Recall in the team scope finds it, and filtering by label works.</td><td>Labels are not carried over to a new value, so send them on every write.</td></tr>
+        <tr><td><b>S4</b> How do we retire a rule safely?</td><td><span class="m m-am">Write over it</span> A new value replaced the rule in recall and kept the old one in history, with its end date and labels. Forget needs its own permission, and a dry run matched 1 record for one wording and 11 for another.</td><td>Close a rule with a closing value. Never give the backend the forget permission.</td></tr>
+        <tr><td><b>S5</b> Can the job see facts written outside our app?</td><td><span class="m m-am">Yes, by listing</span> Listing a personal scope returns every fact with its id, creation time, source (<code>turn</code> for chat, <code>upsert</code> for app writes) and <code>supersededBy</code>. The audit log records only reads, so it cannot be used.</td><td>The job lists each personal scope on every run and keeps facts it has not seen.</td></tr>
+        <tr><td><b>S6</b> Can a fact be given an end date?</td><td><span class="m m-open">No</span> An end date is accepted only on links between entities, not on facts.</td><td>Close rules with a closing value, as in S4.</td></tr>
+        <tr><td><b>S7</b> Does background elaboration add links to the team scope?</td><td><span class="m m-am">Not so far</span> About an hour after the first rule was written, the team scope held only that rule and no links. With one entity there was nothing to link.</td><td>Check again in the end-to-end run, with more rules.</td></tr>
+      </tbody>
+    </table></div>
+    <p>Each Agent Memory search took 4 to 9 seconds, which is another reason grouping does not use it.</p>
+    <p class="done"><b>Still to check</b>on real statements once step 4 is built: how often the model picks the wrong topic or misses a value, and how often the full-list call is needed.</p>
+  </div></div>
+
+  <div class="step"><div class="no">1</div><div>
+    <h3>Settings, tables and the scoring function</h3>
+    <p>Add the settings and the three tables. Write scoring as a pure function: statements in, personal scores, team scores and stages out.</p>
+    <p class="done"><b>Done when</b>unit tests pass for the worked example above, self-correction, opposing values and the test profile.</p>
+  </div></div>
+
+  <div class="step"><div class="no">2</div><div>
+    <h3>The common team scope</h3>
+    <p>Create the team scope and give every member read access from Admin › Access. Mark the chosen team admins with the team-admin role. Nobody gets write access; Capture does not offer the team scope.</p>
+    <p class="done"><b>Done when</b>every member's Ask reads the team scope and no user key can write to it.</p>
+  </div></div>
+
+  <div class="step"><div class="no">3</div><div>
+    <h3>Read new and changed facts from personal scopes</h3>
+    <p>At the start of each run, list the facts in every personal scope. Add a statement for each fact id not seen before, skipping links added by background jobs. Mark statements whose fact was replaced or removed.</p>
+    <p class="done"><b>Done when</b>a fact saved through Claude chat with the plugin, and one saved in Capture, both appear as statements for the right person, and correcting one marks the old statement replaced.</p>
+  </div></div>
+
+  <div class="step"><div class="no">4</div><div>
+    <h3>The promotion job: grouping</h3>
+    <p>Process statements not yet handled, in batches: match them to topics (same subject first, full list if none fits), save new topics and learned aliases, and decide agree or disagree. Runs every <code>PROMOTION_JOB_EVERY</code> and from Run now. A lock keeps it to one run at a time; Run now during a run shows "already running".</p>
+    <p class="done"><b>Done when</b>the conflict-test notes (30 / 45 / 60 days) land in one group with three values, and unrelated notes start their own groups.</p>
+  </div></div>
+
+  <div class="step"><div class="no">5</div><div>
+    <h3>The promotion job: scores, stages and the review list</h3>
+    <p>After grouping, recompute scores and stages, open candidates at the threshold and mark dropped ones. Open a flag when the score against an active team rule reaches <code>PROMOTION_FLAG_AT</code>, one per rule.</p>
+    <p class="done"><b>Done when</b>replaying the worked example with test users gives the same scores and list changes.</p>
+  </div></div>
+
+  <div class="step"><div class="no">6</div><div>
+    <h3>Admin › Promotion tab and approval</h3>
+    <p>Build the Promotion sub-tab shown in section 7 and the backend calls behind it. Approve writes the team rule.</p>
+    <p class="done"><b>Done when</b>an approved rule appears in the team scope, Ask finds it, and the decision shows who approved it and when.</p>
+  </div></div>
+
+  <div class="step"><div class="no">7</div><div>
+    <h3>End-to-end run</h3>
+    <p>With at least three test users and the test profile: save agreeing and conflicting facts, some through Claude chat with the plugin and some in Capture. Run the job, approve a candidate, then ask the question in each Ask mode. Close the rule and ask again.</p>
+    <p>Also check that the team scope holds only approved rules after background elaboration has had time to run (check S7).</p>
+    <p class="done"><b>Done when</b>a fact goes from three personal scopes to one team rule in one sitting, and the run is written up.</p>
+  </div></div>
+
+</div>
+
+</main>
+</div>

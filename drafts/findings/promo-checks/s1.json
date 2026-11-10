@@ -1,0 +1,1094 @@
+[
+ {
+  "statement": "We give Cobalt Ridge 60 days for returns",
+  "expect": "Cobalt Ridge return window",
+  "modes": {
+   "hybrid": {
+    "ms": 8590,
+    "tier": "escalated",
+    "hits": [
+     {
+      "id": "memory_chunk:amwnxdirhnk01x6jfsru",
+      "score": 0.38,
+      "text": "Defect chargeback window for Northwind Outdoor",
+      "source": "memory_chunk"
+     },
+     {
+      "id": "memory_chunk:omzmp88qw2nf00q255yx",
+      "score": 0.3739,
+      "text": "Cobalt Ridge return window",
+      "source": "memory_chunk"
+     },
+     {
+      "id": "memory_chunk:n3vrdzou2bmvvspifr34",
+      "score": 0.3679,
+      "text": "Prime Day pricing strategy for Harbor Basics",
+      "source": "memory_chunk"
+     }
+    ]
+   },
+   "vector": {
+    "ms": 8345,
+    "tier": "escalated",
+    "hits": [
+     {
+      "id": "memory_chunk:amwnxdirhnk01x6jfsru",
+      "score": 0.38,
+      "text": "Defect chargeback window for Northwind Outdoor",
+      "source": "memory_chunk"
+     },
+     {
+      "id": "memory_chunk:omzmp88qw2nf00q255yx",
+      "score": 0.3739,
+      "text": "Cobalt Ridge return window",
+      "source": "memory_chunk"
+     },
+     {
+      "id": "memory_chunk:sx2d28fvhxkf99058aox",
+      "score": 0.3679,
+      "text": "Weekly purchase order day for Northwind Outdoor",
+      "source": "memory_chunk"
+     }
+    ]
+   },
+   "bm25": {
+    "ms": 8585,
+    "tier": "escalated",
+    "hits": [
+     {
+      "id": "memory_chunk:amwnxdirhnk01x6jfsru",
+      "score": 0.38,
+      "text": "Defect chargeback window for Northwind Outdoor",
+      "source": "memory_chunk"
+     },
+     {
+      "id": "memory_chunk:omzmp88qw2nf00q255yx",
+      "score": 0.3739,
+      "text": "Cobalt Ridge return window",
+      "source": "memory_chunk"
+     },
+     {
+      "id": "memory_chunk:sx2d28fvhxkf99058aox",
+      "score": 0.3679,
+      "text": "Weekly purchase order day for Northwind Outdoor",
+      "source": "memory_chunk"
+     }
+    ]
+   }
+  }
+ },
+ {
+  "statement": "30-day window for Cobalt Ridge",
+  "expect": "Cobalt Ridge return window",
+  "modes": {
+   "hybrid": {
+    "ms": 8588,
+    "tier": "escalated",
+    "hits": [
+     {
+      "id": "memory_chunk:amwnxdirhnk01x6jfsru",
+      "score": 0.38,
+      "text": "Defect chargeback window for Northwind Outdoor",
+      "source": "memory_chunk"
+     },
+     {
+      "id": "memory_chunk:omzmp88qw2nf00q255yx",
+      "score": 0.38,
+      "text": "Cobalt Ridge return window",
+      "source": "memory_chunk"
+     },
+     {
+      "id": "memory_chunk:n3vrdzou2bmvvspifr34",
+      "score": 0.3679,
+      "text": "Prime Day pricing strategy for Harbor Basics",
+      "source": "memory_chunk"
+     }
+    ]
+   },
+   "vector": {
+    "ms": 7631,
+    "tier": "escalated",
+    "hits": [
+     {
+      "id": "memory_chunk:amwnxdirhnk01x6jfsru",
+      "score": 0.38,
+      "text": "Defect chargeback window for Northwind Outdoor",
+      "source": "memory_chunk"
+     },
+     {
+      "id": "memory_chunk:omzmp88qw2nf00q255yx",
+      "score": 0.38,
+      "text": "Cobalt Ridge return window",
+      "source": "memory_chunk"
+     },
+     {
+      "id": "memory_chunk:n3vrdzou2bmvvspifr34",
+      "score": 0.3679,
+      "text": "Prime Day pricing strategy for Harbor Basics",
+      "source": "memory_chunk"
+     }
+    ]
+   },
+   "bm25": {
+    "ms": 8994,
+    "tier": "escalated",
+    "hits": [
+     {
+      "id": "memory_chunk:amwnxdirhnk01x6jfsru",
+      "score": 0.38,
+      "text": "Defect chargeback window for Northwind Outdoor",
+      "source": "memory_chunk"
+     },
+     {
+      "id": "memory_chunk:omzmp88qw2nf00q255yx",
+      "score": 0.38,
+      "text": "Cobalt Ridge return window",
+      "source": "memory_chunk"
+     },
+     {
+      "id": "memory_chunk:n3vrdzou2bmvvspifr34",
+      "score": 0.3739,
+      "text": "Prime Day pricing strategy for Harbor Basics",
+      "source": "memory_chunk"
+     }
+    ]
+   }
+  }
+ },
+ {
+  "statement": "Customers get 30 days to send back Cobalt Ridge items",
+  "expect": "Cobalt Ridge return window",
+  "modes": {
+   "hybrid": {
+    "ms": 7384,
+    "tier": "escalated",
+    "hits": [
+     {
+      "id": "memory_chunk:amwnxdirhnk01x6jfsru",
+      "score": 0.38,
+      "text": "Defect chargeback window for Northwind Outdoor",
+      "source": "memory_chunk"
+     },
+     {
+      "id": "memory_chunk:omzmp88qw2nf00q255yx",
+      "score": 0.3739,
+      "text": "Cobalt Ridge return window",
+      "source": "memory_chunk"
+     },
+     {
+      "id": "memory_chunk:imtphnaud3tx8z4s1mg5",
+      "score": 0.3679,
+      "text": "Reno warehouse closing time",
+      "source": "memory_chunk"
+     }
+    ]
+   },
+   "vector": {
+    "ms": 9247,
+    "tier": "escalated",
+    "hits": [
+     {
+      "id": "memory_chunk:amwnxdirhnk01x6jfsru",
+      "score": 0.38,
+      "text": "Defect chargeback window for Northwind Outdoor",
+      "source": "memory_chunk"
+     },
+     {
+      "id": "memory_chunk:omzmp88qw2nf00q255yx",
+      "score": 0.3739,
+      "text": "Cobalt Ridge return window",
+      "source": "memory_chunk"
+     },
+     {
+      "id": "memory_chunk:n3vrdzou2bmvvspifr34",
+      "score": 0.3679,
+      "text": "Prime Day pricing strategy for Harbor Basics",
+      "source": "memory_chunk"
+     }
+    ]
+   },
+   "bm25": {
+    "ms": 8155,
+    "tier": "escalated",
+    "hits": [
+     {
+      "id": "memory_chunk:amwnxdirhnk01x6jfsru",
+      "score": 0.38,
+      "text": "Defect chargeback window for Northwind Outdoor",
+      "source": "memory_chunk"
+     },
+     {
+      "id": "memory_chunk:omzmp88qw2nf00q255yx",
+      "score": 0.3739,
+      "text": "Cobalt Ridge return window",
+      "source": "memory_chunk"
+     },
+     {
+      "id": "memory_chunk:imtphnaud3tx8z4s1mg5",
+      "score": 0.3679,
+      "text": "Reno warehouse closing time",
+      "source": "memory_chunk"
+     }
+    ]
+   }
+  }
+ },
+ {
+  "statement": "Northwind takes about 14 days from PO to arrival",
+  "expect": "Northwind Outdoor lead time",
+  "modes": {
+   "hybrid": {
+    "ms": 7299,
+    "tier": "escalated",
+    "hits": [
+     {
+      "id": "memory_chunk:sx2d28fvhxkf99058aox",
+      "score": 0.38,
+      "text": "Weekly purchase order day for Northwind Outdoor",
+      "source": "memory_chunk"
+     },
+     {
+      "id": "memory_chunk:d0yhkxue831hau9sioam",
+      "score": 0.38,
+      "text": "Northwind Outdoor lead time",
+      "source": "memory_chunk"
+     },
+     {
+      "id": "memory_chunk:amwnxdirhnk01x6jfsru",
+      "score": 0.3739,
+      "text": "Defect chargeback window for Northwind Outdoor",
+      "source": "memory_chunk"
+     }
+    ]
+   },
+   "vector": {
+    "ms": 8883,
+    "tier": "escalated",
+    "hits": [
+     {
+      "id": "memory_chunk:sx2d28fvhxkf99058aox",
+      "score": 0.38,
+      "text": "Weekly purchase order day for Northwind Outdoor",
+      "source": "memory_chunk"
+     },
+     {
+      "id": "memory_chunk:d0yhkxue831hau9sioam",
+      "score": 0.38,
+      "text": "Northwind Outdoor lead time",
+      "source": "memory_chunk"
+     },
+     {
+      "id": "memory_chunk:amwnxdirhnk01x6jfsru",
+      "score": 0.3739,
+      "text": "Defect chargeback window for Northwind Outdoor",
+      "source": "memory_chunk"
+     }
+    ]
+   },
+   "bm25": {
+    "ms": 9303,
+    "tier": "escalated",
+    "hits": [
+     {
+      "id": "memory_chunk:sx2d28fvhxkf99058aox",
+      "score": 0.38,
+      "text": "Weekly purchase order day for Northwind Outdoor",
+      "source": "memory_chunk"
+     },
+     {
+      "id": "memory_chunk:d0yhkxue831hau9sioam",
+      "score": 0.38,
+      "text": "Northwind Outdoor lead time",
+      "source": "memory_chunk"
+     },
+     {
+      "id": "memory_chunk:amwnxdirhnk01x6jfsru",
+      "score": 0.3739,
+      "text": "Defect chargeback window for Northwind Outdoor",
+      "source": "memory_chunk"
+     }
+    ]
+   }
+  }
+ },
+ {
+  "statement": "Reorders for Northwind need to be planned a month ahead",
+  "expect": "Northwind Outdoor lead time",
+  "modes": {
+   "hybrid": {
+    "ms": 8103,
+    "tier": "escalated",
+    "hits": [
+     {
+      "id": "memory_chunk:sx2d28fvhxkf99058aox",
+      "score": 0.38,
+      "text": "Weekly purchase order day for Northwind Outdoor",
+      "source": "memory_chunk"
+     },
+     {
+      "id": "memory_chunk:amwnxdirhnk01x6jfsru",
+      "score": 0.3739,
+      "text": "Defect chargeback window for Northwind Outdoor",
+      "source": "memory_chunk"
+     },
+     {
+      "id": "memory_chunk:d0yhkxue831hau9sioam",
+      "score": 0.3679,
+      "text": "Northwind Outdoor lead time",
+      "source": "memory_chunk"
+     }
+    ]
+   },
+   "vector": {
+    "ms": 7926,
+    "tier": "escalated",
+    "hits": [
+     {
+      "id": "memory_chunk:sx2d28fvhxkf99058aox",
+      "score": 0.38,
+      "text": "Weekly purchase order day for Northwind Outdoor",
+      "source": "memory_chunk"
+     },
+     {
+      "id": "memory_chunk:amwnxdirhnk01x6jfsru",
+      "score": 0.3739,
+      "text": "Defect chargeback window for Northwind Outdoor",
+      "source": "memory_chunk"
+     },
+     {
+      "id": "memory_chunk:d0yhkxue831hau9sioam",
+      "score": 0.3679,
+      "text": "Northwind Outdoor lead time",
+      "source": "memory_chunk"
+     }
+    ]
+   },
+   "bm25": {
+    "ms": 7341,
+    "tier": "escalated",
+    "hits": [
+     {
+      "id": "memory_chunk:sx2d28fvhxkf99058aox",
+      "score": 0.38,
+      "text": "Weekly purchase order day for Northwind Outdoor",
+      "source": "memory_chunk"
+     },
+     {
+      "id": "memory_chunk:amwnxdirhnk01x6jfsru",
+      "score": 0.3739,
+      "text": "Defect chargeback window for Northwind Outdoor",
+      "source": "memory_chunk"
+     },
+     {
+      "id": "memory_chunk:d0yhkxue831hau9sioam",
+      "score": 0.3679,
+      "text": "Northwind Outdoor lead time",
+      "source": "memory_chunk"
+     }
+    ]
+   }
+  }
+ },
+ {
+  "statement": "I've run Northwind promos at 25% off on Amazon",
+  "expect": "Northwind Outdoor maximum promotional discount",
+  "modes": {
+   "hybrid": {
+    "ms": 8598,
+    "tier": "escalated",
+    "hits": [
+     {
+      "id": "memory_chunk:amwnxdirhnk01x6jfsru",
+      "score": 0.38,
+      "text": "Defect chargeback window for Northwind Outdoor",
+      "source": "memory_chunk"
+     },
+     {
+      "id": "memory_chunk:ss9uqtiefh63tn3glaor",
+      "score": 0.38,
+      "text": "Northwind Outdoor maximum promotional discount",
+      "source": "memory_chunk"
+     },
+     {
+      "id": "memory_chunk:n3vrdzou2bmvvspifr34",
+      "score": 0.3739,
+      "text": "Prime Day pricing strategy for Harbor Basics",
+      "source": "memory_chunk"
+     }
+    ]
+   },
+   "vector": {
+    "ms": 8263,
+    "tier": "escalated",
+    "hits": [
+     {
+      "id": "memory_chunk:amwnxdirhnk01x6jfsru",
+      "score": 0.38,
+      "text": "Defect chargeback window for Northwind Outdoor",
+      "source": "memory_chunk"
+     },
+     {
+      "id": "memory_chunk:ss9uqtiefh63tn3glaor",
+      "score": 0.38,
+      "text": "Northwind Outdoor maximum promotional discount",
+      "source": "memory_chunk"
+     },
+     {
+      "id": "memory_chunk:n3vrdzou2bmvvspifr34",
+      "score": 0.3739,
+      "text": "Prime Day pricing strategy for Harbor Basics",
+      "source": "memory_chunk"
+     }
+    ]
+   },
+   "bm25": {
+    "ms": 9309,
+    "tier": "escalated",
+    "hits": [
+     {
+      "id": "memory_chunk:n3vrdzou2bmvvspifr34",
+      "score": 0.38,
+      "text": "Prime Day pricing strategy for Harbor Basics",
+      "source": "memory_chunk"
+     },
+     {
+      "id": "memory_chunk:ss9uqtiefh63tn3glaor",
+      "score": 0.38,
+      "text": "Northwind Outdoor maximum promotional discount",
+      "source": "memory_chunk"
+     },
+     {
+      "id": "memory_chunk:amwnxdirhnk01x6jfsru",
+      "score": 0.3739,
+      "text": "Defect chargeback window for Northwind Outdoor",
+      "source": "memory_chunk"
+     }
+    ]
+   }
+  }
+ },
+ {
+  "statement": "Northwind pays shipping on orders above $5,000",
+  "expect": "Northwind Outdoor free freight threshold",
+  "modes": {
+   "hybrid": {
+    "ms": 7779,
+    "tier": "escalated",
+    "hits": [
+     {
+      "id": "memory_chunk:amwnxdirhnk01x6jfsru",
+      "score": 0.38,
+      "text": "Defect chargeback window for Northwind Outdoor",
+      "source": "memory_chunk"
+     },
+     {
+      "id": "memory_chunk:zkrheyc1j83qyt19hfah",
+      "score": 0.3739,
+      "text": "Northwind Outdoor free freight threshold",
+      "source": "memory_chunk"
+     },
+     {
+      "id": "memory_chunk:sx2d28fvhxkf99058aox",
+      "score": 0.3739,
+      "text": "Weekly purchase order day for Northwind Outdoor",
+      "source": "memory_chunk"
+     }
+    ]
+   },
+   "vector": {
+    "ms": 9273,
+    "tier": "escalated",
+    "hits": [
+     {
+      "id": "memory_chunk:zkrheyc1j83qyt19hfah",
+      "score": 0.38,
+      "text": "Northwind Outdoor free freight threshold",
+      "source": "memory_chunk"
+     },
+     {
+      "id": "memory_chunk:amwnxdirhnk01x6jfsru",
+      "score": 0.38,
+      "text": "Defect chargeback window for Northwind Outdoor",
+      "source": "memory_chunk"
+     },
+     {
+      "id": "memory_chunk:sx2d28fvhxkf99058aox",
+      "score": 0.3739,
+      "text": "Weekly purchase order day for Northwind Outdoor",
+      "source": "memory_chunk"
+     }
+    ]
+   },
+   "bm25": {
+    "ms": 8817,
+    "tier": "escalated",
+    "hits": [
+     {
+      "id": "memory_chunk:zkrheyc1j83qyt19hfah",
+      "score": 0.38,
+      "text": "Northwind Outdoor free freight threshold",
+      "source": "memory_chunk"
+     },
+     {
+      "id": "memory_chunk:amwnxdirhnk01x6jfsru",
+      "score": 0.38,
+      "text": "Defect chargeback window for Northwind Outdoor",
+      "source": "memory_chunk"
+     },
+     {
+      "id": "memory_chunk:sx2d28fvhxkf99058aox",
+      "score": 0.3739,
+      "text": "Weekly purchase order day for Northwind Outdoor",
+      "source": "memory_chunk"
+     }
+    ]
+   }
+  }
+ },
+ {
+  "statement": "Damaged Northwind units can be charged back within 60 days",
+  "expect": "Defect chargeback window for Northwind Outdoor",
+  "modes": {
+   "hybrid": {
+    "ms": 4001,
+    "tier": "hybrid",
+    "hits": [
+     {
+      "id": "memory_chunk:amwnxdirhnk01x6jfsru",
+      "score": 0.38,
+      "text": "Defect chargeback window for Northwind Outdoor",
+      "source": "memory_chunk"
+     },
+     {
+      "id": "memory_chunk:d0yhkxue831hau9sioam",
+      "score": 0.3739,
+      "text": "Northwind Outdoor lead time",
+      "source": "memory_chunk"
+     },
+     {
+      "id": "memory_chunk:sx2d28fvhxkf99058aox",
+      "score": 0.3679,
+      "text": "Weekly purchase order day for Northwind Outdoor",
+      "source": "memory_chunk"
+     }
+    ]
+   },
+   "vector": {
+    "ms": 4187,
+    "tier": "hybrid",
+    "hits": [
+     {
+      "id": "memory_chunk:amwnxdirhnk01x6jfsru",
+      "score": 0.38,
+      "text": "Defect chargeback window for Northwind Outdoor",
+      "source": "memory_chunk"
+     },
+     {
+      "id": "memory_chunk:d0yhkxue831hau9sioam",
+      "score": 0.3739,
+      "text": "Northwind Outdoor lead time",
+      "source": "memory_chunk"
+     },
+     {
+      "id": "memory_chunk:sx2d28fvhxkf99058aox",
+      "score": 0.3679,
+      "text": "Weekly purchase order day for Northwind Outdoor",
+      "source": "memory_chunk"
+     }
+    ]
+   },
+   "bm25": {
+    "ms": 4143,
+    "tier": "hybrid",
+    "hits": [
+     {
+      "id": "memory_chunk:amwnxdirhnk01x6jfsru",
+      "score": 0.38,
+      "text": "Defect chargeback window for Northwind Outdoor",
+      "source": "memory_chunk"
+     },
+     {
+      "id": "memory_chunk:d0yhkxue831hau9sioam",
+      "score": 0.3739,
+      "text": "Northwind Outdoor lead time",
+      "source": "memory_chunk"
+     },
+     {
+      "id": "memory_chunk:sx2d28fvhxkf99058aox",
+      "score": 0.3679,
+      "text": "Weekly purchase order day for Northwind Outdoor",
+      "source": "memory_chunk"
+     }
+    ]
+   }
+  }
+ },
+ {
+  "statement": "Northwind POs go out every Monday",
+  "expect": "Weekly purchase order day for Northwind Outdoor",
+  "modes": {
+   "hybrid": {
+    "ms": 3618,
+    "tier": "hybrid",
+    "hits": [
+     {
+      "id": "memory_chunk:sx2d28fvhxkf99058aox",
+      "score": 0.38,
+      "text": "Weekly purchase order day for Northwind Outdoor",
+      "source": "memory_chunk"
+     },
+     {
+      "id": "memory_chunk:amwnxdirhnk01x6jfsru",
+      "score": 0.3739,
+      "text": "Defect chargeback window for Northwind Outdoor",
+      "source": "memory_chunk"
+     },
+     {
+      "id": "memory_chunk:d0yhkxue831hau9sioam",
+      "score": 0.3679,
+      "text": "Northwind Outdoor lead time",
+      "source": "memory_chunk"
+     }
+    ]
+   },
+   "vector": {
+    "ms": 3967,
+    "tier": "hybrid",
+    "hits": [
+     {
+      "id": "memory_chunk:sx2d28fvhxkf99058aox",
+      "score": 0.38,
+      "text": "Weekly purchase order day for Northwind Outdoor",
+      "source": "memory_chunk"
+     },
+     {
+      "id": "memory_chunk:amwnxdirhnk01x6jfsru",
+      "score": 0.3739,
+      "text": "Defect chargeback window for Northwind Outdoor",
+      "source": "memory_chunk"
+     },
+     {
+      "id": "memory_chunk:d0yhkxue831hau9sioam",
+      "score": 0.3679,
+      "text": "Northwind Outdoor lead time",
+      "source": "memory_chunk"
+     }
+    ]
+   },
+   "bm25": {
+    "ms": 3808,
+    "tier": "hybrid",
+    "hits": [
+     {
+      "id": "memory_chunk:sx2d28fvhxkf99058aox",
+      "score": 0.38,
+      "text": "Weekly purchase order day for Northwind Outdoor",
+      "source": "memory_chunk"
+     },
+     {
+      "id": "memory_chunk:amwnxdirhnk01x6jfsru",
+      "score": 0.3739,
+      "text": "Defect chargeback window for Northwind Outdoor",
+      "source": "memory_chunk"
+     },
+     {
+      "id": "memory_chunk:d0yhkxue831hau9sioam",
+      "score": 0.3679,
+      "text": "Northwind Outdoor lead time",
+      "source": "memory_chunk"
+     }
+    ]
+   }
+  }
+ },
+ {
+  "statement": "The Reno warehouse closes at 6 pm",
+  "expect": "Reno warehouse closing time",
+  "modes": {
+   "hybrid": {
+    "ms": 5213,
+    "tier": "hybrid",
+    "hits": [
+     {
+      "id": "memory_chunk:imtphnaud3tx8z4s1mg5",
+      "score": 0.38,
+      "text": "Reno warehouse closing time",
+      "source": "memory_chunk"
+     },
+     {
+      "id": "memory_chunk:sx2d28fvhxkf99058aox",
+      "score": 0.3739,
+      "text": "Weekly purchase order day for Northwind Outdoor",
+      "source": "memory_chunk"
+     },
+     {
+      "id": "memory_chunk:amwnxdirhnk01x6jfsru",
+      "score": 0.3679,
+      "text": "Defect chargeback window for Northwind Outdoor",
+      "source": "memory_chunk"
+     }
+    ]
+   },
+   "vector": {
+    "ms": 5844,
+    "tier": "hybrid",
+    "hits": [
+     {
+      "id": "memory_chunk:imtphnaud3tx8z4s1mg5",
+      "score": 0.38,
+      "text": "Reno warehouse closing time",
+      "source": "memory_chunk"
+     },
+     {
+      "id": "memory_chunk:sx2d28fvhxkf99058aox",
+      "score": 0.3739,
+      "text": "Weekly purchase order day for Northwind Outdoor",
+      "source": "memory_chunk"
+     },
+     {
+      "id": "memory_chunk:amwnxdirhnk01x6jfsru",
+      "score": 0.3679,
+      "text": "Defect chargeback window for Northwind Outdoor",
+      "source": "memory_chunk"
+     }
+    ]
+   },
+   "bm25": {
+    "ms": 4780,
+    "tier": "hybrid",
+    "hits": [
+     {
+      "id": "memory_chunk:imtphnaud3tx8z4s1mg5",
+      "score": 0.38,
+      "text": "Reno warehouse closing time",
+      "source": "memory_chunk"
+     },
+     {
+      "id": "memory_chunk:sx2d28fvhxkf99058aox",
+      "score": 0.3739,
+      "text": "Weekly purchase order day for Northwind Outdoor",
+      "source": "memory_chunk"
+     },
+     {
+      "id": "memory_chunk:amwnxdirhnk01x6jfsru",
+      "score": 0.3679,
+      "text": "Defect chargeback window for Northwind Outdoor",
+      "source": "memory_chunk"
+     }
+    ]
+   }
+  }
+ },
+ {
+  "statement": "Cobalt Ridge ships from the Dallas warehouse",
+  "expect": null,
+  "modes": {
+   "hybrid": {
+    "ms": 7509,
+    "tier": "escalated",
+    "hits": [
+     {
+      "id": "memory_chunk:d0yhkxue831hau9sioam",
+      "score": 0.38,
+      "text": "Northwind Outdoor lead time",
+      "source": "memory_chunk"
+     },
+     {
+      "id": "memory_chunk:omzmp88qw2nf00q255yx",
+      "score": 0.38,
+      "text": "Cobalt Ridge return window",
+      "source": "memory_chunk"
+     },
+     {
+      "id": "memory_chunk:amwnxdirhnk01x6jfsru",
+      "score": 0.3739,
+      "text": "Defect chargeback window for Northwind Outdoor",
+      "source": "memory_chunk"
+     }
+    ]
+   },
+   "vector": {
+    "ms": 7960,
+    "tier": "escalated",
+    "hits": [
+     {
+      "id": "memory_chunk:amwnxdirhnk01x6jfsru",
+      "score": 0.38,
+      "text": "Defect chargeback window for Northwind Outdoor",
+      "source": "memory_chunk"
+     },
+     {
+      "id": "memory_chunk:omzmp88qw2nf00q255yx",
+      "score": 0.38,
+      "text": "Cobalt Ridge return window",
+      "source": "memory_chunk"
+     },
+     {
+      "id": "memory_chunk:d0yhkxue831hau9sioam",
+      "score": 0.3739,
+      "text": "Northwind Outdoor lead time",
+      "source": "memory_chunk"
+     }
+    ]
+   },
+   "bm25": {
+    "ms": 8284,
+    "tier": "escalated",
+    "hits": [
+     {
+      "id": "memory_chunk:d0yhkxue831hau9sioam",
+      "score": 0.38,
+      "text": "Northwind Outdoor lead time",
+      "source": "memory_chunk"
+     },
+     {
+      "id": "memory_chunk:omzmp88qw2nf00q255yx",
+      "score": 0.38,
+      "text": "Cobalt Ridge return window",
+      "source": "memory_chunk"
+     },
+     {
+      "id": "memory_chunk:imtphnaud3tx8z4s1mg5",
+      "score": 0.3679,
+      "text": "Reno warehouse closing time",
+      "source": "memory_chunk"
+     }
+    ]
+   }
+  }
+ },
+ {
+  "statement": "Our Slack channel for pricing is #pricing-ops",
+  "expect": null,
+  "modes": {
+   "hybrid": {
+    "ms": 8735,
+    "tier": "escalated",
+    "hits": [
+     {
+      "id": "memory_chunk:n3vrdzou2bmvvspifr34",
+      "score": 0.38,
+      "text": "Prime Day pricing strategy for Harbor Basics",
+      "source": "memory_chunk"
+     },
+     {
+      "id": "memory_chunk:amwnxdirhnk01x6jfsru",
+      "score": 0.3739,
+      "text": "Defect chargeback window for Northwind Outdoor",
+      "source": "memory_chunk"
+     },
+     {
+      "id": "memory_chunk:imtphnaud3tx8z4s1mg5",
+      "score": 0.3679,
+      "text": "Reno warehouse closing time",
+      "source": "memory_chunk"
+     }
+    ]
+   },
+   "vector": {
+    "ms": 8002,
+    "tier": "escalated",
+    "hits": [
+     {
+      "id": "memory_chunk:n3vrdzou2bmvvspifr34",
+      "score": 0.38,
+      "text": "Prime Day pricing strategy for Harbor Basics",
+      "source": "memory_chunk"
+     },
+     {
+      "id": "memory_chunk:amwnxdirhnk01x6jfsru",
+      "score": 0.3739,
+      "text": "Defect chargeback window for Northwind Outdoor",
+      "source": "memory_chunk"
+     },
+     {
+      "id": "memory_chunk:imtphnaud3tx8z4s1mg5",
+      "score": 0.3679,
+      "text": "Reno warehouse closing time",
+      "source": "memory_chunk"
+     }
+    ]
+   },
+   "bm25": {
+    "ms": 8824,
+    "tier": "escalated",
+    "hits": [
+     {
+      "id": "memory_chunk:n3vrdzou2bmvvspifr34",
+      "score": 0.38,
+      "text": "Prime Day pricing strategy for Harbor Basics",
+      "source": "memory_chunk"
+     },
+     {
+      "id": "memory_chunk:amwnxdirhnk01x6jfsru",
+      "score": 0.3739,
+      "text": "Defect chargeback window for Northwind Outdoor",
+      "source": "memory_chunk"
+     },
+     {
+      "id": "memory_chunk:sx2d28fvhxkf99058aox",
+      "score": 0.3679,
+      "text": "Weekly purchase order day for Northwind Outdoor",
+      "source": "memory_chunk"
+     }
+    ]
+   }
+  }
+ },
+ {
+  "statement": "Harbor Basics should be priced below Amazon on Prime Day",
+  "expect": "Prime Day pricing strategy for Harbor Basics",
+  "modes": {
+   "hybrid": {
+    "ms": 3973,
+    "tier": "hybrid",
+    "hits": [
+     {
+      "id": "memory_chunk:n3vrdzou2bmvvspifr34",
+      "score": 0.38,
+      "text": "Prime Day pricing strategy for Harbor Basics",
+      "source": "memory_chunk"
+     },
+     {
+      "id": "memory_chunk:sx2d28fvhxkf99058aox",
+      "score": 0.3739,
+      "text": "Weekly purchase order day for Northwind Outdoor",
+      "source": "memory_chunk"
+     },
+     {
+      "id": "memory_chunk:amwnxdirhnk01x6jfsru",
+      "score": 0.3679,
+      "text": "Defect chargeback window for Northwind Outdoor",
+      "source": "memory_chunk"
+     }
+    ]
+   },
+   "vector": {
+    "ms": 4127,
+    "tier": "hybrid",
+    "hits": [
+     {
+      "id": "memory_chunk:n3vrdzou2bmvvspifr34",
+      "score": 0.38,
+      "text": "Prime Day pricing strategy for Harbor Basics",
+      "source": "memory_chunk"
+     },
+     {
+      "id": "memory_chunk:sx2d28fvhxkf99058aox",
+      "score": 0.3739,
+      "text": "Weekly purchase order day for Northwind Outdoor",
+      "source": "memory_chunk"
+     },
+     {
+      "id": "memory_chunk:amwnxdirhnk01x6jfsru",
+      "score": 0.3679,
+      "text": "Defect chargeback window for Northwind Outdoor",
+      "source": "memory_chunk"
+     }
+    ]
+   },
+   "bm25": {
+    "ms": 3589,
+    "tier": "hybrid",
+    "hits": [
+     {
+      "id": "memory_chunk:n3vrdzou2bmvvspifr34",
+      "score": 0.38,
+      "text": "Prime Day pricing strategy for Harbor Basics",
+      "source": "memory_chunk"
+     },
+     {
+      "id": "memory_chunk:sx2d28fvhxkf99058aox",
+      "score": 0.3739,
+      "text": "Weekly purchase order day for Northwind Outdoor",
+      "source": "memory_chunk"
+     },
+     {
+      "id": "memory_chunk:amwnxdirhnk01x6jfsru",
+      "score": 0.3679,
+      "text": "Defect chargeback window for Northwind Outdoor",
+      "source": "memory_chunk"
+     }
+    ]
+   }
+  }
+ },
+ {
+  "statement": "Northwind's account contact is Dana Whitfield",
+  "expect": null,
+  "modes": {
+   "hybrid": {
+    "ms": 7407,
+    "tier": "escalated",
+    "hits": [
+     {
+      "id": "memory_chunk:amwnxdirhnk01x6jfsru",
+      "score": 0.38,
+      "text": "Defect chargeback window for Northwind Outdoor",
+      "source": "memory_chunk"
+     },
+     {
+      "id": "memory_chunk:sx2d28fvhxkf99058aox",
+      "score": 0.3739,
+      "text": "Weekly purchase order day for Northwind Outdoor",
+      "source": "memory_chunk"
+     },
+     {
+      "id": "memory_chunk:ss9uqtiefh63tn3glaor",
+      "score": 0.3679,
+      "text": "Northwind Outdoor maximum promotional discount",
+      "source": "memory_chunk"
+     }
+    ]
+   },
+   "vector": {
+    "ms": 8513,
+    "tier": "escalated",
+    "hits": [
+     {
+      "id": "memory_chunk:amwnxdirhnk01x6jfsru",
+      "score": 0.38,
+      "text": "Defect chargeback window for Northwind Outdoor",
+      "source": "memory_chunk"
+     },
+     {
+      "id": "memory_chunk:sx2d28fvhxkf99058aox",
+      "score": 0.3739,
+      "text": "Weekly purchase order day for Northwind Outdoor",
+      "source": "memory_chunk"
+     },
+     {
+      "id": "memory_chunk:n3vrdzou2bmvvspifr34",
+      "score": 0.3679,
+      "text": "Prime Day pricing strategy for Harbor Basics",
+      "source": "memory_chunk"
+     }
+    ]
+   },
+   "bm25": {
+    "ms": 7831,
+    "tier": "escalated",
+    "hits": [
+     {
+      "id": "memory_chunk:amwnxdirhnk01x6jfsru",
+      "score": 0.38,
+      "text": "Defect chargeback window for Northwind Outdoor",
+      "source": "memory_chunk"
+     },
+     {
+      "id": "memory_chunk:sx2d28fvhxkf99058aox",
+      "score": 0.3739,
+      "text": "Weekly purchase order day for Northwind Outdoor",
+      "source": "memory_chunk"
+     },
+     {
+      "id": "memory_chunk:ss9uqtiefh63tn3glaor",
+      "score": 0.3679,
+      "text": "Northwind Outdoor maximum promotional discount",
+      "source": "memory_chunk"
+     }
+    ]
+   }
+  }
+ }
+]

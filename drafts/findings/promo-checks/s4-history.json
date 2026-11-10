@@ -1,0 +1,116 @@
+OK /entities/organisation/cobalt_ridge/history/return_window
+{
+ "history": [
+  {
+   "id": "w66hwzbwd8s07lx6oby5",
+   "entity": "entity:organisation/cobalt_ridge",
+   "key": "return_window",
+   "value": "30 days",
+   "memoryCategory": "knowledge",
+   "importance": 0.8,
+   "confidence": 0.95,
+   "summary": "Cobalt Ridge's return window is 30 days",
+   "scope": [
+    [
+     "org/spreetail/lab/promo-check/team/"
+    ]
+   ],
+   "labels": [
+    "kind=rule",
+    "approved_by=team-admin"
+   ],
+   "validFrom": null,
+   "validUntil": "2026-11-09T08:20:59.489189911+00:00",
+   "supersedes": null,
+   "supersededBy": "j4824c89f3xhcnwzhqbg",
+   "source": {
+    "kind": "upsert",
+    "trust": 0.95
+   },
+   "createdAt": "2026-11-09T08:20:27.601939692+00:00"
+  },
+  {
+   "id": "j4824c89f3xhcnwzhqbg",
+   "entity": "entity:organisation/cobalt_ridge",
+   "key": "return_window",
+   "value": "45 days",
+   "memoryCategory": "knowledge",
+   "importance": 0.8,
+   "confidence": 0.95,
+   "summary": "Cobalt Ridge's return window is 45 days",
+   "scope": [
+    [
+     "org/spreetail/lab/promo-check/team/"
+    ]
+   ],
+   "labels": [],
+   "validFrom": null,
+   "validUntil": null,
+   "supersedes": "w66hwzbwd8s07lx6oby5",
+   "supersededBy": null,
+   "source": {
+    "kind": "upsert",
+    "trust": 0.95
+   },
+   "createdAt": "2026-11-09T08:20:59.488162856+00:00"
+  }
+ ]
+}
+OK /entities/organization/Cobalt%20Ridge/history/return_window
+{
+ "history": [
+  {
+   "id": "w66hwzbwd8s07lx6oby5",
+   "entity": "entity:organisation/cobalt_ridge",
+   "key": "return_window",
+   "value": "30 days",
+   "memoryCategory": "knowledge",
+   "importance": 0.8,
+   "confidence": 0.95,
+   "summary": "Cobalt Ridge's return window is 30 days",
+   "scope": [
+    [
+     "org/spreetail/lab/promo-check/team/"
+    ]
+   ],
+   "labels": [
+    "kind=rule",
+    "approved_by=team-admin"
+   ],
+   "validFrom": null,
+   "validUntil": "2026-11-09T08:20:59.489189911+00:00",
+   "supersedes": null,
+   "supersededBy": "j4824c89f3xhcnwzhqbg",
+   "source": {
+    "kind": "upsert",
+    "trust": 0.95
+   },
+   "createdAt": "2026-11-09T08:20:27.601939692+00:00"
+  },
+  {
+   "id": "j4824c89f3xhcnwzhqbg",
+   "entity": "entity:organisation/cobalt_ridge",
+   "key": "return_window",
+   "value": "45 days",
+   "memoryCategory": "knowledge",
+   "importance": 0.8,
+   "confidence": 0.95,
+   "summary": "Cobalt Ridge's return window is 45 days",
+   "scope": [
+    [
+     "org/spreetail/lab/promo-check/team/"
+    ]
+   ],
+   "labels": [],
+   "validFrom": null,
+   "validUntil": null,
+   "supersedes": "w66hwzbwd8s07lx6oby5",
+   "supersededBy": null,
+   "source": {
+    "kind": "upsert",
+    "trust": 0.95
+   },
+   "createdAt": "2026-11-09T08:20:59.488162856+00:00"
+  }
+ ]
+}

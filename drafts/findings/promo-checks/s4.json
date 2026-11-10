@@ -1,0 +1,55 @@
+{
+ "supersede_write": {
+  "mode": "triples",
+  "session_id": "d7oevzk3xrufwr6lf6f9",
+  "chunk_id": null,
+  "extraction": {
+   "turn_id": "",
+   "entities": [
+    {
+     "id": "['organisation', 'cobalt_ridge']",
+     "name": "Cobalt Ridge",
+     "entityType": "organization",
+     "memoryCategory": "knowledge",
+     "isNew": false
+    }
+   ],
+   "attributes": [
+    {
+     "id": "j4824c89f3xhcnwzhqbg",
+     "entityId": "['organisation', 'cobalt_ridge']",
+     "key": "return_window",
+     "value": "45 days",
+     "memoryCategory": "knowledge"
+    }
+   ],
+   "relations": [],
+   "instructions": [],
+   "uncertainties": [],
+   "corrections": [
+    {
+     "entityId": "['organisation', 'cobalt_ridge']",
+     "key": "return_window",
+     "oldValue": "30 days",
+     "newValue": "45 days"
+    }
+   ]
+  },
+  "preview": false,
+  "turn_id": "vldgromlfk55ha6vfsk6"
+ },
+ "recall_after": [
+  {
+   "id": "attribute:j4824c89f3xhcnwzhqbg",
+   "text": "Cobalt Ridge's return window is 45 days",
+   "source": "attribute"
+  },
+  {
+   "id": "entity:['organisation', 'cobalt_ridge']",
+   "text": "Cobalt Ridge",
+   "source": "entity"
+  }
+ ],
+ "history /entities/entity:['organisation', 'cobalt_ridge']/history/return_window": "MemoryNotFoundError: [404] Memory request failed",
+ "forget_dry_run": "MemoryScopeError: [403] the `memory:forget` grant is required to forget memories"
+}

@@ -1,0 +1,1 @@
+KINDS {'retrieval': 250, 'decision': 250} keys ['cost', 'createdAt', 'kind', 'latencyMs', 'rowsTouched', 'traceId']
