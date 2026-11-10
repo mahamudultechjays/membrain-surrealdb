@@ -1,5 +1,5 @@
 import { act, fireEvent, render, screen, within } from '@testing-library/react'
-import type { AskApi, AskResponse } from '@/api/ask'
+import type { AskApi, AskCompareResponse, AskResponse } from '@/api/ask'
 import type { Me } from '@/api/auth'
 import { ApiError } from '@/api/client'
 import { mockAskApi } from '@/api/mock/ask'
@@ -29,7 +29,7 @@ async function renderPage(api: AskApi = mockAskApi) {
 }
 
 it('opens on the user’s own space, and searches only that until they widen it', async () => {
-  const api: AskApi = { ask: vi.fn<AskApi['ask']>(mockAskApi.ask) }
+  const api = compareApi(vi.fn<AskApi['compare']>(mockAskApi.compare))
   render(<AskPage me={PRIYA} api={api} />)
 
   await screen.findByRole('button', { name: 'Search in: My space' })
@@ -38,8 +38,8 @@ it('opens on the user’s own space, and searches only that until they widen it'
   })
   fireEvent.submit(screen.getByLabelText('Question').closest('form')!)
 
-  await vi.waitFor(() => expect(api.ask).toHaveBeenCalled())
-  expect(vi.mocked(api.ask).mock.calls[0]?.[0]).toMatchObject({
+  await vi.waitFor(() => expect(api.compare).toHaveBeenCalled())
+  expect(vi.mocked(api.compare).mock.calls[0]?.[0]).toMatchObject({
     scopes: [ownScope(PRIYA.grants)],
   })
 })
@@ -50,7 +50,7 @@ async function findAnswer(question: string) {
 
 const layerHeadings = (answer: HTMLElement) =>
   within(answer)
-    .getAllByRole('heading', { level: 3 })
+    .getAllByRole('heading', { level: 4 })
     .map((h) => h.textContent)
 
 function answerWith(layers: AskResponse['layers']): AskResponse {
@@ -67,39 +67,64 @@ function answerWith(layers: AskResponse['layers']): AskResponse {
       trace_ids: ['t-a', 't-b'],
     },
     trace_id: 't-root',
+    mode: 'default',
+    mode_source: 'config',
+    conflicts: [],
   }
 }
 
+/** One answer as both modes, the way /ask/compare returns them. */
+function bothModes(answer: AskResponse): AskCompareResponse {
+  return {
+    q: answer.q,
+    best_match: { ...answer, mode: 'best_match', mode_source: 'compare' },
+    by_layer: { ...answer, mode: 'by_layer', mode_source: 'compare' },
+  }
+}
+
+/** An API whose compare is stubbed; ask must never be called by Search. */
+function compareApi(compare: AskApi['compare']): AskApi {
+  return { ask: vi.fn<AskApi['ask']>(mockAskApi.ask), compare }
+}
+
 describe('AskPage', () => {
-  it('answers the returns question as Priya org first, then team, then personal, with the 30 vs 60 conflict', async () => {
+  it('answers the returns question as Priya with Best match and By layer side by side', async () => {
     await renderPage()
 
     fireEvent.click(screen.getByRole('button', { name: 'What is the returns window?' }))
     const answer = await findAnswer('What is the returns window?')
 
-    expect(layerHeadings(answer)).toEqual([
+    expect(within(answer).getByText(/as Priya$/)).toBeInTheDocument()
+    const best = within(answer).getByRole('region', { name: 'Best match' })
+    const byLayer = within(answer).getByRole('region', { name: 'By layer' })
+    // Best match: one list, each fact labelled with its layer.
+    expect(best.querySelector('.ask-tally')).toHaveTextContent('Org2Team0Personal1')
+    expect(best.querySelectorAll('.ask-flat > .ask-fact')).toHaveLength(2)
+    // By layer: one closed card per layer.
+    expect(layerHeadings(byLayer)).toEqual([
       'Org org',
       'Team org/team/ops',
       'Personal org/user/u-0001 · Priya',
     ])
-    expect(within(answer).getByText('Nothing found in org/team/ops')).toBeInTheDocument()
-    const conflict = within(answer).getByRole('note')
-    expect(conflict).toHaveTextContent('returns policy · window_days')
-    expect(conflict).toHaveTextContent('30 (Org)')
-    expect(conflict).toHaveTextContent("60 (Priya's personal)")
-    expect(within(answer).getByText(/as Priya$/)).toBeInTheDocument()
   })
 
-  it('labels the score as a match score and opens the source panel with the hit id', async () => {
+  it('keeps match score and trust apart, and opens the source panel with both', async () => {
     await renderPage()
 
     fireEvent.click(screen.getByRole('button', { name: 'What is the returns window?' }))
     const answer = await findAnswer('What is the returns window?')
 
-    const scores = within(answer).getAllByRole('button', {
+    const best = within(answer).getByRole('region', { name: 'Best match' })
+    const scores = within(best).getAllByRole('button', {
       name: /^match score \d\.\d\d$/,
     })
-    expect(within(answer).queryByText(/trust/i)).not.toBeInTheDocument()
+    // Trust is its own chip, never the match score's label.
+    const [used] = [...best.querySelectorAll('.ask-flat > .ask-fact')]
+    expect(used?.querySelector('.ask-trust')).toHaveTextContent('trust 0.95')
+    expect(used?.querySelector('.ask-trust')).toHaveAttribute(
+      'title',
+      expect.stringMatching(/^Structured fact · confidence 0.95 · added 9 Nov 2026$/),
+    )
 
     const first = scores[0]!
     fireEvent.click(first)
@@ -108,6 +133,10 @@ describe('AskPage', () => {
     expect(within(panel).getByText('Hit id')).toBeInTheDocument()
     expect(within(panel).getByText(/^attribute_[0-9a-f]{6}$/)).toBeInTheDocument()
     expect(within(panel).getByText('Hit text')).toBeInTheDocument()
+    expect(within(panel).getByText('Trust').nextElementSibling).toHaveTextContent('0.95')
+    expect(within(panel).getByText('Written as').nextElementSibling).toHaveTextContent(
+      'Structured fact',
+    )
     // Null title and date stay hidden.
     expect(within(panel).queryByText('Title')).not.toBeInTheDocument()
     expect(
@@ -122,8 +151,8 @@ describe('AskPage', () => {
   })
 
   it('shows a failed layer error while the other layers still answer', async () => {
-    const api: AskApi = {
-      ask: async () =>
+    const api = compareApi(async () =>
+      bothModes(
         answerWith([
           {
             layer: 'org',
@@ -153,7 +182,8 @@ describe('AskPage', () => {
             error: null,
           },
         ]),
-    }
+      ),
+    )
     await renderPage(api)
 
     fireEvent.click(screen.getByRole('button', { name: 'Is dock 3 open?' }))
@@ -161,24 +191,23 @@ describe('AskPage', () => {
 
     expect(
       within(answer).getByText(
-        'Recall failed for this layer: Agent Memory call failed: timeout',
+        'Recall failed for Org org: Agent Memory call failed: timeout',
       ),
     ).toBeInTheDocument()
+    // Both columns list it: Best match in its list, By layer in the Personal card.
     expect(
-      within(answer).getByText('reno warehouse · dock_3_status = closed'),
-    ).toBeInTheDocument()
+      within(answer).getAllByText('reno warehouse · dock_3_status = closed'),
+    ).toHaveLength(2)
     expect(
-      within(answer).getByRole('button', { name: 'match score 0.82' }),
-    ).toBeInTheDocument()
+      within(answer).getAllByRole('button', { name: 'match score 0.82', hidden: true }),
+    ).toHaveLength(2)
     expect(within(answer).getByText(/trace t-root/)).toBeInTheDocument()
   })
 
   it('shows the API error message when every layer fails', async () => {
-    const api: AskApi = {
-      ask: async () => {
-        throw new ApiError(503, 'Agent Memory call failed: x')
-      },
-    }
+    const api = compareApi(async () => {
+      throw new ApiError(503, 'Agent Memory call failed: x')
+    })
     await renderPage(api)
 
     fireEvent.change(screen.getByLabelText('Question'), { target: { value: 'anything' } })
@@ -191,12 +220,10 @@ describe('AskPage', () => {
 
   it('cancel aborts the in-flight ask', async () => {
     let seen: AbortSignal | undefined
-    const api: AskApi = {
-      ask: (_request, signal) => {
-        seen = signal
-        return new Promise(() => {})
-      },
-    }
+    const api = compareApi((_request, signal) => {
+      seen = signal
+      return new Promise(() => {})
+    })
     await renderPage(api)
 
     fireEvent.click(screen.getByRole('button', { name: 'Is dock 3 open?' }))
@@ -208,7 +235,9 @@ describe('AskPage', () => {
   })
 
   it('searches only the ticked spaces, and tells the backend which', async () => {
-    const api: AskApi = { ask: vi.fn<AskApi['ask']>(async () => answerWith([])) }
+    const api = compareApi(
+      vi.fn<AskApi['compare']>(async () => bothModes(answerWith([]))),
+    )
     await renderPage(api)
 
     fireEvent.click(screen.getByRole('button', { name: /^Search in:/ }))
@@ -219,19 +248,21 @@ describe('AskPage', () => {
       'Search in: Org + My space',
     )
     fireEvent.click(screen.getByRole('button', { name: 'Is dock 3 open?' }))
-    expect(api.ask).toHaveBeenCalledWith(
+    expect(api.compare).toHaveBeenCalledWith(
       { q: 'Is dock 3 open?', scopes: ['org', 'org/user/u-0001'] },
       expect.any(AbortSignal),
     )
   })
 
   it('searches everything, without narrowing, while every space is ticked', async () => {
-    const api: AskApi = { ask: vi.fn<AskApi['ask']>(async () => answerWith([])) }
+    const api = compareApi(
+      vi.fn<AskApi['compare']>(async () => bothModes(answerWith([]))),
+    )
     await renderPage(api)
 
     fireEvent.click(screen.getByRole('button', { name: 'Is dock 3 open?' }))
 
-    expect(api.ask).toHaveBeenCalledWith(
+    expect(api.compare).toHaveBeenCalledWith(
       { q: 'Is dock 3 open?', scopes: [] },
       expect.any(AbortSignal),
     )
@@ -254,7 +285,9 @@ describe('AskPage', () => {
   })
 
   it('can deselect every space, which leaves nothing to ask, then select all again', async () => {
-    const api: AskApi = { ask: vi.fn<AskApi['ask']>(async () => answerWith([])) }
+    const api = compareApi(
+      vi.fn<AskApi['compare']>(async () => bothModes(answerWith([]))),
+    )
     await renderPage(api)
 
     fireEvent.click(screen.getByRole('button', { name: /^Search in:/ }))
@@ -270,7 +303,100 @@ describe('AskPage', () => {
     expect(
       screen.getByRole('button', { name: 'Search in: All spaces' }),
     ).toBeInTheDocument()
+    expect(api.compare).not.toHaveBeenCalled()
+  })
+})
+
+describe('Compare view', () => {
+  const askReturns = async () => {
+    fireEvent.click(screen.getByRole('button', { name: 'What is the returns window?' }))
+    return findAnswer('What is the returns window?')
+  }
+
+  it('sends one click as one compare request, with no mode picker', async () => {
+    const api = compareApi(vi.fn<AskApi['compare']>(mockAskApi.compare))
+    await renderPage(api)
+    expect(screen.queryByRole('radiogroup')).not.toBeInTheDocument()
+    expect(screen.getByText(/together, side by side/)).toBeInTheDocument()
+
+    await askReturns()
+    // One request, so every scope is recalled once for both columns.
+    expect(api.compare).toHaveBeenCalledTimes(1)
     expect(api.ask).not.toHaveBeenCalled()
+  })
+
+  it('lines up the 30 vs 60 disagreement: the value Best match used next to every By layer value', async () => {
+    await renderPage()
+    const answer = await askReturns()
+
+    const table = within(answer).getByRole('table')
+    expect(table).toHaveTextContent('1 point where the layers disagree')
+    const row = within(table).getAllByRole('row')[1]!
+    expect(within(row).getByRole('rowheader')).toHaveTextContent(
+      'returns policywindow_days',
+    )
+    const [picked, all] = within(row).getAllByRole('cell')
+    expect(picked).toHaveTextContent('30')
+    expect(picked).toHaveTextContent('Org')
+    expect(picked).toHaveTextContent('Used')
+    expect(picked).toHaveTextContent('Scores within 0.10, so the broader Org layer wins')
+    expect(picked).not.toHaveTextContent('60')
+    expect(all).toHaveTextContent('30')
+    expect(all).toHaveTextContent('60')
+    expect(all).toHaveTextContent('Personal')
+    expect(all).not.toHaveTextContent('Used')
+    // Each value shows the trust of its source: Org structured, Personal from chat.
+    expect(picked!.querySelector('.ask-trust')).toHaveTextContent('trust 0.95')
+    expect([...all!.querySelectorAll('.ask-trust')].map((t) => t.textContent)).toEqual([
+      'trust 0.95',
+      'trust 0.50',
+    ])
+  })
+
+  it('Best match puts the Org value first and folds the other under it', async () => {
+    await renderPage()
+    const answer = await askReturns()
+    const best = within(answer).getByRole('region', { name: 'Best match' })
+
+    const [first] = [...best.querySelectorAll('.ask-flat > .ask-fact')]
+    expect(first).toHaveTextContent('returns policy · window_days = 30')
+    expect(first).toHaveTextContent('Used')
+    expect(first?.querySelector('.ask-layer-tag')).toHaveTextContent('Org')
+    const folded = within(first as HTMLElement)
+      .getByText('1 set aside')
+      .closest('details')!
+    expect(folded).toHaveTextContent('returns policy · window_days = 60')
+    expect(folded).toHaveTextContent('Disagrees with the chosen Org value: 30')
+  })
+
+  it('By layer cards start closed, count what disagrees, and expand all at once', async () => {
+    await renderPage()
+    const answer = await askReturns()
+    const byLayer = within(answer).getByRole('region', { name: 'By layer' })
+
+    const cards = [
+      ...byLayer.querySelectorAll('details.ask-layer'),
+    ] as HTMLDetailsElement[]
+    expect(cards.every((card) => !card.open)).toBe(true)
+    expect(cards[0]).toHaveTextContent('1 disagree')
+    expect(cards[1]).not.toHaveTextContent('disagree')
+    expect(within(byLayer).queryByText('Used')).not.toBeInTheDocument()
+
+    fireEvent.click(within(byLayer).getByRole('button', { name: 'Expand all' }))
+    const reopened = [
+      ...byLayer.querySelectorAll('details.ask-layer'),
+    ] as HTMLDetailsElement[]
+    expect(reopened.every((card) => card.open)).toBe(true)
+  })
+
+  it('says so when the layers agree, with no table', async () => {
+    await renderPage()
+    fireEvent.click(screen.getByRole('button', { name: 'Is dock 3 open?' }))
+    const answer = await findAnswer('Is dock 3 open?')
+    expect(within(answer).queryByRole('table')).not.toBeInTheDocument()
+    expect(
+      within(answer).getByText(/No disagreements between layers/),
+    ).toBeInTheDocument()
   })
 })
 

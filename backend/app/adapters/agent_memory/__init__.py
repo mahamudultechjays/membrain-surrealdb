@@ -1,4 +1,9 @@
-from app.adapters.agent_memory.ask import AgentMemoryRecall, NotConfiguredRecall
+from app.adapters.agent_memory.ask import (
+    AgentMemoryFactProvenance,
+    AgentMemoryRecall,
+    NotConfiguredFactProvenance,
+    NotConfiguredRecall,
+)
 from app.adapters.agent_memory.brain import AgentMemoryBrain, NotConfiguredBrain
 from app.adapters.agent_memory.capture import AgentMemoryCapture, NotConfiguredCapture
 from app.adapters.agent_memory.chat import AgentMemoryChat, NotConfiguredChat
@@ -17,6 +22,7 @@ __all__ = [
     "AgentMemoryCapture",
     "AgentMemoryChat",
     "AgentMemoryDocuments",
+    "AgentMemoryFactProvenance",
     "AgentMemoryGraph",
     "AgentMemoryLab",
     "AgentMemoryPeople",
@@ -27,6 +33,7 @@ __all__ = [
     "NotConfiguredCapture",
     "NotConfiguredChat",
     "NotConfiguredDocuments",
+    "NotConfiguredFactProvenance",
     "NotConfiguredGraph",
     "NotConfiguredLab",
     "NotConfiguredPeople",

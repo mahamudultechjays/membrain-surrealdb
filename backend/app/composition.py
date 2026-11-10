@@ -9,6 +9,7 @@ from app.adapters.agent_memory import (
     AgentMemoryCapture,
     AgentMemoryChat,
     AgentMemoryDocuments,
+    AgentMemoryFactProvenance,
     AgentMemoryGraph,
     AgentMemoryLab,
     AgentMemoryPeople,
@@ -19,6 +20,7 @@ from app.adapters.agent_memory import (
     NotConfiguredCapture,
     NotConfiguredChat,
     NotConfiguredDocuments,
+    NotConfiguredFactProvenance,
     NotConfiguredGraph,
     NotConfiguredLab,
     NotConfiguredPeople,
@@ -30,6 +32,7 @@ from app.adapters.files import PdfAndTextReader
 from app.adapters.sqlite import SqliteUserScopes
 from app.core.config import settings
 from app.domain.ports.document_store import DocumentStore
+from app.domain.ports.fact_provenance import FactProvenanceReader
 from app.domain.ports.memory_brain import MemoryBrain
 from app.domain.ports.memory_capture import MemoryCapture
 from app.domain.ports.memory_graph import MemoryGraph
@@ -122,6 +125,11 @@ def get_memory_graph() -> MemoryGraph:
 def get_memory_recall() -> MemoryRecall:
     client = get_agent_memory_client()
     return AgentMemoryRecall(client) if client else NotConfiguredRecall()
+
+
+def get_fact_provenance() -> FactProvenanceReader:
+    client = get_agent_memory_client()
+    return AgentMemoryFactProvenance(client) if client else NotConfiguredFactProvenance()
 
 
 @lru_cache

@@ -12,6 +12,7 @@ from app.composition import (
     get_access_service,
     get_chat_sessions,
     get_document_store,
+    get_fact_provenance,
     get_memory_brain,
     get_memory_capture,
     get_memory_chat,
@@ -27,6 +28,7 @@ from app.composition import (
 )
 from app.core.config import settings
 from app.domain.ports.document_store import DocumentStore
+from app.domain.ports.fact_provenance import FactProvenanceReader
 from app.domain.ports.memory_brain import MemoryBrain
 from app.domain.ports.memory_capture import MemoryCapture
 from app.domain.ports.memory_chat import MemoryChat, MemoryReflect
@@ -50,6 +52,7 @@ MemoryBrainDep = Annotated[MemoryBrain, Depends(get_memory_brain)]
 MemoryGraphDep = Annotated[MemoryGraph, Depends(get_memory_graph)]
 PreviewCacheDep = Annotated[PreviewCache, Depends(get_preview_cache)]
 MemoryRecallDep = Annotated[MemoryRecall, Depends(get_memory_recall)]
+FactProvenanceDep = Annotated[FactProvenanceReader, Depends(get_fact_provenance)]
 ScopeRegistryDep = Annotated[ScopeRegistry, Depends(get_scope_registry)]
 AccessServiceDep = Annotated[AccessService, Depends(get_access_service)]
 MemoryChatDep = Annotated[MemoryChat, Depends(get_memory_chat)]

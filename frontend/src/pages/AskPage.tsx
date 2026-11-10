@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react'
-import { askApi, type AskApi, type AskResponse } from '@/api/ask'
+import { askApi, type AskApi, type AskCompareResponse } from '@/api/ask'
 import type { Me } from '@/api/auth'
 import type { ChatApi } from '@/api/chat'
 import type { ReflectApi } from '@/api/reflect'
@@ -8,6 +8,7 @@ import AskAnswer from '@/components/ask/AskAnswer'
 import AskChat from '@/components/ask/AskChat'
 import AskReflect from '@/components/ask/AskReflect'
 import AskLoading from '@/components/ask/AskLoading'
+import { ModeGlyph } from '@/components/ask/LayerGlyph'
 import { readAreas, spaceName, startExcluded } from '@/components/ask/layers'
 import HeaderSlot from '@/components/HeaderSlot'
 import KeepAlive from '@/components/KeepAlive'
@@ -30,7 +31,7 @@ type Run =
   /** `id` remounts the loading timer for each new question. */
   | { status: 'loading'; id: number }
   /** `who` is fixed when asked, so changing the picker later can't relabel it. */
-  | { status: 'success'; answer: AskResponse; who: string }
+  | { status: 'success'; answer: AskCompareResponse; who: string }
   | { status: 'error'; error: Error }
 
 interface Props {
@@ -74,6 +75,16 @@ export default function AskPage({
           ))}
         </nav>
         <p>{MODE_INTROS[mode]}</p>
+        {mode === 'search' && (
+          <p className="ask-mode-hint">
+            <ModeGlyph mode="best_match" />
+            <ModeGlyph mode="by_layer" />
+            <span>
+              Every question runs <strong>Best match</strong> and{' '}
+              <strong>By layer</strong> together, side by side.
+            </span>
+          </p>
+        )}
       </div>
       {/* Both modes stay mounted once opened, so switching keeps the question typed. */}
       {visited.map((m) => (
@@ -127,8 +138,10 @@ function AskSearch({ me, api = askApi }: Props) {
     inFlight.current = controller
     setRun({ status: 'loading', id: ++runCount.current })
     const askedAs = who
+    // One request answers in both modes: the backend recalls every scope once
+    // and applies each mode's rules to the same hits.
     api
-      .ask({ q: text, scopes: narrowed }, controller.signal)
+      .compare({ q: text, scopes: narrowed }, controller.signal)
       .then((answer) => {
         if (!controller.signal.aborted)
           setRun({ status: 'success', answer, who: askedAs })
@@ -159,7 +172,7 @@ function AskSearch({ me, api = askApi }: Props) {
 
   return (
     <>
-      <section className="panel ask-who" aria-label="Spaces searched">
+      <section className="ask-who" aria-label="Spaces searched">
         {options.length > 1 && (
           <HeaderSlot>
             <ScopePicker

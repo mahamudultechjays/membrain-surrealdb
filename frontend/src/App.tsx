@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { getMe, logout, type Me } from '@/api/auth'
 import { clearLabResults } from '@/components/admin/labResults'
 import { clearChats } from '@/components/ask/chatStore'
@@ -104,7 +104,12 @@ function Shell({ me, onMe, onSignedOut, onSignOut }: ShellProps) {
 
   // Grants can change while signed in (on Admin, or by another admin), so
   // re-read them on every page change rather than trusting the sign-in copy.
+  // Not on the first page: App fetched /auth/me a moment ago to sign in. The
+  // ref (not a flag) also keeps StrictMode's effect re-run from fetching.
+  const readFor = useRef(route)
   useEffect(() => {
+    if (readFor.current === route) return
+    readFor.current = route
     const controller = new AbortController()
     getMe(controller.signal)
       .then(onMe)

@@ -42,6 +42,19 @@ class Settings(BaseSettings):
     ORG_SCOPE: str = "org/spreetail"
     USER_SCOPE_ROOT: str = "org/spreetail/user"
 
+    # Ask > Search modes. The mode used when a request names none, and how close
+    # two scopes' match scores must be for best_match to call it a tie (the
+    # broader layer then wins). Both are meant to be tuned after testing.
+    ASK_MODE_DEFAULT: Literal["default", "best_match", "by_layer"] = "default"
+    ASK_TIE_MARGIN: float = 0.10
+    # A disagreement is flagged only when one of its values matches the question
+    # at least this well. Agent Memory pads small scopes with every record it
+    # holds, scored 0.38 and below by rank, so the floor sits just above that.
+    ASK_CONFLICT_MIN_SCORE: float = 0.40
+    # Trust is looked up per entity (one GET each), only for attribute hits at or
+    # above ASK_CONFLICT_MIN_SCORE, and for at most this many entities per question.
+    ASK_PROVENANCE_MAX_ENTITIES: int = 12
+
     # Login: Entra ID SSO, as in membrain (Authlib + a signed session cookie).
     # The app registration must allow <FRONTEND_URL>/api/v1/auth/callback.
     AZURE_CLIENT_ID: str | None = None

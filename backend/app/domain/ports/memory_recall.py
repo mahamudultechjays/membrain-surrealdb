@@ -11,6 +11,13 @@ class RecallHit:
     # What the hit is: entity, attribute, memory_chunk, chunk or section.
     kind: str
     score: float
+    # For attribute hits, the record it points at, from /query's `resource`:
+    # enough to look up the attribute's trust (see ports.fact_provenance).
+    entity_type: str | None = None
+    entity_name: str | None = None
+    key: str | None = None
+    # When the remembered event happened, for memory chunks; None otherwise.
+    occurred_at: str | None = None
 
 
 @dataclass(frozen=True, slots=True)

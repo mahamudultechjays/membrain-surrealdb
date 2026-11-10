@@ -6,18 +6,42 @@
   margin: 0;
 }
 
-/* Who is asking: a context strip, not an input, so it sits on the surface tone. */
+/* What Search reads: a quiet line above the question, not a panel. */
 .ask-who {
+  margin-bottom: 20px;
+}
+
+/* Search runs both modes; says so under the page intro. */
+.page-head .ask-mode-hint {
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
-  gap: 8px 16px;
-  margin-bottom: 24px;
-  padding: 12px 16px;
-  background: var(--mb-surface);
+  gap: 8px;
+  margin-top: 6px;
+  color: var(--mb-ink-2);
+  font-size: 14px;
+}
+
+.ask-mode-hint strong {
+  font-weight: 600;
+  color: var(--mb-ink);
+}
+
+/* The layer stack glyph (components/ask/LayerGlyph.tsx). */
+.layer-glyph {
+  flex: none;
+  display: block;
+}
+
+.layer-glyph .layer-glyph-pick {
+  color: var(--mb-accent);
+}
+
+.layer-glyph .layer-glyph-flag {
+  color: var(--mb-warn);
 }
 
 .ask-reads {
+  margin: 0;
   font-size: 13px;
   color: var(--mb-ink-2);
   overflow-wrap: anywhere;
@@ -131,25 +155,399 @@
 
 /* --- Answer --- */
 
+.ask-answer-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 6px 16px;
+  margin-bottom: 14px;
+}
+
 .ask-answer h2 {
-  margin: 0 0 6px;
+  min-width: 0;
+  margin: 0;
   font-size: 18px;
   font-weight: 600;
 }
 
+/* --- Compare table: one row per point the layers disagree on --- */
+
+.ask-compare-wrap {
+  margin-bottom: 20px;
+  border: 1px solid color-mix(in srgb, var(--mb-warn) 28%, transparent);
+  border-radius: var(--mb-radius);
+  background: var(--mb-bg);
+  overflow: hidden;
+}
+
+.ask-compare {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.ask-compare caption {
+  padding: 10px 14px;
+  background: var(--mb-warn-soft);
+  color: var(--mb-warn);
+  font-weight: 600;
+  text-align: left;
+}
+
+.ask-compare caption svg {
+  display: inline-block;
+  margin-right: 8px;
+  vertical-align: -3px;
+}
+
+.ask-compare thead th {
+  padding: 8px 14px;
+  border-bottom: 1px solid var(--mb-line);
+  color: var(--mb-muted);
+  font-size: 12px;
+  font-weight: 600;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.ask-compare thead th .layer-glyph {
+  display: inline-block;
+  margin-right: 6px;
+  vertical-align: -3px;
+}
+
+.ask-compare thead th:first-child {
+  width: 26%;
+}
+
+.ask-compare thead th:nth-child(2) {
+  width: 34%;
+}
+
+.ask-compare tbody th,
+.ask-compare td {
+  padding: 12px 14px;
+  border-top: 1px solid var(--mb-line);
+  text-align: left;
+  vertical-align: top;
+}
+
+.ask-compare tbody tr:first-child > * {
+  border-top: 0;
+}
+
+/* The second column is the one people compare against, so it gets the tint. */
+.ask-compare td:nth-child(2) {
+  background: var(--mb-soft);
+}
+
+.ask-compare tbody th {
+  font-weight: 600;
+}
+
+.ask-compare-entity,
+.ask-compare-key {
+  display: block;
+  overflow-wrap: anywhere;
+}
+
+.ask-compare-key {
+  margin-top: 2px;
+  color: var(--mb-muted);
+  font-size: 12px;
+  font-weight: 400;
+}
+
+.ask-picked {
+  display: grid;
+  gap: 6px;
+}
+
+.ask-picked-value {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 8px;
+}
+
+.ask-picked-reason {
+  color: var(--mb-ink-2);
+  font-size: 13px;
+  text-wrap: pretty;
+}
+
+.ask-all-values {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ask-all-values li {
+  display: grid;
+  gap: 2px;
+}
+
+/* --- The two modes, side by side --- */
+
+.ask-columns {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+  align-items: start;
+}
+
+.ask-column {
+  min-width: 0;
+}
+
+.ask-column-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 2px 12px;
+  margin-bottom: 10px;
+  padding-bottom: 8px;
+  border-bottom: 2px solid var(--mb-line);
+}
+
+.ask-column-head h3 {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.ask-column-meta {
+  color: var(--mb-muted);
+  font-size: 12px;
+}
+
+.ask-column-hint {
+  flex: 1 1 100%;
+  margin: 0;
+  color: var(--mb-muted);
+  font-size: 13px;
+}
+
+@media (max-width: 960px) {
+  .ask-columns {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* Phones: each table row becomes a small card, each cell named by its column. */
+@media (max-width: 640px) {
+  .ask-compare thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+
+  .ask-compare tbody tr {
+    display: block;
+    border-top: 1px solid var(--mb-line);
+  }
+
+  .ask-compare tbody tr:first-child {
+    border-top: 0;
+  }
+
+  .ask-compare tbody th,
+  .ask-compare td {
+    display: block;
+    border-top: 0;
+    padding: 8px 14px;
+  }
+
+  .ask-compare td::before {
+    content: attr(data-label);
+    display: block;
+    margin-bottom: 4px;
+    color: var(--mb-muted);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+}
+
 .ask-summary {
-  margin: 0 0 16px;
+  margin: 0;
   color: var(--mb-muted);
 }
 
-.ask-conflict {
+.ask-no-conflict {
   margin-bottom: 16px;
-  padding: 10px 14px;
-  border: 1px solid color-mix(in srgb, var(--mb-warn) 26%, transparent);
-  border-radius: var(--mb-radius-sm);
-  background: var(--mb-warn-soft);
-  color: var(--mb-warn);
-  font-size: 14px;
+}
+
+.ask-value-text {
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.ask-value-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px 8px;
+  color: var(--mb-muted);
+  font-size: 12px;
+}
+
+.ask-value-meta .mono {
+  font-size: 11px;
+}
+
+/* --- Best match column: one list, each fact labelled with its layer --- */
+
+.ask-tally {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 16px;
+  margin: 0 0 10px;
+  color: var(--mb-muted);
+  font-size: 13px;
+}
+
+.ask-tally-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.ask-tally-item .layer-glyph {
+  color: var(--mb-accent);
+}
+
+.ask-tally-item .mono {
+  color: var(--mb-ink-2);
+}
+
+.ask-tally-error {
+  margin-bottom: 10px;
+}
+
+.ask-facts.ask-flat {
+  margin-bottom: 12px;
+  padding: 0 16px;
+  border: 1px solid var(--mb-line);
+  border-radius: var(--mb-radius);
+  background: var(--mb-bg);
+}
+
+.ask-flat > .ask-fact:first-child {
+  border-top: 0;
+}
+
+/* Trust from the fact's entity record; the colour carries the level. */
+.ask-trust .mono {
+  margin-left: 4px;
+}
+
+/* Org, Team or Personal on each fact, so the single list keeps its sources. */
+.ask-layer-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding-left: 7px;
+  background: var(--mb-bg);
+  box-shadow: inset 0 0 0 1px var(--mb-line-2);
+}
+
+.ask-layer-tag .layer-glyph {
+  width: 13px;
+  height: 13px;
+  color: var(--mb-accent);
+}
+
+/* Best match: the values a fact won over, folded under it. */
+.ask-aside {
+  margin: -4px 0 10px;
+  font-size: 13px;
+}
+
+.ask-aside summary {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 32px;
+  padding: 0 12px;
+  border: 1px dashed var(--mb-line-2);
+  border-radius: 999px;
+  color: var(--mb-ink-2);
+  font-weight: 600;
+  cursor: pointer;
+  list-style: none;
+}
+
+.ask-aside summary::-webkit-details-marker {
+  display: none;
+}
+
+.ask-aside summary::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-right: 1.5px solid currentColor;
+  border-bottom: 1.5px solid currentColor;
+  transform: rotate(-45deg);
+  transition: transform 150ms var(--mb-ease);
+}
+
+.ask-aside[open] summary::before {
+  transform: rotate(45deg);
+}
+
+.ask-aside summary:hover {
+  border-color: var(--mb-muted);
+  color: var(--mb-ink);
+}
+
+.ask-aside ul {
+  display: grid;
+  gap: 8px;
+  margin: 8px 0 0;
+  padding: 0 0 0 14px;
+  border-left: 1px dashed var(--mb-line-2);
+  list-style: none;
+}
+
+.ask-aside li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 12px;
+}
+
+.ask-aside-text {
+  flex: 1 1 240px;
+  color: var(--mb-muted);
+  overflow-wrap: anywhere;
+}
+
+.ask-aside-meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--mb-muted);
+}
+
+.ask-aside-reason {
+  flex-basis: 100%;
+  margin: 0;
+  font-size: 12px;
+  color: var(--mb-muted);
 }
 
 /* One card per layer, so org, team and personal read as separate sources. */
@@ -169,14 +567,83 @@
   padding: 12px 0;
 }
 
-.ask-layer-head h3 {
+/* By layer: cards open and close; the header is the toggle. */
+.ask-layer-tools {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 8px;
+}
+
+.ask-layer-toggle {
+  min-height: 32px;
+  padding: 0 12px;
+  border: 1px solid var(--mb-line-2);
+  border-radius: 999px;
+  background: var(--mb-bg);
+  color: var(--mb-ink-2);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.ask-layer-toggle:hover {
+  border-color: var(--mb-muted);
+  color: var(--mb-ink);
+}
+
+summary.ask-layer-head {
+  cursor: pointer;
+  list-style: none;
+  user-select: none;
+}
+
+summary.ask-layer-head::-webkit-details-marker {
+  display: none;
+}
+
+summary.ask-layer-head:focus-visible {
+  outline: 2px solid var(--mb-accent);
+  outline-offset: 2px;
+  border-radius: var(--mb-radius-sm);
+}
+
+.ask-layer-badges {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 8px;
+}
+
+.ask-layer-chevron {
+  color: var(--mb-muted);
+  transition: transform 150ms var(--mb-ease);
+}
+
+.ask-layer[open] .ask-layer-chevron {
+  transform: rotate(180deg);
+}
+
+.ask-layer:not([open]) summary.ask-layer-head:hover h4 {
+  color: var(--mb-accent-ink);
+}
+
+.ask-layer-head h4 {
+  min-width: 0;
   margin: 0;
   font-size: 15px;
   font-weight: 600;
 }
 
+.ask-layer-head h4 .layer-glyph {
+  display: inline-block;
+  margin-right: 8px;
+  vertical-align: -2px;
+  color: var(--mb-accent);
+}
+
 .ask-area {
   margin-left: 4px;
+  overflow-wrap: anywhere;
   color: var(--mb-muted);
   font-weight: 400;
 }
@@ -210,6 +677,31 @@
 
 .ask-fact + .ask-fact {
   border-top: 1px solid var(--mb-line);
+}
+
+/* Set aside by Best match: still shown, dimmed, with the reason under it. */
+.ask-fact[data-status='set_aside'] .ask-fact-text {
+  color: var(--mb-muted);
+}
+
+.ask-fact-state[data-tone='good'] {
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--mb-accent) 35%, transparent);
+}
+
+.ask-fact[data-status='set_aside'] .ask-fact-state {
+  background: transparent;
+  box-shadow: inset 0 0 0 1px var(--mb-line-2);
+  color: var(--mb-muted);
+}
+
+.ask-fact-reason {
+  margin: -4px 0 10px;
+  font-size: 12px;
+  color: var(--mb-muted);
+}
+
+.ask-fact-reason[data-status='used'] {
+  color: var(--mb-accent-ink);
 }
 
 .ask-fact-row {
@@ -324,7 +816,8 @@
 @media (pointer: coarse) {
   .ask-chip,
   .ask-score,
-  .ask-source-close {
+  .ask-source-close,
+  .ask-layer-toggle {
     min-height: 44px;
   }
 }
