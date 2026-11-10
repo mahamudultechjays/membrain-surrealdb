@@ -2,6 +2,7 @@
 
 from functools import lru_cache
 
+import anthropic
 from surrealdb_memory import AsyncMemory
 
 from app.adapters.agent_memory import (
@@ -30,11 +31,14 @@ from app.adapters.agent_memory import (
     NotConfiguredRecall,
     NotConfiguredScopeRegistry,
 )
+from app.adapters.agent_memory.team_rules import AgentMemoryTeamRules, NotConfiguredTeamRules
+from app.adapters.anthropic import ClaudeGroupingModel, NotConfiguredGroupingModel
 from app.adapters.files import PdfAndTextReader
-from app.adapters.sqlite import SqliteFactTags, SqliteOnboarding, SqliteUserScopes
+from app.adapters.sqlite import SqliteFactTags, SqliteOnboarding, SqlitePromotion, SqliteUserScopes
 from app.core.config import settings
 from app.domain.ports.document_store import DocumentStore
 from app.domain.ports.fact_tags import FactTagRepository
+from app.domain.ports.grouping_model import GroupingModel
 from app.domain.ports.memory_brain import MemoryBrain
 from app.domain.ports.memory_capture import MemoryCapture
 from app.domain.ports.memory_graph import MemoryGraph
@@ -43,15 +47,19 @@ from app.domain.ports.memory_probe import MemoryProbe
 from app.domain.ports.memory_recall import MemoryRecall
 from app.domain.ports.onboarding import OnboardingRepository
 from app.domain.ports.passage_writer import PassageWriter
+from app.domain.ports.promotion import PromotionRepository
 from app.domain.ports.scope_registry import ScopeRegistry
+from app.domain.ports.team_rules import TeamRuleWriter
 from app.domain.ports.text_reader import DocumentTextReader
 from app.domain.ports.user_scopes import UserScopeRepository
+from app.domain.promotion import Weights
 from app.domain.vct import VctMap
 from app.services import vct_map
 from app.services.access import AccessService
 from app.services.capture_flow import PreviewCache
 from app.services.chat_flow import ChatSessions
 from app.services.onboarding import OnboardingService
+from app.services.promotion.service import PromotionService
 from app.services.tagger import TaggerService
 
 
@@ -101,6 +109,10 @@ async def close_clients() -> None:
         await get_memory_lab().close()
     if get_fact_lister.cache_info().currsize:
         await get_fact_lister().close()
+    if get_promotion_lister.cache_info().currsize:
+        await get_promotion_lister().close()
+    if get_team_rule_writer.cache_info().currsize:
+        await get_team_rule_writer().close()
     client = get_agent_memory_client()
     if client is not None:
         await client.close()
@@ -192,6 +204,7 @@ def get_access_service() -> AccessService:
         get_scope_registry(),
         org_scope=settings.ORG_SCOPE,
         user_root=settings.USER_SCOPE_ROOT,
+        team_scope=settings.PROMOTION_TEAM_SCOPE,
     )
 
 
@@ -257,3 +270,59 @@ def get_tagger_service() -> TaggerService:
 
 def get_vct_map() -> VctMap:
     return vct_map.load()
+
+
+@lru_cache
+def get_promotion_repository() -> PromotionRepository:
+    """Promotion state (statements, topics, review list), next to the grants."""
+    return SqlitePromotion(settings.USER_SCOPES_DB_PATH)
+
+
+@lru_cache
+def get_promotion_lister() -> AgentMemoryFactLister | NotConfiguredFactLister:
+    """Its own read key, minted for every personal scope the job lists."""
+    client = get_agent_memory_client()
+    if client is None:
+        return NotConfiguredFactLister()
+    return AgentMemoryFactLister(
+        client, _connect, holder="promotion-job", prefix="membrain-promotion"
+    )
+
+
+@lru_cache
+def get_grouping_model() -> GroupingModel:
+    key = settings.ANTHROPIC_API_KEY
+    if key is None or not key.get_secret_value():
+        return NotConfiguredGroupingModel()
+    return ClaudeGroupingModel(
+        anthropic.AsyncAnthropic(api_key=key.get_secret_value()), settings.PROMOTION_MODEL
+    )
+
+
+@lru_cache
+def get_team_rule_writer() -> AgentMemoryTeamRules | NotConfiguredTeamRules:
+    client = get_agent_memory_client()
+    if client is None:
+        return NotConfiguredTeamRules()
+    return AgentMemoryTeamRules(client, _connect, scope=settings.PROMOTION_TEAM_SCOPE)
+
+
+def get_team_rules() -> TeamRuleWriter:
+    return get_team_rule_writer()
+
+
+@lru_cache
+def get_promotion_service() -> PromotionService:
+    """One per process: it holds the lock and the last run."""
+    return PromotionService(
+        get_promotion_repository(),
+        get_promotion_lister(),
+        get_grouping_model(),
+        get_user_scope_repository(),
+        weights=Weights(settings.PROMOTION_FIRST_WEIGHT, settings.PROMOTION_REPEAT_FACTOR),
+        personal_rule_at=settings.PROMOTION_PERSONAL_RULE_AT,
+        candidate_at=settings.PROMOTION_CANDIDATE_AT,
+        flag_at=settings.PROMOTION_FLAG_AT,
+        batch_size=settings.PROMOTION_BATCH_SIZE,
+        generic_subjects=settings.promotion_generic_subjects(),
+    )

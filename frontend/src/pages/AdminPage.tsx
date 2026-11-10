@@ -11,6 +11,8 @@ import {
 } from '@/api/scopePaths'
 import { describe, memoryRows, type MemoryRow } from '@/components/admin/memoryAccess'
 import MemoryLab from '@/components/admin/MemoryLab'
+import PromotionPanel from '@/components/admin/PromotionPanel'
+import type { PromotionApi } from '@/api/promotion'
 import { OnboardUser, TaggerPanel } from '@/components/vct/Vct'
 import type { VctApi } from '@/api/vct'
 import NewScope from '@/components/admin/NewScope'
@@ -28,6 +30,7 @@ interface Props {
   /** The memory jobs' API; defaults to the real (or mock) one. */
   labApi?: LabApi
   vctApi?: VctApi
+  promotionApi?: PromotionApi
 }
 
 type UsersState =
@@ -813,13 +816,16 @@ function ScopeCells({
   )
 }
 
-const SECTIONS = ['access', 'lab', 'vct'] as const
+const SECTIONS = ['access', 'lab', 'vct', 'promotion'] as const
 type Section = (typeof SECTIONS)[number]
 const SECTION_LABELS: Record<Section, string> = {
   access: 'Access',
   lab: 'Lab',
   vct: 'Value chain',
+  promotion: 'Promotion',
 }
+/** A team admin who is not an org admin reviews promotion and nothing else. */
+const TEAM_ADMIN_SECTIONS = ['promotion'] as const
 
 /**
  * Admin has three sections, each with its own URL: #/admin/access (who may read
@@ -827,15 +833,22 @@ const SECTION_LABELS: Record<Section, string> = {
  * reflect) and #/admin/vct (the VCT tagger, and onboarding people to the value
  * chain). Each stays mounted once opened, so a running job keeps going.
  */
-export default function AdminPage({ me, api = adminApi, labApi, vctApi }: Props) {
-  const section = useHashSubRoute(SECTIONS, 'access')
+export default function AdminPage({
+  me,
+  api = adminApi,
+  labApi,
+  vctApi,
+  promotionApi,
+}: Props) {
+  const allowed = me.is_admin ? SECTIONS : TEAM_ADMIN_SECTIONS
+  const section = useHashSubRoute(allowed, allowed[0])
   const visited = useVisited(section)
   return (
     <main className="page admin-page">
       <div className="page-head">
         <h1>Admin</h1>
         <nav className="ask-modes admin-tabs" aria-label="Admin section">
-          {SECTIONS.map((s) => (
+          {allowed.map((s) => (
             <a
               key={s}
               href={`#/admin/${s}`}
@@ -848,8 +861,10 @@ export default function AdminPage({ me, api = adminApi, labApi, vctApi }: Props)
       </div>
       {visited.map((s) => (
         <KeepAlive key={s} active={s === section}>
-          {s === 'lab' ? (
-            <MemoryLab api={labApi} />
+          {s === 'promotion' ? (
+            <PromotionPanel api={promotionApi} />
+          ) : s === 'lab' ? (
+            <MemoryLab api={labApi} promotionApi={promotionApi} />
           ) : s === 'vct' ? (
             <div className="vct-admin">
               <TaggerPanel api={vctApi} />

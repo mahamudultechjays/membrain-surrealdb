@@ -5,6 +5,8 @@ from typing import Literal, Protocol
 
 Access = Literal["read", "write"]
 LayerName = Literal["org", "team", "personal"]
+# Our own roles, not Agent Memory grants (spec: team admin is a role).
+ROLE_TEAM_ADMIN = "team_admin"
 
 
 @dataclass(frozen=True, slots=True)
@@ -34,3 +36,9 @@ class UserScopeRepository(Protocol):
     async def remove(self, email: str, scope_path: str) -> bool:
         """Drop one grant. False when the user did not hold it."""
         ...
+
+    async def roles_for(self, email: str) -> set[str]: ...
+
+    async def set_role(self, email: str, role: str, on: bool) -> None: ...
+
+    async def emails_with_role(self, role: str) -> list[str]: ...

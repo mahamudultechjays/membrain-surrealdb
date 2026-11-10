@@ -16,6 +16,7 @@ from app.api.v1.endpoints import (
     graph,
     health,
     onboarding,
+    promotion,
     vct,
 )
 
@@ -34,3 +35,4 @@ api_router.include_router(documents.router, tags=["documents"])
 api_router.include_router(graph.router, tags=["graph"])
 api_router.include_router(brain.router, tags=["brain"])
 api_router.include_router(vct.router, tags=["vct"])
+api_router.include_router(promotion.router, tags=["promotion"])

@@ -11,9 +11,15 @@ if missing, plus read on the org scope. Teams are granted by an admin.
 
 import re
 
-from app.domain.errors import ScopeNotGrantedError
+from app.domain.errors import ScopeNotGrantedError, TeamScopeWriteError
 from app.domain.ports.scope_registry import ScopeRegistry
-from app.domain.ports.user_scopes import Access, LayerName, ScopeGrant, UserScopeRepository
+from app.domain.ports.user_scopes import (
+    ROLE_TEAM_ADMIN,
+    Access,
+    LayerName,
+    ScopeGrant,
+    UserScopeRepository,
+)
 
 
 class AccessService:
@@ -24,11 +30,14 @@ class AccessService:
         *,
         org_scope: str,
         user_root: str,
+        team_scope: str | None = None,
     ) -> None:
         self._grants = grants
         self._registry = registry
         self._org_scope = org_scope.strip("/")
         self._user_root = user_root.strip("/")
+        # The promotion team scope: readable, never writable by a person.
+        self._team_scope = team_scope.strip("/") if team_scope else None
 
     def personal_scope(self, name: str, email: str) -> str:
         """'Arun Das' -> <user root>/arun_das; a one-word name or none falls back sensibly."""
@@ -93,6 +102,8 @@ class AccessService:
     ) -> ScopeGrant:
         """Give a user a scope, registering it in Agent Memory first if needed."""
         path = scope_path.strip("/")
+        if access == "write" and path == self._team_scope:
+            raise TeamScopeWriteError(path)
         await self._registry.ensure(path)
         grant = ScopeGrant(email.strip().lower(), name, path, access, layer)
         await self._grants.put(grant)
@@ -100,3 +111,12 @@ class AccessService:
 
     async def revoke(self, email: str, scope_path: str) -> bool:
         return await self._grants.remove(email, scope_path.strip("/"))
+
+    async def is_team_admin(self, email: str) -> bool:
+        return ROLE_TEAM_ADMIN in await self._grants.roles_for(email)
+
+    async def set_team_admin(self, email: str, on: bool) -> None:
+        await self._grants.set_role(email, ROLE_TEAM_ADMIN, on)
+
+    async def team_admins(self) -> list[str]:
+        return await self._grants.emails_with_role(ROLE_TEAM_ADMIN)

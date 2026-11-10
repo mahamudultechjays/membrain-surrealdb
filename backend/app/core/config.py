@@ -56,6 +56,23 @@ class Settings(BaseSettings):
     )
     TAGGER_MAX_FACTS: int = 500
 
+    # Promotion (drafts/promotion/promotion-build-spec.html, section 3). Test
+    # profile for .env: PERSONAL_RULE_AT=1.5, CANDIDATE_AT=2, FLAG_AT=1,
+    # BATCH_SIZE=5, JOB_EVERY_MINUTES=5.
+    PROMOTION_ENABLED: bool = False
+    PROMOTION_TEAM_SCOPE: str = "org/spreetail/team/common"
+    PROMOTION_PERSONAL_RULE_AT: float = 1.75
+    PROMOTION_CANDIDATE_AT: float = 3.0
+    PROMOTION_FLAG_AT: float = 2.0
+    PROMOTION_FIRST_WEIGHT: float = 1.0
+    PROMOTION_REPEAT_FACTOR: float = 0.5
+    PROMOTION_BATCH_SIZE: int = 20
+    PROMOTION_GENERIC_SUBJECTS: str = "spreetail,our team,we,the company"
+    PROMOTION_MODEL: str = "claude-haiku-5-5"
+    PROMOTION_JOB_EVERY_MINUTES: float = 240
+    # The small Claude model that groups statements. Unset: grouping is skipped.
+    ANTHROPIC_API_KEY: SecretStr | None = None
+
     # Login: Entra ID SSO, as in membrain (Authlib + a signed session cookie).
     # The app registration must allow <FRONTEND_URL>/api/v1/auth/callback.
     AZURE_CLIENT_ID: str | None = None
@@ -98,6 +115,11 @@ class Settings(BaseSettings):
         """ADMIN_EMAILS, lowercased. Accepts "a@x.com,b@x.com" or '["a@x.com"]'."""
         raw = self.ADMIN_EMAILS.strip().strip("[]")
         return {e.strip().strip("'\"").lower() for e in raw.split(",") if e.strip().strip("'\"")}
+
+    def promotion_generic_subjects(self) -> frozenset[str]:
+        return frozenset(
+            s.strip().lower() for s in self.PROMOTION_GENERIC_SUBJECTS.split(",") if s.strip()
+        )
 
 
 @lru_cache

@@ -46,15 +46,25 @@ def plan_reads(grants: list[ScopeGrant]) -> list[LayerRead]:
     return sorted(reads.values(), key=lambda r: (LAYER_ORDER[r.layer], r.area))
 
 
-async def ask(recall: MemoryRecall, grants: list[ScopeGrant], *, q: str) -> Answer:
-    """Raises MemoryNotConfiguredError or MemoryUnavailableError when recall fails."""
+async def ask(
+    recall: MemoryRecall,
+    grants: list[ScopeGrant],
+    *,
+    q: str,
+    skip: frozenset[str] = frozenset(),
+) -> Answer:
+    """Raises MemoryNotConfiguredError or MemoryUnavailableError when recall fails.
+
+    `skip`: bare record ids left out of the answer (closed team rules and their
+    closing values, from promotion).
+    """
     scopes = [read.area for read in plan_reads(grants)]
     started = time.perf_counter()
     result = await recall.recall(q, lenses=scopes, k=RECALL_K)
     return Answer(
         q=q,
         scopes=scopes,
-        hits=result.hits,
+        hits=[h for h in result.hits if h.id.split(":", 1)[-1] not in skip],
         tier=result.tier or None,
         trace_id=result.trace_id,
         latency_ms=round((time.perf_counter() - started) * 1000),

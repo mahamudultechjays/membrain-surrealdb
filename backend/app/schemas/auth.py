@@ -27,6 +27,8 @@ class MeResponse(BaseModel):
     email: str
     name: str
     is_admin: bool
+    # Holds the team-admin role: sees Admin > Promotion only.
+    is_team_admin: bool = False
     grants: list[GrantOut]
 
 

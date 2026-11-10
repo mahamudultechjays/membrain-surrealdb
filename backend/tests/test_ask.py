@@ -234,3 +234,26 @@ def test_unknown_filter_ids_are_422(client: TestClient) -> None:
     response = client.get("/api/v1/ask", params={"q": "x", "goal": "zz-1", "node": "sc6,qq"})
     assert response.status_code == 422
     assert "qq, zz-1" in response.json()["detail"]
+
+
+def test_ask_drops_closed_rule_hits(client: TestClient, recall: FakeRecall) -> None:
+    from app.composition import get_promotion_repository
+    from app.domain.ports.promotion import ReviewItem
+
+    repo = app.dependency_overrides[get_promotion_repository]()
+
+    async def close_rule() -> None:
+        iid = await repo.add_review_item(ReviewItem("candidate", 1, "30 days", 3, "open"))
+        await repo.set_status(iid, "active", expect={"open"}, memory_ref="a1")
+        await repo.set_status(iid, "closed", expect={"active"}, closed_ref="a2")
+
+    import asyncio
+
+    asyncio.run(close_rule())
+    recall.hits = [
+        _hit("attribute:a1", "Cobalt Ridge's return window is 30 days"),
+        _hit("attribute:a2", "Cobalt Ridge's return window is no longer a team rule"),
+        _hit("attribute:b1", "Acme's lead time is 18 days"),
+    ]
+    body = _ask(client)
+    assert [f["source"]["hit_id"] for f in body["facts"]] == ["attribute:b1"]

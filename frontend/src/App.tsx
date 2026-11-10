@@ -96,7 +96,7 @@ interface ShellProps {
 }
 
 function Shell({ me, onMe, onSignedOut, onSignOut }: ShellProps) {
-  const routes = me.is_admin ? ADMIN_ROUTES : USER_ROUTES
+  const routes = me.is_admin || me.is_team_admin ? ADMIN_ROUTES : USER_ROUTES
   const route = useHashRoute<Route>(routes, 'capture')
   const visited = useVisited(route)
   // Each nav link goes back to where that page was left, e.g. #/ask/chat.

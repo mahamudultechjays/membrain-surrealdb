@@ -14,6 +14,7 @@ from app.api.deps import (
     CurrentUserDep,
     FactTagRepositoryDep,
     MemoryRecallDep,
+    PromotionRepositoryDep,
     VctMapDep,
     is_admin,
 )
@@ -40,6 +41,7 @@ async def ask(
     recall: MemoryRecallDep,
     tag_store: FactTagRepositoryDep,
     vmap: VctMapDep,
+    promotion: PromotionRepositoryDep,
     q: Annotated[str, Query(min_length=1, max_length=1000)],
     scope: Annotated[list[str] | None, Query()] = None,
     as_user: Annotated[list[str] | None, Query()] = None,
@@ -84,7 +86,8 @@ async def ask(
             )
         grants = [g for g in grants if g.scope_path in wanted]
     try:
-        answer = await ask_flow.ask(recall, grants, q=q)
+        closed = await promotion.closed_rule_refs()
+        answer = await ask_flow.ask(recall, grants, q=q, skip=closed)
     except MemoryNotConfiguredError as exc:
         raise HTTPException(
             status.HTTP_503_SERVICE_UNAVAILABLE,

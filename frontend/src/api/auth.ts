@@ -19,6 +19,8 @@ export interface Me {
   email: string
   name: string
   is_admin: boolean
+  /** Holds the team-admin role: sees Admin › Promotion only. */
+  is_team_admin?: boolean
   grants: Grant[]
 }
 

@@ -20,6 +20,14 @@ class ListedFact:
     # The captured turn the fact was extracted from; None for facts written
     # directly as triples.
     turn_id: str | None = None
+    # The triple and how it was written, for promotion.
+    entity_type: str | None = None
+    entity: str | None = None
+    key: str | None = None
+    value: str | None = None
+    created_at: str | None = None
+    # turn (chat), upsert (app), consolidation...
+    source_kind: str | None = None
 
 
 @dataclass(frozen=True, slots=True)

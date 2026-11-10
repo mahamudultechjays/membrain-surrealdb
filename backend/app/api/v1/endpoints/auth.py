@@ -102,6 +102,7 @@ async def me(user: CurrentUserDep, access: AccessServiceDep) -> MeResponse:
         email=user.email,
         name=user.name,
         is_admin=is_admin(user.email),
+        is_team_admin=await access.is_team_admin(user.email),
         grants=[
             GrantOut.model_validate(g).model_copy(update={"owner": owners.get(g.scope_path)})
             for g in grants

@@ -18,7 +18,13 @@ CREATE TABLE IF NOT EXISTS user_scopes (
     layer      TEXT NOT NULL CHECK (layer IN ('org', 'team', 'personal')),
     created_at TEXT NOT NULL,
     PRIMARY KEY (email, scope_path)
-)
+);
+CREATE TABLE IF NOT EXISTS user_roles (
+    email      TEXT NOT NULL,
+    role       TEXT NOT NULL,
+    created_at TEXT NOT NULL,
+    PRIMARY KEY (email, role)
+);
 """
 
 _COLUMNS = "email, name, scope_path, access, layer"
@@ -67,6 +73,33 @@ class SqliteUserScopes(SqliteStore):
             )
         )
         return bool(cursor.rowcount > 0)
+
+    async def roles_for(self, email: str) -> set[str]:
+        rows = await self._query(
+            "SELECT role FROM user_roles WHERE email = ?", (email.strip().lower(),)
+        )
+        return {r[0] for r in rows}
+
+    async def set_role(self, email: str, role: str, on: bool) -> None:
+        key = (email.strip().lower(), role)
+        if on:
+            now = datetime.now(UTC).isoformat(timespec="seconds")
+            await self._write(
+                lambda db: db.execute(
+                    "INSERT OR IGNORE INTO user_roles (email, role, created_at) VALUES (?, ?, ?)",
+                    (*key, now),
+                )
+            )
+        else:
+            await self._write(
+                lambda db: db.execute("DELETE FROM user_roles WHERE email = ? AND role = ?", key)
+            )
+
+    async def emails_with_role(self, role: str) -> list[str]:
+        rows = await self._query(
+            "SELECT email FROM user_roles WHERE role = ? ORDER BY email", (role,)
+        )
+        return [r[0] for r in rows]
 
 
 def _grant(row: tuple[str, ...]) -> ScopeGrant:

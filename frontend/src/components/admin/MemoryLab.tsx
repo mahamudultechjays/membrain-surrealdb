@@ -1,4 +1,6 @@
 import { useEffect, useState, type ReactNode } from 'react'
+import type { PromotionApi } from '@/api/promotion'
+import PromotionJob from '@/components/admin/PromotionJob'
 import {
   labApi,
   type LabAction,
@@ -26,7 +28,13 @@ type Scopes = Record<LabAction, string>
  * on the scope picked next to its button, and see what it did right under it
  * (standup 2026-11-04).
  */
-export default function MemoryLab({ api = labApi }: { api?: LabApi }) {
+export default function MemoryLab({
+  api = labApi,
+  promotionApi,
+}: {
+  api?: LabApi
+  promotionApi?: PromotionApi
+}) {
   const [options, setOptions] = useState<string[] | null>(null)
   // Each job's own scope; '' until the list has loaded.
   const [scopes, setScopes] = useState<Scopes>({
@@ -193,6 +201,8 @@ export default function MemoryLab({ api = labApi }: { api?: LabApi }) {
             </label>
           </>,
         )}
+
+        <PromotionJob api={promotionApi} />
       </div>
     </section>
   )

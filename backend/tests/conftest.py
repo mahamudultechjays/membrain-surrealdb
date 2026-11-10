@@ -3,8 +3,13 @@ from collections.abc import Iterator
 import pytest
 from fastapi.testclient import TestClient
 
-from app.adapters.sqlite import SqliteFactTags, SqliteUserScopes
-from app.composition import get_access_service, get_fact_tag_repository, get_memory_probe
+from app.adapters.sqlite import SqliteFactTags, SqlitePromotion, SqliteUserScopes
+from app.composition import (
+    get_access_service,
+    get_fact_tag_repository,
+    get_memory_probe,
+    get_promotion_repository,
+)
 from app.core.config import settings
 from app.domain.ports.memory_probe import MemoryStatus
 from app.main import app
@@ -70,9 +75,12 @@ def access(
         registry,
         org_scope="org/spreetail",
         user_root="org/spreetail/user",
+        team_scope="org/spreetail/team/common",
     )
     app.dependency_overrides[get_access_service] = lambda: service
     app.dependency_overrides[get_fact_tag_repository] = lambda: tags
+    promotion = SqlitePromotion(":memory:")
+    app.dependency_overrides[get_promotion_repository] = lambda: promotion
     monkeypatch.setattr(settings, "DEV_LOGIN_ENABLED", True)
     monkeypatch.setattr(settings, "ADMIN_EMAILS", "admin@x.com")
     return service

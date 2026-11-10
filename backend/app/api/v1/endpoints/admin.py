@@ -25,6 +25,7 @@ from app.core.config import settings
 from app.domain.errors import (
     MemoryNotConfiguredError,
     MemoryUnavailableError,
+    TeamScopeWriteError,
     UnknownVctNodeError,
 )
 from app.domain.ports.fact_tags import FactTagRepository
@@ -33,6 +34,7 @@ from app.schemas.admin import (
     GrantRequest,
     RegisterScopeRequest,
     ScopesResponse,
+    TeamAdminsResponse,
     UserGrants,
     UsersResponse,
 )
@@ -115,6 +117,10 @@ async def add_grant(
     name = held[0].name if held else (body.name or email)
     try:
         await access.grant(email, name, path, body.access, body.layer)
+    except TeamScopeWriteError as exc:
+        raise HTTPException(
+            status.HTTP_400_BAD_REQUEST, "The team scope is written only by promotion approval."
+        ) from exc
     except (MemoryNotConfiguredError, MemoryUnavailableError) as exc:
         raise _unavailable(exc) from exc
     _log(request, admin.email, "grant", email, path, body.access)
@@ -129,6 +135,28 @@ async def remove_grant(
     if not await access.revoke(email, scope_path):
         raise HTTPException(status.HTTP_404_NOT_FOUND, "That user does not hold that scope.")
     _log(request, admin.email, "revoke", email, scope_path.strip("/"), None)
+
+
+@router.get("/team-admins", response_model=TeamAdminsResponse)
+async def list_team_admins(admin: AdminUserDep, access: AccessServiceDep) -> TeamAdminsResponse:
+    """Who holds the team-admin role (they review Admin > Promotion)."""
+    return TeamAdminsResponse(emails=await access.team_admins())
+
+
+@router.put("/team-admins/{email}", status_code=status.HTTP_204_NO_CONTENT)
+async def add_team_admin(
+    email: str, request: Request, admin: AdminUserDep, access: AccessServiceDep
+) -> None:
+    await access.set_team_admin(email, True)
+    _log(request, admin.email, "team_admin_on", email, settings.PROMOTION_TEAM_SCOPE, None)
+
+
+@router.delete("/team-admins/{email}", status_code=status.HTTP_204_NO_CONTENT)
+async def remove_team_admin(
+    email: str, request: Request, admin: AdminUserDep, access: AccessServiceDep
+) -> None:
+    await access.set_team_admin(email, False)
+    _log(request, admin.email, "team_admin_off", email, settings.PROMOTION_TEAM_SCOPE, None)
 
 
 @router.get("/scopes", response_model=ScopesResponse)

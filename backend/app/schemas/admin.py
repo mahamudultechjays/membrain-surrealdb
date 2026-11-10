@@ -42,3 +42,7 @@ class ScopesResponse(BaseModel):
 
 class RegisterScopeRequest(BaseModel):
     path: str = Field(pattern=SCOPE_PATH, max_length=200)
+
+
+class TeamAdminsResponse(BaseModel):
+    emails: list[str]

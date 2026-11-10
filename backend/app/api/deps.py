@@ -24,8 +24,11 @@ from app.composition import (
     get_memory_reflect,
     get_onboarding_service,
     get_preview_cache,
+    get_promotion_repository,
+    get_promotion_service,
     get_scope_registry,
     get_tagger_service,
+    get_team_rules,
     get_text_reader,
     get_vct_map,
 )
@@ -40,7 +43,9 @@ from app.domain.ports.memory_lab import MemoryLab
 from app.domain.ports.memory_people import MemoryPeople
 from app.domain.ports.memory_probe import MemoryProbe
 from app.domain.ports.memory_recall import MemoryRecall
+from app.domain.ports.promotion import PromotionRepository
 from app.domain.ports.scope_registry import ScopeRegistry
+from app.domain.ports.team_rules import TeamRuleWriter
 from app.domain.ports.text_reader import DocumentTextReader
 from app.domain.vct import VctMap
 from app.schemas.auth import CurrentUser
@@ -48,6 +53,7 @@ from app.services.access import AccessService
 from app.services.capture_flow import PreviewCache
 from app.services.chat_flow import ChatSessions
 from app.services.onboarding import OnboardingService
+from app.services.promotion.service import PromotionService
 from app.services.tagger import TaggerService
 
 MemoryProbeDep = Annotated[MemoryProbe, Depends(get_memory_probe)]
@@ -67,6 +73,9 @@ MemoryLabDep = Annotated[MemoryLab, Depends(get_memory_lab)]
 MemoryPeopleDep = Annotated[MemoryPeople, Depends(get_memory_people)]
 OnboardingServiceDep = Annotated[OnboardingService, Depends(get_onboarding_service)]
 TaggerServiceDep = Annotated[TaggerService, Depends(get_tagger_service)]
+PromotionServiceDep = Annotated[PromotionService, Depends(get_promotion_service)]
+PromotionRepositoryDep = Annotated[PromotionRepository, Depends(get_promotion_repository)]
+TeamRuleWriterDep = Annotated[TeamRuleWriter, Depends(get_team_rules)]
 FactTagRepositoryDep = Annotated[FactTagRepository, Depends(get_fact_tag_repository)]
 VctMapDep = Annotated[VctMap, Depends(get_vct_map)]
 
@@ -94,3 +103,13 @@ async def require_admin(user: CurrentUserDep) -> CurrentUser:
 
 
 AdminUserDep = Annotated[CurrentUser, Depends(require_admin)]
+
+
+async def require_promotion_admin(user: CurrentUserDep, access: AccessServiceDep) -> CurrentUser:
+    """Org admins and team admins (a role in our grants table) review promotion."""
+    if not is_admin(user.email) and not await access.is_team_admin(user.email):
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "Team admins only.")
+    return user
+
+
+PromotionAdminDep = Annotated[CurrentUser, Depends(require_promotion_admin)]

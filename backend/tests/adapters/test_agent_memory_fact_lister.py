@@ -119,3 +119,26 @@ async def test_not_configured() -> None:
     with pytest.raises(MemoryNotConfiguredError):
         await lister.page([ME], limit=10, cursor=None)
     await lister.close()
+
+
+async def test_listing_keeps_entity_key_value_and_source_kind() -> None:
+    body = {
+        "attributes": [
+            {
+                **PAGE["attributes"][0],
+                "createdAt": "2026-11-05T07:05:06Z",
+                "source": {"kind": "upsert"},
+            },
+            {**PAGE["attributes"][1], "source": {"kind": "turn", "ref": "turn:t1"}},
+        ],
+        "page": {"hasMore": False},
+    }
+    lister, _, _ = _lister(body)
+    first, second = (await lister.page([ME], limit=10, cursor=None)).facts
+    assert (first.entity_type, first.entity, first.key, first.value) == (
+        "company", "supidtest_zeta", "pays", "Net 45 terms",
+    )  # fmt: skip
+    assert (first.created_at, first.source_kind) == ("2026-11-05T07:05:06Z", "upsert")
+    assert (second.entity_type, second.entity, second.source_kind) == (
+        "organisation", "gatetest_omega", "turn",
+    )  # fmt: skip

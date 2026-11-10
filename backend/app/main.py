@@ -10,7 +10,12 @@ from starlette.middleware.sessions import SessionMiddleware
 
 from app.api.middleware import TRACE_ID_HEADER, TraceMiddleware
 from app.api.v1.router import api_router
-from app.composition import close_clients, get_agent_memory_client, get_tagger_service
+from app.composition import (
+    close_clients,
+    get_agent_memory_client,
+    get_promotion_service,
+    get_tagger_service,
+)
 from app.core.config import settings
 from app.core.logging import setup_logging
 
@@ -21,9 +26,17 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
     if settings.TAGGER_ENABLED and get_agent_memory_client() is not None:
         interval = settings.TAGGER_INTERVAL_HOURS * 3600
         tagger = asyncio.create_task(get_tagger_service().loop(interval))
+    promotion: asyncio.Task[None] | None = None
+    if settings.PROMOTION_ENABLED and get_agent_memory_client() is not None:
+        every = settings.PROMOTION_JOB_EVERY_MINUTES * 60
+        promotion = asyncio.create_task(get_promotion_service().loop(every))
     try:
         yield
     finally:
+        if promotion is not None:
+            promotion.cancel()
+            with suppress(asyncio.CancelledError):
+                await promotion
         if tagger is not None:
             tagger.cancel()
             with suppress(asyncio.CancelledError):

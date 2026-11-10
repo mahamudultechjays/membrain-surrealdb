@@ -39,3 +39,24 @@ class FactNotTaggedError(Exception):
 
 class TaggerBusyError(Exception):
     """A VCT tagger run is already in progress."""
+
+
+class PromotionBusyError(Exception):
+    """A promotion run is already going."""
+
+
+class PromotionStateError(Exception):
+    """A review item is not in a state that allows this decision."""
+
+    def __init__(self, item_id: int, status: str | None) -> None:
+        self.item_id = item_id
+        self.status = status
+        super().__init__(f"Review item {item_id} is {status or 'missing'}")
+
+
+class GroupingModelError(Exception):
+    """The grouping model could not answer."""
+
+
+class TeamScopeWriteError(Exception):
+    """Nobody is given write access to the promotion team scope."""

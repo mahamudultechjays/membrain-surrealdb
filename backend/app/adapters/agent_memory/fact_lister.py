@@ -24,13 +24,21 @@ _ENTITY_NAME = re.compile(r"([^/'\[\],\s]+)'?\s*\]?\s*$")
 
 
 class AgentMemoryFactLister:
-    def __init__(self, admin: AsyncMemory, connect: Callable[[str], AsyncMemory]) -> None:
-        self._keys = ScopedKeys(admin, connect, prefix="membrain-tagger")
+    def __init__(
+        self,
+        admin: AsyncMemory,
+        connect: Callable[[str], AsyncMemory],
+        *,
+        holder: str = _HOLDER,
+        prefix: str = "membrain-tagger",
+    ) -> None:
+        self._keys = ScopedKeys(admin, connect, prefix=prefix)
+        self._holder = holder
 
     async def page(self, scopes: list[str], *, limit: int, cursor: str | None) -> ListedPage:
         if not scopes:
             return ListedPage()
-        client = await self._keys.client_for(_HOLDER, {"memory:read": sorted(scopes)})
+        client = await self._keys.client_for(self._holder, {"memory:read": sorted(scopes)})
         params: dict[str, Any] = {"limit": limit}
         if cursor:
             params["cursor"] = cursor
@@ -63,13 +71,33 @@ def _fact(raw: Any) -> ListedFact | None:
     fact_id = _id(raw.get("id"))
     if not fact_id:
         return None
+    source = raw.get("source")
+    entity_type, entity_name = _entity(raw.get("entity"))
     return ListedFact(
         id=fact_id,
         text=_text(raw),
         scopes=_scopes(raw.get("scope")),
         supersedes=_id(raw.get("supersedes")) or None,
         turn_id=_turn(raw.get("source")),
+        entity_type=entity_type,
+        entity=entity_name,
+        key=str(raw.get("key") or "") or None,
+        value=str(raw.get("value") or "") or None,
+        created_at=raw.get("createdAt"),
+        source_kind=source.get("kind") if isinstance(source, dict) else None,
     )
+
+
+def _entity(raw: Any) -> tuple[str | None, str | None]:
+    """(type, name) from "['organisation', 'cobalt_ridge']" or
+    "entity:organisation/organisation/cobalt_ridge"."""
+    text = str(raw or "").removeprefix("entity:").strip("[] ")
+    sep = "/" if "/" in text else ","
+    bits = [b.strip().strip("'\"") for b in text.split(sep)]
+    bits = [b for b in bits if b]
+    if not bits:
+        return None, None
+    return (bits[0] if len(bits) > 1 else None), bits[-1]
 
 
 def _turn(source: Any) -> str | None:
